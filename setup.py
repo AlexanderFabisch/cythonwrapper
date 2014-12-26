@@ -2,6 +2,7 @@
 
 
 from distutils.core import setup
+import os
 import pywrap
 
 
@@ -14,4 +15,5 @@ if __name__ == "__main__":
           description='Generator for Python and C++ wrappers',
           long_description=open('README.rst').read(),
           license='New BSD',
+          scripts=["bin" + os.sep + "pywrap"],
           packages=['pywrap'],)
