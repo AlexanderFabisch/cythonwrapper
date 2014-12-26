@@ -44,6 +44,56 @@ if __name__ == '__main__':
 """
 
 
+def write_cython_wrapper(filename, verbose=0):
+    results, cython_files = make_cython_wrapper(filename, verbose)
+    for filename, content in results.items():
+        open(filename, "w").write(content)
+    for cython_file in cython_files:
+        os.system("cython --cplus %s" % cython_file)
+
+
+def make_cython_wrapper(filename, verbose=0):
+    results = {}
+
+    parts = filename.split(".")
+    module = ".".join(parts[:-1])
+
+    pxd_filename = "_" + module + ".pxd"
+    pyx_filename = module + ".pyx"
+
+    tmpfile = filename
+    header = parts[-1] in ["h", "hh", "hpp"]
+
+    if header:
+        tmpfile = filename + ".cc"
+        with open(tmpfile, "w") as f:
+            f.write(open(filename, "r").read())
+
+    state = parse(tmpfile, module, verbose)
+
+    output = state.to_pxd()
+    if header:
+        output = output.replace(tmpfile, filename)
+        os.remove(tmpfile)
+    results[pxd_filename] = output
+    if verbose >= 2:
+        print("= %s =" % pxd_filename)
+        print(output)
+
+    output = state.to_pyx()
+    results[pyx_filename] = output
+    if verbose >= 2:
+        print("= %s =" % pyx_filename)
+        print(output)
+
+    setup = make_setup(filename=filename, module=module)
+    results["setup.py"] = setup
+
+    cython_files = [pyx_filename]
+
+    return results, cython_files
+
+
 def make_setup(**kwargs):
     return SETUP_PY % kwargs
 

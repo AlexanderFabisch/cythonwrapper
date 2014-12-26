@@ -9,41 +9,7 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         raise Exception("No filename given")
 
-    verbose = 3
     filename = sys.argv[1]
+    verbose = 3
 
-    parts = filename.split(".")
-    module = ".".join(parts[:-1])
-
-    pxd_filename = "_" + module + ".pxd"
-    pyx_filename = module + ".pyx"
-
-    tmpfile = filename
-    header = parts[-1] in ["h", "hh", "hpp"]
-
-    if header:
-        tmpfile = filename + ".cc"
-        with open(tmpfile, "w") as f:
-            f.write(open(filename, "r").read())
-
-    state = pycy.parse(tmpfile, module, verbose)
-
-    output = state.to_pxd()
-    if header:
-        output = output.replace(tmpfile, filename)
-        os.remove(tmpfile)
-    open(pxd_filename, "w").write(output)
-    if verbose >= 2:
-        print("= %s =" % pxd_filename)
-        print(output)
-
-    output = state.to_pyx()
-    open(pyx_filename, "w").write(output)
-    if verbose >= 2:
-        print("= %s =" % pyx_filename)
-        print(output)
-
-    os.system("cython --cplus %s" % pyx_filename)
-
-    setup = pycy.make_setup(filename=filename, module=module)
-    open("setup.py", "w").write(setup)
+    pycy.write_cython_wrapper(filename, verbose)
