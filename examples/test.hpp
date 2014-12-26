@@ -19,7 +19,7 @@ public:
     {
     }
 
-    void print()
+    void p()
     {
         std::cout << a << std::endl;
     }

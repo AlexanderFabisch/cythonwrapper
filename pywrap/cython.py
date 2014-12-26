@@ -11,7 +11,7 @@ METHOD_DEF = "        %(result_type)s %(name)s(%(args)s)"
 CONSTRUCTOR_DEF = "        %(name)s(%(args)s)"
 ARG_DEF = "%(tipe)s %(name)s"
 
-PY_CLASS_DEF = """def Cpp%(name)s:
+PY_CLASS_DEF = """cdef class Cpp%(name)s:
     cdef %(name)s *thisptr
 
     def __dealloc__(self):
@@ -65,7 +65,8 @@ import numpy as np""" + os.linesep
             includes += "" + os.linesep  # TODO
         if self.string:
             includes += "from libcpp.string cimport string" + os.linesep
-        includes += "cimport _" + self.module + os.linesep
+        #includes += "cimport _" + self.module + os.linesep
+        includes += "from _%s cimport *%s" % (self.module, os.linesep)
         return includes
 
 
