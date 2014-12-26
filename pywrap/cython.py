@@ -89,6 +89,7 @@ def make_cython_wrapper(filename, verbose=0):
     setup = make_setup(filename=filename, module=module)
     results["setup.py"] = setup
 
+    # Files that will be cythonized
     cython_files = [pyx_filename]
 
     return results, cython_files
@@ -233,10 +234,10 @@ def function_def(function, arguments, includes, constructor=False, **kwargs):
             # TODO
         elif argument.tipe == "double *":
             includes.numpy = True
-            if constructor or function.startswith("set"):
-                body += "%scdef np.ndarray[double, ndim=1] %s_array = %s%s" % (ind, argument.name, argument.name, os.linesep)
-                body += "%scdef %s %s = &%s_array[0]%s" % (ind, argument.tipe, cppname, argument.name, os.linesep)
-                skip = True
+            body += "%scdef np.ndarray[double, ndim=1] %s_array = np.asarray(%s)%s" % (ind, argument.name, argument.name, os.linesep)
+            body += "%scdef %s %s = &%s_array[0]%s" % (ind, argument.tipe, cppname, argument.name, os.linesep)
+            call_args.append(argument.name + "_array.shape[0]")
+            skip = True
 
     if constructor:
         body += "%sself.thisptr = new %s(%s)%s" % (ind, kwargs["class_name"], ", ".join(call_args), os.linesep)
