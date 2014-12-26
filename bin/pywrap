@@ -5,34 +5,6 @@ import sys
 import pywrap.cython as pycy
 
 
-SETUP_PY = """import os
-
-
-def configuration(parent_package='', top_path=None):
-    from numpy.distutils.misc_util import Configuration
-    import numpy
-
-    config = Configuration('.', parent_package, top_path)
-
-    config.add_extension(
-        '%(module)s',
-        sources=["%(module)s.cpp", "%(filename)s"], #created by cython
-        include_dirs=[".", numpy.get_include()],
-        define_macros=[("NDEBUG",)],
-        extra_compile_args=["-O3"],
-        language="c++",
-    )
-    return config
-
-if __name__ == '__main__':
-    from numpy.distutils.core import setup
-    setup(**configuration(top_path='').todict())
-"""
-
-def make_setup(**kwargs):
-    return SETUP_PY % kwargs
-
-
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         raise Exception("No filename given")
@@ -73,5 +45,5 @@ if __name__ == "__main__":
 
     os.system("cython --cplus %s" % pyx_filename)
 
-    setup = make_setup(filename=filename, module=module)
+    setup = pycy.make_setup(filename=filename, module=module)
     open("setup.py", "w").write(setup)

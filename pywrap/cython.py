@@ -1,4 +1,5 @@
 import os
+import warnings
 try:
     import clang.cindex as ci
 except:
@@ -18,6 +19,33 @@ PY_CLASS_DEF = """cdef class Cpp%(name)s:
         del self.thisptr
 """
 PY_ARG_DEF = "%(name)s"
+SETUP_PY = """import os
+
+
+def configuration(parent_package='', top_path=None):
+    from numpy.distutils.misc_util import Configuration
+    import numpy
+
+    config = Configuration('.', parent_package, top_path)
+
+    config.add_extension(
+        '%(module)s',
+        sources=["%(module)s.cpp", "%(filename)s"], #created by cython
+        include_dirs=[".", numpy.get_include()],
+        define_macros=[("NDEBUG",)],
+        extra_compile_args=["-O3"],
+        language="c++",
+    )
+    return config
+
+if __name__ == '__main__':
+    from numpy.distutils.core import setup
+    setup(**configuration(top_path='').todict())
+"""
+
+
+def make_setup(**kwargs):
+    return SETUP_PY % kwargs
 
 
 def parse(filename, module, verbose):
@@ -85,6 +113,11 @@ class Clazz:
         return class_str + "\n" + consts_str + "\n" + methods_str
 
     def to_pyx(self, includes):
+        if len(self.constructors) > 1:
+            msg = ("Class '%s' has more than one constructor. This is not "
+                   "compatible to Python. The last constructor will overwrite "
+                   "all others." % self.name)
+            warnings.warn(msg)
         class_str = PY_CLASS_DEF % self.__dict__
         consts_str = "\n".join([const.to_pyx(includes) for const in self.constructors])
         methods_str = "\n".join([method.to_pyx(includes) for method in self.methods])
