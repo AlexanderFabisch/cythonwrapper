@@ -108,9 +108,9 @@ class Clazz:
 
     def to_pxd(self):
         class_str = CLASS_DEF % self.__dict__
-        consts_str = "\n".join(map(to_pxd, self.constructors))
-        methods_str = "\n".join(map(to_pxd, self.methods))
-        return class_str + "\n" + consts_str + "\n" + methods_str
+        consts_str = os.linesep.join(map(to_pxd, self.constructors))
+        methods_str = os.linesep.join(map(to_pxd, self.methods))
+        return class_str + os.linesep + consts_str + os.linesep + methods_str
 
     def to_pyx(self, includes):
         if len(self.constructors) > 1:
@@ -119,9 +119,9 @@ class Clazz:
                    "all others." % self.name)
             warnings.warn(msg)
         class_str = PY_CLASS_DEF % self.__dict__
-        consts_str = "\n".join([const.to_pyx(includes) for const in self.constructors])
-        methods_str = "\n".join([method.to_pyx(includes) for method in self.methods])
-        return class_str + "\n" + consts_str + "\n" + methods_str
+        consts_str = os.linesep.join([const.to_pyx(includes) for const in self.constructors])
+        methods_str = os.linesep.join([method.to_pyx(includes) for method in self.methods])
+        return class_str + os.linesep + consts_str + os.linesep + methods_str
 
 
 class Method:
@@ -176,24 +176,25 @@ def function_def(function, arguments, includes, constructor=False, **kwargs):
         call_args.append(cppname)
 
         if argument.tipe in ["int", "float", "double"]:
-            body += "%scdef %s %s = %s\n" % (ind, argument.tipe, cppname, argument.name)
+            body += "%scdef %s %s = %s%s" % (ind, argument.tipe, cppname,
+                                             argument.name, os.linesep)
         if argument.tipe == "bool":
             includes.boolean = True
             # TODO
         elif argument.tipe == "double *":
             includes.numpy = True
             if constructor or function.startswith("set"):
-                body += "%scdef np.ndarray[double, ndim=1] %s_array = %s\n" % (ind, argument.name, argument.name)
-                body += "%scdef %s %s = &%s_array[0]\n" % (ind, argument.tipe, cppname, argument.name)
+                body += "%scdef np.ndarray[double, ndim=1] %s_array = %s%s" % (ind, argument.name, argument.name, os.linesep)
+                body += "%scdef %s %s = &%s_array[0]%s" % (ind, argument.tipe, cppname, argument.name, os.linesep)
                 skip = True
 
     if constructor:
-        body += "%sself.thisptr = new %s(%s)\n" % (ind, kwargs["class_name"], ", ".join(call_args))
+        body += "%sself.thisptr = new %s(%s)%s" % (ind, kwargs["class_name"], ", ".join(call_args), os.linesep)
     elif kwargs["result_type"] == "void":
-        body += "%sself.thisptr.%s(%s)\n" % (ind, function, ", ".join(call_args))
+        body += "%sself.thisptr.%s(%s)%s" % (ind, function, ", ".join(call_args), os.linesep)
     else:
-        body += "%scdef %s result = self.thisptr.%s(%s)\n" % (ind, kwargs["result_type"], function, ", ".join(call_args))
-        body += "%sreturn result\n" % ind
+        body += "%scdef %s result = self.thisptr.%s(%s)%s" % (ind, kwargs["result_type"], function, ", ".join(call_args), os.linesep)
+        body += "%sreturn result%s" % (ind, os.linesep)
 
     if constructor:
         signature = "    def __cinit__(self, %s):" % ", ".join(args)
