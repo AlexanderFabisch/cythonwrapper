@@ -158,10 +158,13 @@ class Clazz:
         self.methods = []
 
     def to_pxd(self):
+        header = """from libcpp.string cimport string
+from libcpp.vector cimport vector
+from libcpp cimport bool""" + os.linesep + os.linesep  # TODO only if required
         class_str = CLASS_DEF % self.__dict__
         consts_str = os.linesep.join(map(to_pxd, self.constructors))
         methods_str = os.linesep.join(map(to_pxd, self.methods))
-        return class_str + os.linesep + consts_str + os.linesep + methods_str
+        return header + class_str + os.linesep + consts_str + os.linesep + methods_str
 
     def to_pyx(self, includes):
         if len(self.constructors) > 1:
@@ -232,6 +235,8 @@ def function_def(function, arguments, includes, constructor=False, **kwargs):
         if argument.tipe == "bool":
             includes.boolean = True
             # TODO
+        if argument.tipe == "string":
+            includes.string = True
         elif argument.tipe == "double *":
             includes.numpy = True
             body += "%scdef np.ndarray[double, ndim=1] %s_array = np.asarray(%s)%s" % (ind, argument.name, argument.name, os.linesep)
@@ -244,13 +249,18 @@ def function_def(function, arguments, includes, constructor=False, **kwargs):
     elif kwargs["result_type"] == "void":
         body += "%sself.thisptr.%s(%s)%s" % (ind, function, ", ".join(call_args), os.linesep)
     else:
-        body += "%scdef %s result = self.thisptr.%s(%s)%s" % (ind, kwargs["result_type"], function, ", ".join(call_args), os.linesep)
+        if kwargs["result_type"] == "bool":
+            includes.boolean = True
+        elif kwargs["result_type"] == "string":
+            includes.string = True
+        result_type = kwargs["result_type"]
+        body += "%scdef %s result = self.thisptr.%s(%s)%s" % (ind, result_type, function, ", ".join(call_args), os.linesep)
         body += "%sreturn result%s" % (ind, os.linesep)
 
     if constructor:
         signature = "    def __cinit__(self, %s):" % ", ".join(args)
     else:
-        signature = "    def %s(self, %s):" % (function, ", ".join(args))
+        signature = "    def %s(self, %s):" % (from_camel_case(function), ", ".join(args))
 
     return signature + os.linesep + body
 

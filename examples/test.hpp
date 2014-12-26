@@ -23,7 +23,7 @@ public:
             delete[] vec;
     }
 
-    void set_vec(double* vec, unsigned size)
+    void setVec(double* vec, unsigned size)
     {
         if(this->vec)
             delete[] this->vec;
@@ -33,7 +33,7 @@ public:
         this->size = size;
     }
 
-    void get_vec(double* vec, unsigned size)
+    void getVec(double* vec, unsigned size)
     {
         if(!this->vec || size != this->size)
             throw std::invalid_argument("Bullshit!");
@@ -41,11 +41,21 @@ public:
             vec[i] = this->vec[i];
     }
 
+    bool isEmpty()
+    {
+        return size == 0;
+    }
+
     void p()
     {
         for(unsigned i = 0; i < size; i++)
             std::cout << vec[i] << ", ";
         std::cout << std::endl;
+    }
+
+    std::string info()
+    {
+        return std::string("This class contains a raw double array.");
     }
 };
 
