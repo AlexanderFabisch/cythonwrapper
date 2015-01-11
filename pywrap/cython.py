@@ -3,7 +3,9 @@ import warnings
 try:
     import clang.cindex as ci
 except:
-    raise Exception("Install 'python-clang-3.5' and 'libclang-3.5-dev'")
+    raise Exception("Install 'python-clang-3.5' and 'libclang-3.5-dev'. "
+                    "Note that a recent operating system is required, e.g. "
+                    "Ubuntu 14.04.")
 
 
 CLASS_DEF = """cdef extern from "%(filename)s" namespace "%(namespace)s":
