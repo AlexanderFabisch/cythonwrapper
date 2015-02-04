@@ -1,8 +1,9 @@
 import numpy as np
-from test import CppA
+from test import CppFactory
 
 
-a = CppA()
+fac = CppFactory()
+a = fac.make()
 vec = np.array([0.1, 0.5, 0.9])
 print("Empty: %s" % a.is_empty())
 a.set_vec(vec)

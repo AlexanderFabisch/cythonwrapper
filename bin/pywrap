@@ -2,6 +2,12 @@
 
 import sys
 import pywrap.cython as pycy
+try:
+    import clang.cindex as ci
+except:
+    raise Exception("Install 'python-clang-3.5' and 'libclang-3.5-dev'. "
+                    "Note that a recent operating system is required, e.g. "
+                    "Ubuntu 14.04.")
 
 
 if __name__ == "__main__":
@@ -11,4 +17,5 @@ if __name__ == "__main__":
     filename = sys.argv[1]
     verbose = 3
 
+    ci.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
     pycy.write_cython_wrapper(filename, verbose)

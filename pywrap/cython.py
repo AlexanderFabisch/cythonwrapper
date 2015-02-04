@@ -6,16 +6,23 @@ except:
     raise Exception("Install 'python-clang-3.5' and 'libclang-3.5-dev'. "
                     "Note that a recent operating system is required, e.g. "
                     "Ubuntu 14.04.")
+try:
+    from Cython.Build import cythonize
+except:
+    raise Exception("Install 'cython'.")
 
 
 CLASS_DEF = """cdef extern from "%(filename)s" namespace "%(namespace)s":
-    cdef cppclass %(name)s:"""
+    cdef cppclass %(name)s"""
 METHOD_DEF = "        %(result_type)s %(name)s(%(args)s)"
 CONSTRUCTOR_DEF = "        %(name)s(%(args)s)"
 ARG_DEF = "%(tipe)s %(name)s"
 
 PY_CLASS_DEF = """cdef class Cpp%(name)s:
     cdef %(name)s *thisptr
+
+    def __cinit__(self):
+        self.thisptr = NULL
 
     def __dealloc__(self):
         del self.thisptr
@@ -51,6 +58,7 @@ def write_cython_wrapper(filename, verbose=0):
     for filename, content in results.items():
         open(filename, "w").write(content)
     for cython_file in cython_files:
+        #cythonize(cython_file, cplus=True)
         os.system("cython --cplus %s" % cython_file)
 
 
@@ -119,7 +127,10 @@ class State:
         self.classes = []
 
     def to_pxd(self):
-        return "\n".join(map(to_pxd, self.classes))
+        header = """from libcpp.string cimport string
+from libcpp.vector cimport vector
+from libcpp cimport bool""" + os.linesep + os.linesep  # TODO only if required
+        return header + "\n".join(map(to_pxd, self.classes))
 
     def to_pyx(self):
         includes = Includes(self.module)
@@ -160,13 +171,14 @@ class Clazz:
         self.methods = []
 
     def to_pxd(self):
-        header = """from libcpp.string cimport string
-from libcpp.vector cimport vector
-from libcpp cimport bool""" + os.linesep + os.linesep  # TODO only if required
         class_str = CLASS_DEF % self.__dict__
-        consts_str = os.linesep.join(map(to_pxd, self.constructors))
-        methods_str = os.linesep.join(map(to_pxd, self.methods))
-        return header + class_str + os.linesep + consts_str + os.linesep + methods_str
+        if len(self.constructors) == 0 and len(self.methods) == 0:
+            return class_str + os.linesep
+        else:
+            consts_str = os.linesep.join(map(to_pxd, self.constructors))
+            methods_str = os.linesep.join(map(to_pxd, self.methods))
+            return (class_str + ":" + os.linesep + consts_str + os.linesep +
+                    methods_str + os.linesep)
 
     def to_pyx(self, includes):
         if len(self.constructors) > 1:
@@ -231,9 +243,10 @@ def function_def(function, arguments, includes, constructor=False, **kwargs):
         args.append(argument.name)
         call_args.append(cppname)
 
-        if argument.tipe in ["int", "float", "double"]:
+        if is_basic_type(argument.tipe):
             body += "%scdef %s %s = %s%s" % (ind, argument.tipe, cppname,
                                              argument.name, os.linesep)
+            print argument.tipe
         if argument.tipe == "bool":
             includes.boolean = True
             # TODO
@@ -256,8 +269,14 @@ def function_def(function, arguments, includes, constructor=False, **kwargs):
         elif kwargs["result_type"] == "string":
             includes.string = True
         result_type = kwargs["result_type"]
-        body += "%scdef %s result = self.thisptr.%s(%s)%s" % (ind, result_type, function, ", ".join(call_args), os.linesep)
-        body += "%sreturn result%s" % (ind, os.linesep)
+        body += ("%scdef %s result = self.thisptr.%s(%s)%s" %
+                 (ind, result_type, function, ", ".join(call_args), os.linesep))
+        if is_basic_type(result_type) or result_type == "string" or result_type == "bool":
+            body += "%sreturn result%s" % (ind, os.linesep)
+        else:
+            body += """%sret = Cpp%s()
+        ret.thisptr = result
+        return ret%s""" % (ind, result_type.split()[0], os.linesep)
 
     if constructor:
         signature = "    def __cinit__(self, %s):" % ", ".join(args)
@@ -334,6 +353,11 @@ def typename(name):
     new_name = name.replace("const ", "")
     # Remove namespace
     return new_name.split("::")[-1]
+
+
+def is_basic_type(type_name):
+    return type_name in ["int", "unsigned int", "long", "unsigned long",
+                         "float", "double"]
 
 
 def to_pxd(obj):

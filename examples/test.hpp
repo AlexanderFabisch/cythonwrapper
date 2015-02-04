@@ -17,7 +17,7 @@ public:
     {
     }
 
-    ~A()
+    virtual ~A()
     {
         if(vec)
             delete[] vec;
@@ -56,6 +56,22 @@ public:
     std::string info()
     {
         return std::string("This class contains a raw double array.");
+    }
+};
+
+class B : public A
+{
+    unsigned size;
+public:
+    B(unsigned size) : size(size) {}
+};
+
+class Factory
+{
+public:
+    A* make()
+    {
+        return new B();
     }
 };
 
