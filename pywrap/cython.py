@@ -134,7 +134,7 @@ def _derive_module_name_from(filename):
 
 
 def make_setup(**kwargs):
-    return SETUP_PY % kwargs
+    return config.setup_py % kwargs
 
 
 def parse(filename, module, verbose):
@@ -199,14 +199,17 @@ class Clazz:
         self.methods = []
 
     def to_pxd(self):
-        class_str = CLASS_DEF % self.__dict__
+        header = """from libcpp.string cimport string
+from libcpp.vector cimport vector
+from libcpp cimport bool""" + os.linesep + os.linesep  # TODO only if required
+        class_str = config.class_def % self.__dict__
+
         if len(self.constructors) == 0 and len(self.methods) == 0:
             return class_str + os.linesep
-        else:
-            consts_str = os.linesep.join(map(to_pxd, self.constructors))
-            methods_str = os.linesep.join(map(to_pxd, self.methods))
-            return (class_str + ":" + os.linesep + consts_str + os.linesep +
-                    methods_str + os.linesep)
+
+        consts_str = os.linesep.join(map(to_pxd, self.constructors))
+        methods_str = os.linesep.join(map(to_pxd, self.methods))
+        return header + class_str + os.linesep + consts_str + os.linesep + methods_str
 
     def to_pyx(self, includes):
         if len(self.constructors) > 1:
@@ -214,7 +217,7 @@ class Clazz:
                    "compatible to Python. The last constructor will overwrite "
                    "all others." % self.name)
             warnings.warn(msg)
-        class_str = PY_CLASS_DEF % self.__dict__
+        class_str = config.py_class_def % self.__dict__
         consts_str = os.linesep.join([const.to_pyx(includes) for const in self.constructors])
         methods_str = os.linesep.join([method.to_pyx(includes) for method in self.methods])
         return class_str + os.linesep + consts_str + os.linesep + methods_str
@@ -229,7 +232,7 @@ class Method:
     def to_pxd(self):
         method_dict = {"args": ", ".join(map(to_pxd, self.arguments))}
         method_dict.update(self.__dict__)
-        method_str = METHOD_DEF % method_dict
+        method_str = config.method_def % method_dict
         return method_str
 
     def to_pyx(self, includes):
@@ -246,7 +249,7 @@ class Constructor:
     def to_pxd(self):
         const_dict = {"args": ", ".join(map(to_pxd, self.arguments))}
         const_dict.update(self.__dict__)
-        const_str = CONSTRUCTOR_DEF % const_dict
+        const_str = config.constructor_def % const_dict
         return const_str
 
     def to_pyx(self, includes):
@@ -320,10 +323,10 @@ class Param:
         self.tipe = tipe
 
     def to_pxd(self):
-        return ARG_DEF % self.__dict__
+        return config.arg_def % self.__dict__
 
     def to_pyx(self):
-        return PY_ARG_DEF % self.__dict__
+        return config.py_arg_def % self.__dict__
 
 
 def recurse(node, filename, state, verbose=0):
