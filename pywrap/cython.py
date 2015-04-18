@@ -10,6 +10,7 @@ try:
     from Cython.Build import cythonize
 except:
     raise Exception("Install 'cython'.")
+from . import defaultconfig as config
 
 
 ci.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
@@ -56,21 +57,26 @@ if __name__ == '__main__':
 """
 
 
-def write_cython_wrapper(filename, verbose=0):
+def write_cython_wrapper(filename, target=".", verbose=0):
+    if not os.path.exists(target):
+        os.makedirs(target)
+
     results, cython_files = make_cython_wrapper(filename, verbose)
-    write_files(results)
-    cython(cython_files)
+    write_files(results, target)
+    cython(cython_files, target)
 
 
-def write_files(files):
+def write_files(files, target="."):
     for filename, content in files.items():
-        open(filename, "w").write(content)
+        outputfile = os.path.join(target, filename)
+        open(outputfile, "w").write(content)
 
 
-def cython(cython_files):
+def cython(cython_files, target="."):
     for cython_file in cython_files:
-        #cythonize(cython_file, cplus=True)
-        os.system("cython --cplus %s" % cython_file)
+        inputfile = os.path.join(target, cython_file)
+        #cythonize(inputfile, cplus=True)
+        os.system("cython --cplus %s" % inputfile)
 
 
 def make_cython_wrapper(filename, verbose=0):
@@ -78,10 +84,10 @@ def make_cython_wrapper(filename, verbose=0):
 
     module = _derive_module_name_from(filename)
 
-    pxd_filename = "_" + module + ".pxd"
-    pyx_filename = module + ".pyx"
+    pxd_filename = "_" + module + "." + config.pxd_file_ending
+    pyx_filename = module + "." + config.pyx_file_ending
 
-    header = _file_ending(filename) in ["h", "hh", "hpp"]
+    header = _file_ending(filename) in config.cpp_header_endings
 
     tmpfile = filename
 
@@ -94,9 +100,11 @@ def make_cython_wrapper(filename, verbose=0):
 
     declarations = state.to_pxd()
     if header:
-        declarations = declarations.replace(tmpfile, filename)
+        absolute_filename = os.path.abspath(filename)
+        declarations = declarations.replace(tmpfile, absolute_filename)
         os.remove(tmpfile)
     results[pxd_filename] = declarations
+
     if verbose >= 2:
         print("= %s =" % pxd_filename)
         print(declarations)
@@ -107,7 +115,7 @@ def make_cython_wrapper(filename, verbose=0):
         print("= %s =" % pyx_filename)
         print(extension)
 
-    setup = make_setup(filename=filename, module=module)
+    setup = make_setup(filename=absolute_filename, module=module)
     results["setup.py"] = setup
 
     # Files that will be cythonized

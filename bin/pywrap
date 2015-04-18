@@ -14,7 +14,12 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         raise Exception("No filename given")
 
-    filename = sys.argv[1]
-    verbose = 3
+    try:
+        filename = sys.argv[1]
+        target = sys.argv[2]
+    except IndexError:
+        print("Usage: pywrap <header> <target>")
+        exit(1)
+    verbose = 0
 
-    pycy.write_cython_wrapper(filename, verbose)
+    pycy.write_cython_wrapper(filename, target, verbose)
