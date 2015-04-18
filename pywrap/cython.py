@@ -74,7 +74,8 @@ def make_cython_wrapper(filename, target=".", verbose=0):
         print("= %s =" % pyx_filename)
         print(extension)
 
-    setup = make_setup(filename=relpath, module=module)
+    sourcedir = os.path.relpath(".", start=target)
+    setup = make_setup(filename=relpath, module=module, sourcedir=sourcedir)
     results["setup.py"] = setup
 
     # Files that will be cythonized

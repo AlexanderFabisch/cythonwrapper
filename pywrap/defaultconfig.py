@@ -29,7 +29,7 @@ def configuration(parent_package='', top_path=None):
     config.add_extension(
         '%(module)s',
         sources=["%(module)s.cpp", "%(filename)s"],
-        include_dirs=[".", numpy.get_include()],
+        include_dirs=["%(sourcedir)s", numpy.get_include()],
         define_macros=[("NDEBUG",)],
         extra_compile_args=["-O3"],
         language="c++",
