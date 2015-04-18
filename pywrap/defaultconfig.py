@@ -10,6 +10,9 @@ arg_def = "%(tipe)s %(name)s"
 py_class_def = """cdef class Cpp%(name)s:
     cdef %(name)s *thisptr
 
+    def __cinit__(self):
+        self.thisptr = NULL
+
     def __dealloc__(self):
         del self.thisptr
 """
@@ -25,7 +28,7 @@ def configuration(parent_package='', top_path=None):
 
     config.add_extension(
         '%(module)s',
-        sources=["%(module)s.cpp", "%(filename)s"], #created by cython
+        sources=["%(module)s.cpp", "%(filename)s"],
         include_dirs=[".", numpy.get_include()],
         define_macros=[("NDEBUG",)],
         extra_compile_args=["-O3"],

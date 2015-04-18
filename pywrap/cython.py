@@ -16,47 +16,6 @@ from . import defaultconfig as config
 ci.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
 
 
-CLASS_DEF = """cdef extern from "%(filename)s" namespace "%(namespace)s":
-    cdef cppclass %(name)s"""
-METHOD_DEF = "        %(result_type)s %(name)s(%(args)s)"
-CONSTRUCTOR_DEF = "        %(name)s(%(args)s)"
-ARG_DEF = "%(tipe)s %(name)s"
-
-PY_CLASS_DEF = """cdef class Cpp%(name)s:
-    cdef %(name)s *thisptr
-
-    def __cinit__(self):
-        self.thisptr = NULL
-
-    def __dealloc__(self):
-        del self.thisptr
-"""
-PY_ARG_DEF = "%(name)s"
-SETUP_PY = """import os
-
-
-def configuration(parent_package='', top_path=None):
-    from numpy.distutils.misc_util import Configuration
-    import numpy
-
-    config = Configuration('.', parent_package, top_path)
-
-    config.add_extension(
-        '%(module)s',
-        sources=["%(module)s.cpp", "%(filename)s"], #created by cython
-        include_dirs=[".", numpy.get_include()],
-        define_macros=[("NDEBUG",)],
-        extra_compile_args=["-O3"],
-        language="c++",
-    )
-    return config
-
-if __name__ == '__main__':
-    from numpy.distutils.core import setup
-    setup(**configuration(top_path='').todict())
-"""
-
-
 def write_cython_wrapper(filename, target=".", verbose=0):
     if not os.path.exists(target):
         os.makedirs(target)
@@ -79,7 +38,7 @@ def cython(cython_files, target="."):
         os.system("cython --cplus %s" % inputfile)
 
 
-def make_cython_wrapper(filename, verbose=0):
+def make_cython_wrapper(filename, target=".", verbose=0):
     results = {}
 
     module = _derive_module_name_from(filename)
@@ -100,8 +59,8 @@ def make_cython_wrapper(filename, verbose=0):
 
     declarations = state.to_pxd()
     if header:
-        absolute_filename = os.path.abspath(filename)
-        declarations = declarations.replace(tmpfile, absolute_filename)
+        relpath = os.path.relpath(filename, start=target)
+        declarations = declarations.replace(tmpfile, relpath)
         os.remove(tmpfile)
     results[pxd_filename] = declarations
 
@@ -115,7 +74,7 @@ def make_cython_wrapper(filename, verbose=0):
         print("= %s =" % pyx_filename)
         print(extension)
 
-    setup = make_setup(filename=absolute_filename, module=module)
+    setup = make_setup(filename=relpath, module=module)
     results["setup.py"] = setup
 
     # Files that will be cythonized
