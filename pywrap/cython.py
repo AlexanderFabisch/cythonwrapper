@@ -12,6 +12,9 @@ except:
     raise Exception("Install 'cython'.")
 
 
+ci.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
+
+
 CLASS_DEF = """cdef extern from "%(filename)s" namespace "%(namespace)s":
     cdef cppclass %(name)s"""
 METHOD_DEF = "        %(result_type)s %(name)s(%(args)s)"

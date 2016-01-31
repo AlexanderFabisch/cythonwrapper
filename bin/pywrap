@@ -17,5 +17,4 @@ if __name__ == "__main__":
     filename = sys.argv[1]
     verbose = 3
 
-    ci.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
     pycy.write_cython_wrapper(filename, verbose)
