@@ -84,20 +84,20 @@ def make_cython_wrapper(filename, verbose=0):
 
     state = parse(tmpfile, module, verbose)
 
-    output = state.to_pxd()
+    declarations = state.to_pxd()
     if header:
-        output = output.replace(tmpfile, filename)
+        declarations = declarations.replace(tmpfile, filename)
         os.remove(tmpfile)
-    results[pxd_filename] = output
+    results[pxd_filename] = declarations
     if verbose >= 2:
         print("= %s =" % pxd_filename)
-        print(output)
+        print(declarations)
 
-    output = state.to_pyx()
-    results[pyx_filename] = output
+    extension = state.to_pyx()
+    results[pyx_filename] = extension
     if verbose >= 2:
         print("= %s =" % pyx_filename)
-        print(output)
+        print(extension)
 
     setup = make_setup(filename=filename, module=module)
     results["setup.py"] = setup
