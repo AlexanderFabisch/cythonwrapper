@@ -68,14 +68,14 @@ def write_cython_wrapper(filename, verbose=0):
 def make_cython_wrapper(filename, verbose=0):
     results = {}
 
-    parts = filename.split(".")
-    module = ".".join(parts[:-1])
+    module = _derive_module_name_from(filename)
 
     pxd_filename = "_" + module + ".pxd"
     pyx_filename = module + ".pyx"
 
+    header = _file_ending(filename) in ["h", "hh", "hpp"]
+
     tmpfile = filename
-    header = parts[-1] in ["h", "hh", "hpp"]
 
     if header:
         tmpfile = filename + ".cc"
@@ -106,6 +106,16 @@ def make_cython_wrapper(filename, verbose=0):
     cython_files = [pyx_filename]
 
     return results, cython_files
+
+
+def _file_ending(filename):
+    return filename.split(".")[-1]
+
+
+def _derive_module_name_from(filename):
+    filename_without_ending = ".".join(filename.split(".")[:-1])
+    package_names = filename.split(os.sep)
+    return ".".join(package_names)
 
 
 def make_setup(**kwargs):
