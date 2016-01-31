@@ -58,8 +58,16 @@ if __name__ == '__main__':
 
 def write_cython_wrapper(filename, verbose=0):
     results, cython_files = make_cython_wrapper(filename, verbose)
-    for filename, content in results.items():
+    write_files(results)
+    cython(cython_files)
+
+
+def write_files(files):
+    for filename, content in files.items():
         open(filename, "w").write(content)
+
+
+def cython(cython_files):
     for cython_file in cython_files:
         #cythonize(cython_file, cplus=True)
         os.system("cython --cplus %s" % cython_file)
@@ -113,9 +121,8 @@ def _file_ending(filename):
 
 
 def _derive_module_name_from(filename):
-    filename_without_ending = ".".join(filename.split(".")[:-1])
-    package_names = filename.split(os.sep)
-    return ".".join(package_names)
+    filename = filename.split(os.sep)[-1]
+    return filename.split(".")[0]
 
 
 def make_setup(**kwargs):
@@ -328,6 +335,8 @@ def recurse(node, filename, state, verbose=0):
     elif node.kind == ci.CursorKind.PARM_DECL:
         param = Param(node.displayname, typename(node.type.spelling))
         state.last_function.arguments.append(param)
+    elif node.kind == ci.CursorKind.FUNCTION_DECL:
+        raise NotImplementedError("functions are not implemented yet")
     elif node.kind == ci.CursorKind.CXX_METHOD:
         method = Method(node.spelling, typename(node.result_type.spelling))
         state.classes[-1].methods.append(method)
