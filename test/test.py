@@ -14,8 +14,8 @@ def full_path(filename):
         return PREFIX + os.sep + filename
 
 
-def write_cython_wrapper(filename, verbose=0):
-    results, cython_files = pycy.make_cython_wrapper(filename, verbose)
+def write_cython_wrapper(filename, target=".", verbose=0):
+    results, cython_files = pycy.make_cython_wrapper(filename, target, verbose)
     pycy.write_files(results)
     pycy.cython(cython_files)
 
