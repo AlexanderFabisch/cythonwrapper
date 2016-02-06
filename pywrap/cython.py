@@ -20,7 +20,7 @@ def write_cython_wrapper(filename, target=".", verbose=0):
     if not os.path.exists(target):
         os.makedirs(target)
 
-    results, cython_files = make_cython_wrapper(filename, verbose)
+    results, cython_files = make_cython_wrapper(filename, target, verbose)
     write_files(results, target)
     cython(cython_files, target)
 

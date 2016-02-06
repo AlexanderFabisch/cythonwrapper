@@ -71,7 +71,7 @@ class Factory
 public:
     A* make()
     {
-        return new B();
+        return new B(5);
     }
 };
 
