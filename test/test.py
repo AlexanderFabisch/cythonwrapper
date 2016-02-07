@@ -51,3 +51,16 @@ def test_double_in_double_out():
     assert_equal(d + 2.0, a.plus2(d))
 
     remove_files(filenames)
+
+
+def test_vector():
+    filenames = write_cython_wrapper("vector.hpp")
+    run_setup()
+
+    from vector import CppA
+    a = CppA()
+    v = [2.0, 1.0, 3.0]
+    n = a.norm(v)
+    assert_equal(n, 14.0)
+
+    remove_files(filenames)
