@@ -88,3 +88,14 @@ def test_string_in_string_out():
     assert_equal(s + ".", a.end(s))
 
     remove_files(filenames)
+
+
+def test_constructor_args():
+    filenames = write_cython_wrapper("constructorargs.hpp")
+    run_setup()
+
+    from constructorargs import CppA
+    a = CppA(11, 7)
+    assert_equal(18, a.sum())
+
+    remove_files(filenames)
