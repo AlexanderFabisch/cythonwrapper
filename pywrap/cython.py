@@ -11,7 +11,8 @@ try:
 except:
     raise Exception("Install 'cython'.")
 from . import defaultconfig as config
-from .cpptypeconv import (is_basic_type, typename, cython_define_basic_inputarg,
+from .cpptypeconv import (is_basic_type, is_type_with_automatic_conversion,
+                          typename, cython_define_basic_inputarg,
                           cython_define_nparray1d_inputarg)
 
 
@@ -240,15 +241,14 @@ def function_def(function, arguments, includes, constructor=False,
         args.append(argument.name)
         call_args.append(cppname)
 
-        if is_basic_type(argument.tipe):
+        if is_type_with_automatic_conversion(argument.tipe):
             body += cython_define_basic_inputarg(
                 argument.tipe, cppname, argument.name) + os.linesep
-        if argument.tipe == "bool":
-            includes.boolean = True
-            # TODO boolean arguments are not handled yet
-        if argument.tipe == "string":
-            includes.string = True
-            # TODO string arguments are not handled yet
+
+            if argument.tipe == "bool":
+                includes.boolean = True
+            elif argument.tipe == "string":
+                includes.string = True
         elif argument.tipe == "double *":
             includes.numpy = True
             body += cython_define_nparray1d_inputarg(

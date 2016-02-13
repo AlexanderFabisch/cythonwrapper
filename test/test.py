@@ -64,3 +64,15 @@ def test_vector():
     assert_equal(n, 14.0)
 
     remove_files(filenames)
+
+
+def test_bool_in_bool_out():
+    filenames = write_cython_wrapper("boolinboolout.hpp")
+    run_setup()
+
+    from boolinboolout import CppA
+    a = CppA()
+    b = False
+    assert_equal(not b, a.neg(b))
+
+    remove_files(filenames)

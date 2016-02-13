@@ -1,10 +1,14 @@
-def is_basic_type(type_name):
+def is_basic_type(typename):
     # TODO This is not a complete list of the fundamental types. The reason is
     # that I don't know if they all will be converted correctly between Python
     # and C++ by Cython. See http://en.cppreference.com/w/cpp/language/types
     # for a complete list.
-    return type_name in ["int", "unsigned int", "long", "unsigned long",
-                         "float", "double"]
+    return typename in ["int", "unsigned int", "long", "unsigned long",
+                        "float", "double"]
+
+
+def is_type_with_automatic_conversion(typename):
+    return is_basic_type(typename) or typename in ["bool", "string"]
 
 
 def typename(tname):
