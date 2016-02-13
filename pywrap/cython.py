@@ -267,8 +267,7 @@ def function_def(function, arguments, includes, constructor=False,
             includes.string = True
 
         # TODO needs refactoring
-        body += ("%scdef %s result = self.thisptr.%s(%s)%s" %
-                 (ind, result_type, function, ", ".join(call_args), os.linesep))
+        body += ind + _call_cpp_function(result_type, function, call_args) + os.linesep
         if is_basic_type(result_type) or result_type == "string" or result_type == "bool":
             body += "%sreturn result%s" % (ind, os.linesep)
         else:
@@ -282,6 +281,11 @@ def function_def(function, arguments, includes, constructor=False,
         signature = "    def %s(%s):" % (from_camel_case(function), ", ".join(args))
 
     return signature + os.linesep + body
+
+
+def _call_cpp_function(result_tname, fname, call_args):
+    return "cdef {result_tname} result = self.thisptr.{fname}({args})".format(
+        result_tname=result_tname, fname=fname, args=", ".join(call_args))
 
 
 class Param:
