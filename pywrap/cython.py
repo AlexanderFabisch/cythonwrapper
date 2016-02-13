@@ -219,7 +219,11 @@ class Constructor:
                             constructor=True, class_name=self.class_name)
 
 
-def function_def(function, arguments, includes, constructor=False, **kwargs):
+def function_def(function, arguments, includes, constructor=False,
+                 result_type="void", class_name=None):
+    if class_name is None and constructor:
+        raise ValueError("Constructurs require a class name.")
+
     ind = "        "
     body = ""
     call_args = []
@@ -253,15 +257,16 @@ def function_def(function, arguments, includes, constructor=False, **kwargs):
             skip = True
 
     if constructor:
-        body += "%sself.thisptr = new %s(%s)%s" % (ind, kwargs["class_name"], ", ".join(call_args), os.linesep)
-    elif kwargs["result_type"] == "void":
+        body += "%sself.thisptr = new %s(%s)%s" % (ind, class_name, ", ".join(call_args), os.linesep)
+    elif result_type == "void":
         body += "%sself.thisptr.%s(%s)%s" % (ind, function, ", ".join(call_args), os.linesep)
     else:
-        if kwargs["result_type"] == "bool":
+        if result_type == "bool":
             includes.boolean = True
-        elif kwargs["result_type"] == "string":
+        elif result_type == "string":
             includes.string = True
-        result_type = kwargs["result_type"]
+
+        # TODO needs refactoring
         body += ("%scdef %s result = self.thisptr.%s(%s)%s" %
                  (ind, result_type, function, ", ".join(call_args), os.linesep))
         if is_basic_type(result_type) or result_type == "string" or result_type == "bool":
@@ -309,7 +314,7 @@ def recurse(node, filename, state, verbose=0):
         param = Param(node.displayname, typename(node.type.spelling))
         state.last_function.arguments.append(param)
     elif node.kind == ci.CursorKind.FUNCTION_DECL:
-        raise NotImplementedError("functions are not implemented yet")
+        raise NotImplementedError("TODO functions are not implemented yet")
     elif node.kind == ci.CursorKind.CXX_METHOD:
         method = Method(node.spelling, typename(node.result_type.spelling))
         state.classes[-1].methods.append(method)
