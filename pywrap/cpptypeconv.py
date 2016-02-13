@@ -16,6 +16,7 @@ def typename(tname):
     # TODO does not work with std::vector<namespace::type>
     cython_tname = tname
     cython_tname = _remove_const_modifier(cython_tname)
+    cython_tname = _remove_reference_modifier(cython_tname)
     cython_tname = _remove_namespace(cython_tname)
     cython_tname = _replace_angle_brackets(cython_tname)
     return cython_tname
@@ -23,6 +24,10 @@ def typename(tname):
 
 def _remove_const_modifier(tname):
     return tname.replace("const ", "")
+
+
+def _remove_reference_modifier(tname):
+    return tname.replace(" &", "")
 
 
 def _remove_namespace(tname):

@@ -76,3 +76,15 @@ def test_bool_in_bool_out():
     assert_equal(not b, a.neg(b))
 
     remove_files(filenames)
+
+
+def test_string_in_string_out():
+    filenames = write_cython_wrapper("stringinstringout.hpp")
+    run_setup()
+
+    from stringinstringout import CppA
+    a = CppA()
+    s = "This is a sentence"
+    assert_equal(s + ".", a.end(s))
+
+    remove_files(filenames)
