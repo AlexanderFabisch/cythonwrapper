@@ -227,7 +227,7 @@ def function_def(function, arguments, includes, constructor=False,
     ind = "        "
     body = ""
     call_args = []
-    args = []
+    args = ["self"]
     skip = False
     for i in range(len(arguments)):
         if skip:
@@ -277,9 +277,9 @@ def function_def(function, arguments, includes, constructor=False,
         return ret%s""" % (ind, result_type.split()[0], os.linesep)
 
     if constructor:
-        signature = "    def __cinit__(self, %s):" % ", ".join(args)
+        signature = "    def __cinit__(%s):" % ", ".join(args)
     else:
-        signature = "    def %s(self, %s):" % (from_camel_case(function), ", ".join(args))
+        signature = "    def %s(%s):" % (from_camel_case(function), ", ".join(args))
 
     return signature + os.linesep + body
 
