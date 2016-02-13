@@ -43,13 +43,15 @@ def cython_define_basic_inputarg(cython_tname, cython_argname, python_argname):
                                   python_argname)
 
 
-def cython_define_nparray1d_inputarg(cython_tname, cython_argname, python_argname):
+def cython_define_nparray1d_inputarg(cython_tname, cython_argname,
+                                     python_argname):
     return (
-"""%scdef np.ndarray[double, ndim=1] %s_array = np.asarray(%s)
-%scdef %s %s = &%s_array[0]
-"""
-             % (_intend(2), python_argname, python_argname,
-                _intend(2), cython_tname, cython_argname, python_argname))
+"""{ind}cdef np.ndarray[double, ndim=1] {array_argname} = np.asarray({python_argname})
+{ind}cdef {cython_tname} {cython_argname} = &{array_argname}[0]
+""".format(cython_tname=cython_tname, cython_argname=cython_argname,
+           python_argname=python_argname,
+           array_argname=python_argname + "_array",
+           ind=_intend(2)))
 
 
 def _intend(level):
