@@ -8,6 +8,18 @@ Install the package with::
 
     python setup.py install
 
+Usage
+-----
+
+We can generate a Python extension that wraps a library deined in a C++ header
+with::
+
+    pywrap <header> <target>
+
+The result is located in the directory <target> and can be build with::
+
+    python setup.py build_ext -i
+
 Documentation
 -------------
 
