@@ -2,6 +2,7 @@ import pywrap.cython as pycy
 import os
 from sklearn.utils.testing import assert_warns_message
 from nose.tools import assert_equal
+import contextlib
 
 
 PREFIX = os.sep.join(__file__.split(os.sep)[:-1])
@@ -14,7 +15,17 @@ def full_path(filename):
         return PREFIX + os.sep + filename
 
 
-def write_cython_wrapper(filename, target=".", verbose=0):
+@contextlib.contextmanager
+def cython_extension_from(header):
+    filenames = _write_cython_wrapper(full_path(header))
+    _run_setup()
+    try:
+        yield
+    finally:
+        _remove_files(filenames)
+
+
+def _write_cython_wrapper(filename, target=".", verbose=0):
     results, cython_files = pycy.make_cython_wrapper(filename, target, verbose)
     pycy.write_files(results)
     pycy.cython(cython_files)
@@ -27,11 +38,11 @@ def write_cython_wrapper(filename, target=".", verbose=0):
     return filenames
 
 
-def run_setup():
+def _run_setup():
     os.system("python setup.py build_ext -i")
 
 
-def remove_files(filenames):
+def _remove_files(filenames):
     for f in filenames:
         os.remove(f)
 
@@ -42,60 +53,40 @@ def test_twoctors():
 
 
 def test_double_in_double_out():
-    filenames = write_cython_wrapper("doubleindoubleout.hpp")
-    run_setup()
-
-    from doubleindoubleout import CppA
-    a = CppA()
-    d = 3.213
-    assert_equal(d + 2.0, a.plus2(d))
-
-    remove_files(filenames)
+    with cython_extension_from("doubleindoubleout.hpp"):
+        from doubleindoubleout import CppA
+        a = CppA()
+        d = 3.213
+        assert_equal(d + 2.0, a.plus2(d))
 
 
 def test_vector():
-    filenames = write_cython_wrapper("vector.hpp")
-    run_setup()
-
-    from vector import CppA
-    a = CppA()
-    v = [2.0, 1.0, 3.0]
-    n = a.norm(v)
-    assert_equal(n, 14.0)
-
-    remove_files(filenames)
+    with cython_extension_from("vector.hpp"):
+        from vector import CppA
+        a = CppA()
+        v = [2.0, 1.0, 3.0]
+        n = a.norm(v)
+        assert_equal(n, 14.0)
 
 
 def test_bool_in_bool_out():
-    filenames = write_cython_wrapper("boolinboolout.hpp")
-    run_setup()
-
-    from boolinboolout import CppA
-    a = CppA()
-    b = False
-    assert_equal(not b, a.neg(b))
-
-    remove_files(filenames)
+    with cython_extension_from("boolinboolout.hpp"):
+        from boolinboolout import CppA
+        a = CppA()
+        b = False
+        assert_equal(not b, a.neg(b))
 
 
 def test_string_in_string_out():
-    filenames = write_cython_wrapper("stringinstringout.hpp")
-    run_setup()
-
-    from stringinstringout import CppA
-    a = CppA()
-    s = "This is a sentence"
-    assert_equal(s + ".", a.end(s))
-
-    remove_files(filenames)
+    with cython_extension_from("stringinstringout.hpp"):
+        from stringinstringout import CppA
+        a = CppA()
+        s = "This is a sentence"
+        assert_equal(s + ".", a.end(s))
 
 
 def test_constructor_args():
-    filenames = write_cython_wrapper("constructorargs.hpp")
-    run_setup()
-
-    from constructorargs import CppA
-    a = CppA(11, 7)
-    assert_equal(18, a.sum())
-
-    remove_files(filenames)
+    with cython_extension_from("constructorargs.hpp"):
+        from constructorargs import CppA
+        a = CppA(11, 7)
+        assert_equal(18, a.sum())

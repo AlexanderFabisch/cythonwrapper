@@ -23,7 +23,7 @@ def test_define_inputarg_basic():
 
 def test_cython_define_nparray1d_inputarg():
     assert_equal(
-        cython_define_nparray1d_inputarg("double *", "cpp_a", "a")[-30:],
+        cython_define_nparray1d_inputarg("double *", "cpp_a", "a"),
         """        cdef np.ndarray[double, ndim=1] a_array = np.asarray(a)
         cdef double * cpp_a = &a_array[0]
-"""[-30:])
+""")
