@@ -11,6 +11,8 @@ try:
 except:
     raise Exception("Install 'cython'.")
 from . import defaultconfig as config
+from .cpptypeconv import (is_basic_type, typename, cython_define_basic_inputarg,
+                          cython_define_nparray1d_inputarg)
 
 
 ci.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
@@ -235,18 +237,18 @@ def function_def(function, arguments, includes, constructor=False, **kwargs):
         call_args.append(cppname)
 
         if is_basic_type(argument.tipe):
-            body += "%scdef %s %s = %s%s" % (ind, argument.tipe, cppname,
-                                             argument.name, os.linesep)
-            print argument.tipe
+            body += cython_define_basic_inputarg(
+                argument.tipe, cppname, argument.name) + os.linesep
         if argument.tipe == "bool":
             includes.boolean = True
-            # TODO
+            # TODO boolean arguments are not handled yet
         if argument.tipe == "string":
             includes.string = True
+            # TODO string arguments are not handled yet
         elif argument.tipe == "double *":
             includes.numpy = True
-            body += "%scdef np.ndarray[double, ndim=1] %s_array = np.asarray(%s)%s" % (ind, argument.name, argument.name, os.linesep)
-            body += "%scdef %s %s = &%s_array[0]%s" % (ind, argument.tipe, cppname, argument.name, os.linesep)
+            body += cython_define_nparray1d_inputarg(
+                argument.tipe, cppname, argument.name)
             call_args.append(argument.name + "_array.shape[0]")
             skip = True
 
@@ -338,19 +340,6 @@ def from_camel_case(name):
             i += 1
         i += 1
     return new_name.lower()
-
-
-def typename(name):
-    # TODO does not work with std::vector<namespace::type>
-    # Remove const modifier
-    new_name = name.replace("const ", "")
-    # Remove namespace
-    return new_name.split("::")[-1]
-
-
-def is_basic_type(type_name):
-    return type_name in ["int", "unsigned int", "long", "unsigned long",
-                         "float", "double"]
 
 
 def to_pxd(obj):
