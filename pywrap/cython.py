@@ -258,19 +258,20 @@ def function_def(function, arguments, includes, constructor=False,
 
     if constructor:
         body += "%sself.thisptr = new %s(%s)%s" % (ind, class_name, ", ".join(call_args), os.linesep)
-    elif result_type == "void":
-        body += "%sself.thisptr.%s(%s)%s" % (ind, function, ", ".join(call_args), os.linesep)
     else:
         if result_type == "bool":
             includes.boolean = True
         elif result_type == "string":
             includes.string = True
 
-        # TODO needs refactoring
-        body += ind + _call_cpp_function(result_type, function, call_args) + os.linesep
-        if is_basic_type(result_type) or result_type == "string" or result_type == "bool":
+        body += _call_cpp_function(result_type, function, call_args)
+
+        if result_type == "void":
+            pass
+        elif is_type_with_automatic_conversion(result_type):
             body += "%sreturn result%s" % (ind, os.linesep)
         else:
+            # TODO only works with default constructor
             body += """%sret = Cpp%s()
         ret.thisptr = result
         return ret%s""" % (ind, result_type.split()[0], os.linesep)
@@ -284,8 +285,12 @@ def function_def(function, arguments, includes, constructor=False,
 
 
 def _call_cpp_function(result_tname, fname, call_args):
-    return "cdef {result_tname} result = self.thisptr.{fname}({args})".format(
-        result_tname=result_tname, fname=fname, args=", ".join(call_args))
+    call = "self.thisptr.{fname}({args})".format(fname=fname,
+                                                 args=", ".join(call_args))
+    if result_tname != "void":
+        call = "cdef {result_tname} result = {call}".format(
+            result_tname=result_tname, call=call)
+    return "    " * 2 + call + os.linesep
 
 
 class Param:
