@@ -90,3 +90,11 @@ def test_constructor_args():
         from constructorargs import CppA
         a = CppA(11, 7)
         assert_equal(18, a.sum())
+
+
+def test_factory():
+    with cython_extension_from("factory.hpp"):
+        from factory import CppAFactory
+        factory = CppAFactory()
+        a = factory.make()
+        assert_equal(5, a.get())

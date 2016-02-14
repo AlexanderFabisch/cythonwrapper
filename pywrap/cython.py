@@ -273,12 +273,12 @@ def function_def(function, arguments, includes, constructor=False,
         else:
             # TODO only works with default constructor
             cython_classname = "Cpp%s" % result_type.split()[0]
-            body += """%sret = Cpp%s.__new__(Cpp%s)
+            body += """%sret = %s()
         ret.thisptr = result
-        return ret%s""" % (ind, cython_classname, cython_classname, os.linesep)
+        return ret%s""" % (ind, cython_classname, os.linesep)
 
     if constructor:
-        signature = "    def __cinit__(%s):" % ", ".join(args)
+        signature = "    def __init__(%s):" % ", ".join(args)
     else:
         signature = "    def %s(%s):" % (from_camel_case(function), ", ".join(args))
 

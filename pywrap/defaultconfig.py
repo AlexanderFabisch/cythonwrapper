@@ -10,8 +10,12 @@ arg_def = "%(tipe)s %(name)s"
 py_class_def = """cdef class Cpp%(name)s:
     cdef %(name)s *thisptr
 
+    def __cinit__(self):
+        self.thisptr = NULL
+
     def __dealloc__(self):
-        del self.thisptr
+        if self.thisptr != NULL:
+            del self.thisptr
 """
 py_arg_def = "%(name)s"
 setup_py = """import os

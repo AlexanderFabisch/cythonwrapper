@@ -8,6 +8,8 @@ def is_basic_type(typename):
 
 
 def is_type_with_automatic_conversion(typename):
+    # TODO add more types from this list:
+    # http://docs.cython.org/src/userguide/wrapping_CPlusPlus.html#standard-library
     return is_basic_type(typename) or typename in ["bool", "string"]
 
 
