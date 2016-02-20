@@ -106,7 +106,7 @@ def parse(filename, module, verbose):
     cursor = translation_unit.cursor
 
     state = State(module)
-    recurse(cursor, filename, state, verbose)
+    state.parse(cursor, filename, state, verbose)
     return state
 
 
@@ -117,6 +117,49 @@ class State:
         self.last_function = None
         self.classes = []
         self.includes = Includes(module)
+
+    def parse(self, node, filename, state, verbose=0):
+        namespace = state.namespace
+        if verbose >= 2:
+            print("Node: %s, %s" % (node.kind, node.displayname))
+
+        if node.location.file is None:
+            pass
+        elif node.location.file.name != filename:
+            return
+        elif node.kind == ci.CursorKind.NAMESPACE:
+            if state.namespace == "":
+                state.namespace = node.displayname
+            else:
+                state.namespace = state.namespace + "::" + node.displayname
+        elif node.kind == ci.CursorKind.PARM_DECL:
+            tname = typename(node.type.spelling)
+            state.includes.add_include_for(tname)
+            param = Param(node.displayname, tname)
+            state.last_function.arguments.append(param)
+        elif node.kind == ci.CursorKind.FUNCTION_DECL:
+            raise NotImplementedError("TODO functions are not implemented yet")
+        elif node.kind == ci.CursorKind.CXX_METHOD:
+            tname = typename(node.result_type.spelling)
+            state.includes.add_include_for(tname)
+            method = Method(node.spelling, tname)
+            state.classes[-1].methods.append(method)
+            state.last_function = method
+        elif node.kind == ci.CursorKind.CONSTRUCTOR:
+            constructor = Constructor(node.spelling, state.classes[-1].name)
+            state.classes[-1].constructors.append(constructor)
+            state.last_function = constructor
+        elif node.kind == ci.CursorKind.CLASS_DECL:
+            clazz = Clazz(filename, state.namespace, node.displayname)
+            state.classes.append(clazz)
+        else:
+            if verbose:
+                print("Unknown node: %s, %s" % (node.kind, node.displayname))
+
+        for child in node.get_children():
+            self.parse(child, filename, state, verbose)
+
+        state.namespace = namespace
 
     def to_pxd(self):
         return self.includes.to_pxd() + "\n".join(map(to_pxd, self.classes))
@@ -299,50 +342,6 @@ class Param:
 
     def to_pyx(self):
         return config.py_arg_def % self.__dict__
-
-
-def recurse(node, filename, state, verbose=0):
-    namespace = state.namespace
-    if verbose >= 2:
-        print("Node: %s, %s" % (node.kind, node.displayname))
-
-    if node.location.file is None:
-        pass
-    elif node.location.file.name != filename:
-        return
-    elif node.kind == ci.CursorKind.NAMESPACE:
-        if state.namespace == "":
-            state.namespace = node.displayname
-        else:
-            state.namespace = state.namespace + "::" + node.displayname
-    elif node.kind == ci.CursorKind.PARM_DECL:
-        tname = typename(node.type.spelling)
-        state.includes.add_include_for(tname)
-        param = Param(node.displayname, tname)
-        state.last_function.arguments.append(param)
-    elif node.kind == ci.CursorKind.FUNCTION_DECL:
-        raise NotImplementedError("TODO functions are not implemented yet")
-    elif node.kind == ci.CursorKind.CXX_METHOD:
-        tname = typename(node.result_type.spelling)
-        state.includes.add_include_for(tname)
-        method = Method(node.spelling, tname)
-        state.classes[-1].methods.append(method)
-        state.last_function = method
-    elif node.kind == ci.CursorKind.CONSTRUCTOR:
-        constructor = Constructor(node.spelling, state.classes[-1].name)
-        state.classes[-1].constructors.append(constructor)
-        state.last_function = constructor
-    elif node.kind == ci.CursorKind.CLASS_DECL:
-        clazz = Clazz(filename, state.namespace, node.displayname)
-        state.classes.append(clazz)
-    else:
-        if verbose:
-            print("Unknown node: %s, %s" % (node.kind, node.displayname))
-
-    for child in node.get_children():
-        recurse(child, filename, state, verbose)
-
-    state.namespace = namespace
 
 
 def from_camel_case(name):
