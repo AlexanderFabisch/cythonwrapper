@@ -116,12 +116,12 @@ class State:
         self.namespace = ""
         self.last_function = None
         self.classes = []
+        self.includes = Includes(module)
 
     def to_pxd(self):
         return self.includes.to_pxd() + "\n".join(map(to_pxd, self.classes))
 
     def to_pyx(self):
-        self.includes = Includes(self.module)
         code = "\n".join([clazz.to_pyx(self.includes) for clazz in self.classes])
         return self.includes.to_pyx() + os.linesep + os.linesep + code
 
@@ -133,6 +133,12 @@ class Includes:
         self.boolean = False
         self.vector = False
         self.string = False
+
+    def add_include_for(self, tname):
+        if tname == "bool":
+            self.boolean = True
+        elif tname == "string":
+            self.string = True
 
     def _header(self):
         includes = ""
@@ -243,11 +249,6 @@ def function_def(function, arguments, includes, constructor=False,
         if is_type_with_automatic_conversion(argument.tipe):
             body += cython_define_basic_inputarg(
                 argument.tipe, cppname, argument.name) + os.linesep
-
-            if argument.tipe == "bool":
-                includes.boolean = True
-            elif argument.tipe == "string":
-                includes.string = True
         elif argument.tipe == "double *":
             includes.numpy = True
             body += cython_define_nparray1d_inputarg(
@@ -258,11 +259,6 @@ def function_def(function, arguments, includes, constructor=False,
     if constructor:
         body += "%sself.thisptr = new %s(%s)%s" % (ind, class_name, ", ".join(call_args), os.linesep)
     else:
-        if result_type == "bool":
-            includes.boolean = True
-        elif result_type == "string":
-            includes.string = True
-
         body += _call_cpp_function(result_type, function, call_args)
 
         if result_type == "void":
@@ -320,12 +316,16 @@ def recurse(node, filename, state, verbose=0):
         else:
             state.namespace = state.namespace + "::" + node.displayname
     elif node.kind == ci.CursorKind.PARM_DECL:
-        param = Param(node.displayname, typename(node.type.spelling))
+        tname = typename(node.type.spelling)
+        state.includes.add_include_for(tname)
+        param = Param(node.displayname, tname)
         state.last_function.arguments.append(param)
     elif node.kind == ci.CursorKind.FUNCTION_DECL:
         raise NotImplementedError("TODO functions are not implemented yet")
     elif node.kind == ci.CursorKind.CXX_METHOD:
-        method = Method(node.spelling, typename(node.result_type.spelling))
+        tname = typename(node.result_type.spelling)
+        state.includes.add_include_for(tname)
+        method = Method(node.spelling, tname)
         state.classes[-1].methods.append(method)
         state.last_function = method
     elif node.kind == ci.CursorKind.CONSTRUCTOR:
