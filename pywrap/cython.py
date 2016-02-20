@@ -58,15 +58,15 @@ def make_cython_wrapper(filename, target=".", verbose=0):
         with open(tmpfile, "w") as f:
             f.write(open(filename, "r").read())
 
-    state = parse(tmpfile, module, verbose)
+    ast = parse(tmpfile, module, verbose)
 
-    extension = state.to_pyx()
+    extension = ast.to_pyx()
     results[pyx_filename] = extension
     if verbose >= 2:
         print("= %s =" % pyx_filename)
         print(extension)
 
-    declarations = state.to_pxd()
+    declarations = ast.to_pxd()
     if header:
         relpath = os.path.relpath(filename, start=target)
         declarations = declarations.replace(tmpfile, relpath)
@@ -105,12 +105,13 @@ def parse(filename, module, verbose):
     translation_unit = index.parse(filename)
     cursor = translation_unit.cursor
 
-    state = State(module)
-    state.parse(cursor, filename, verbose)
-    return state
+    ast = AST(module)
+    ast.parse(cursor, filename, verbose)
+    return ast
 
 
-class State:
+class AST:
+    """Abstract Syntax Tree."""
     def __init__(self, module):
         self.module = module
         self.namespace = ""
