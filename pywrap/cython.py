@@ -60,6 +60,12 @@ def make_cython_wrapper(filename, target=".", verbose=0):
 
     state = parse(tmpfile, module, verbose)
 
+    extension = state.to_pyx()
+    results[pyx_filename] = extension
+    if verbose >= 2:
+        print("= %s =" % pyx_filename)
+        print(extension)
+
     declarations = state.to_pxd()
     if header:
         relpath = os.path.relpath(filename, start=target)
@@ -70,12 +76,6 @@ def make_cython_wrapper(filename, target=".", verbose=0):
     if verbose >= 2:
         print("= %s =" % pxd_filename)
         print(declarations)
-
-    extension = state.to_pyx()
-    results[pyx_filename] = extension
-    if verbose >= 2:
-        print("= %s =" % pyx_filename)
-        print(extension)
 
     sourcedir = os.path.relpath(".", start=target)
     setup = make_setup(filename=relpath, module=module, sourcedir=sourcedir)
@@ -118,15 +118,12 @@ class State:
         self.classes = []
 
     def to_pxd(self):
-        header = """from libcpp.string cimport string
-from libcpp.vector cimport vector
-from libcpp cimport bool""" + os.linesep + os.linesep  # TODO only if required
-        return header + "\n".join(map(to_pxd, self.classes))
+        return self.includes.to_pxd() + "\n".join(map(to_pxd, self.classes))
 
     def to_pyx(self):
-        includes = Includes(self.module)
-        code = "\n".join([clazz.to_pyx(includes) for clazz in self.classes])
-        return includes.to_pyx() + os.linesep + os.linesep + code
+        self.includes = Includes(self.module)
+        code = "\n".join([clazz.to_pyx(self.includes) for clazz in self.classes])
+        return self.includes.to_pyx() + os.linesep + os.linesep + code
 
 
 class Includes:
@@ -137,20 +134,25 @@ class Includes:
         self.vector = False
         self.string = False
 
-    def to_pyx(self):
+    def _header(self):
         includes = ""
         if self.numpy:
-            includes += """cimport numpy as np
-import numpy as np""" + os.linesep
+            includes += "cimport numpy as np" + os.linesep
+            includes += "import numpy as np" + os.linesep
         if self.boolean:
-            includes += "" + os.linesep  # TODO
+            includes += "from libcpp cimport bool" + os.linesep
         if self.vector:
-            includes += "" + os.linesep  # TODO
+            includes += "from libcpp.vector cimport vector" + os.linesep
         if self.string:
             includes += "from libcpp.string cimport string" + os.linesep
-        #includes += "cimport _" + self.module + os.linesep
         includes += "from _%s cimport *%s" % (self.module, os.linesep)
         return includes
+
+    def to_pxd(self):
+        return self._header()
+
+    def to_pyx(self):
+        return self._header()
 
 
 class Clazz:
@@ -162,9 +164,6 @@ class Clazz:
         self.methods = []
 
     def to_pxd(self):
-        header = """from libcpp.string cimport string
-from libcpp.vector cimport vector
-from libcpp cimport bool""" + os.linesep + os.linesep  # TODO only if required
         class_str = config.class_def % self.__dict__
 
         if len(self.constructors) == 0 and len(self.methods) == 0:
@@ -172,7 +171,7 @@ from libcpp cimport bool""" + os.linesep + os.linesep  # TODO only if required
 
         consts_str = os.linesep.join(map(to_pxd, self.constructors))
         methods_str = os.linesep.join(map(to_pxd, self.methods))
-        return header + class_str + os.linesep + consts_str + os.linesep + methods_str
+        return class_str + os.linesep + consts_str + os.linesep + methods_str
 
     def to_pyx(self, includes):
         if len(self.constructors) > 1:
