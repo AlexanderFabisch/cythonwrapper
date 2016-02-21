@@ -235,10 +235,74 @@ class Clazz:
         return class_str + os.linesep + consts_str + os.linesep + methods_str
 
 
-class Method:
-    def __init__(self, name, result_type):
+class FunctionBase(object):
+    def __init__(self, name):
         self.name = name
         self.arguments = []
+
+    def function_def(self, includes, result_type=None):
+        body, args, call_args = self._input_type_conversions(includes)
+        body += self._call_cpp_function(call_args, result_type)
+        body += self._output_type_conversion(result_type)
+        return self._signature(args) + os.linesep + body
+
+    def _call_cpp_function(self, call_args, result_type=None):
+        call = "self.thisptr.{fname}({args})".format(fname=self.name,
+                                                    args=", ".join(call_args))
+        if result_type != "void":
+            call = "cdef {result_type} result = {call}".format(
+                result_type=result_type, call=call)
+        return "    " * 2 + call + os.linesep
+
+    def _signature(self, args):
+        return "    def %s(%s):" % (from_camel_case(self.name), ", ".join(args))
+
+    def _input_type_conversions(self, includes):
+        body = ""
+        call_args = []
+        args = ["self"]
+        skip = False
+
+        for i in range(len(self.arguments)):
+            if skip:
+                skip = False
+                continue
+
+            argument = self.arguments[i]
+            cppname = "cpp_" + argument.name
+
+            args.append(argument.name)
+            call_args.append(cppname)
+
+            if is_type_with_automatic_conversion(argument.tipe):
+                body += cython_define_basic_inputarg(
+                    argument.tipe, cppname, argument.name) + os.linesep
+            elif argument.tipe == "double *":
+                includes.numpy = True
+                body += cython_define_nparray1d_inputarg(
+                    argument.tipe, cppname, argument.name)
+                call_args.append(argument.name + "_array.shape[0]")
+                skip = True
+
+        return body, args, call_args
+
+    def _output_type_conversion(self, result_type):
+        if result_type is None or result_type == "void":
+            return ""
+        elif is_type_with_automatic_conversion(result_type):
+            return "        return result" + os.linesep
+        else:
+            # TODO only works with default constructor
+            cython_classname = "Cpp%s" % result_type.split()[0]
+            return """        ret = %s()
+        ret.thisptr = result
+        return ret
+""" % cython_classname
+
+
+class Method(FunctionBase):
+    def __init__(self, name, result_type):
+        super(self.__class__, self).__init__(name)
         self.result_type = result_type
 
     def to_pxd(self):
@@ -248,15 +312,20 @@ class Method:
         return method_str
 
     def to_pyx(self, includes):
-        return function_def(self.name, self.arguments, includes,
-                            constructor=False, result_type=self.result_type)
+        return self.function_def(includes, result_type=self.result_type)
 
 
-class Constructor:
+class Constructor(FunctionBase):
     def __init__(self, name, class_name):
-        self.name = name
+        super(self.__class__, self).__init__(name)
         self.class_name = class_name
-        self.arguments = []
+
+    def _call_cpp_function(self, call_args, result_type):
+        return "        self.thisptr = new %s(%s)%s" % (
+            self.class_name, ", ".join(call_args), os.linesep)
+
+    def _signature(self, args):
+        return "    def __init__(%s):" % ", ".join(args)
 
     def to_pxd(self):
         const_dict = {"args": ", ".join(map(to_pxd, self.arguments))}
@@ -265,72 +334,7 @@ class Constructor:
         return const_str
 
     def to_pyx(self, includes):
-        return function_def(self.name, self.arguments, includes,
-                            constructor=True, class_name=self.class_name)
-
-
-def function_def(function, arguments, includes, constructor=False,
-                 result_type="void", class_name=None):
-    if class_name is None and constructor:
-        raise ValueError("Constructurs require a class name.")
-
-    ind = "        "
-    body = ""
-    call_args = []
-    args = ["self"]
-    skip = False
-    for i in range(len(arguments)):
-        if skip:
-            skip = False
-            continue
-
-        argument = arguments[i]
-        cppname = "cpp_" + argument.name
-
-        args.append(argument.name)
-        call_args.append(cppname)
-
-        if is_type_with_automatic_conversion(argument.tipe):
-            body += cython_define_basic_inputarg(
-                argument.tipe, cppname, argument.name) + os.linesep
-        elif argument.tipe == "double *":
-            includes.numpy = True
-            body += cython_define_nparray1d_inputarg(
-                argument.tipe, cppname, argument.name)
-            call_args.append(argument.name + "_array.shape[0]")
-            skip = True
-
-    if constructor:
-        body += "%sself.thisptr = new %s(%s)%s" % (ind, class_name, ", ".join(call_args), os.linesep)
-    else:
-        body += _call_cpp_function(result_type, function, call_args)
-
-        if result_type == "void":
-            pass
-        elif is_type_with_automatic_conversion(result_type):
-            body += "%sreturn result%s" % (ind, os.linesep)
-        else:
-            # TODO only works with default constructor
-            cython_classname = "Cpp%s" % result_type.split()[0]
-            body += """%sret = %s()
-        ret.thisptr = result
-        return ret%s""" % (ind, cython_classname, os.linesep)
-
-    if constructor:
-        signature = "    def __init__(%s):" % ", ".join(args)
-    else:
-        signature = "    def %s(%s):" % (from_camel_case(function), ", ".join(args))
-
-    return signature + os.linesep + body
-
-
-def _call_cpp_function(result_tname, fname, call_args):
-    call = "self.thisptr.{fname}({args})".format(fname=fname,
-                                                 args=", ".join(call_args))
-    if result_tname != "void":
-        call = "cdef {result_tname} result = {call}".format(
-            result_tname=result_tname, call=call)
-    return "    " * 2 + call + os.linesep
+        return self.function_def(includes)
 
 
 class Param:
