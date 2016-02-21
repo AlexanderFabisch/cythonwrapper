@@ -41,20 +41,14 @@ def _replace_angle_brackets(tname):
 
 
 def cython_define_basic_inputarg(cython_tname, cython_argname, python_argname):
-    return "%scdef %s %s = %s" % (_intend(2), cython_tname, cython_argname,
-                                  python_argname)
+    return "cdef %s %s = %s" % (cython_tname, cython_argname, python_argname)
 
 
 def cython_define_nparray1d_inputarg(cython_tname, cython_argname,
                                      python_argname):
     return (
-"""{ind}cdef np.ndarray[double, ndim=1] {array_argname} = np.asarray({python_argname})
-{ind}cdef {cython_tname} {cython_argname} = &{array_argname}[0]
+"""cdef np.ndarray[double, ndim=1] {array_argname} = np.asarray({python_argname})
+cdef {cython_tname} {cython_argname} = &{array_argname}[0]
 """.format(cython_tname=cython_tname, cython_argname=cython_argname,
            python_argname=python_argname,
-           array_argname=python_argname + "_array",
-           ind=_intend(2)))
-
-
-def _intend(level):
-    return "    " * level
+           array_argname=python_argname + "_array"))
