@@ -15,7 +15,6 @@ def is_type_with_automatic_conversion(typename):
 
 def typename(tname):
     """Get cython type from C++ type."""
-    # TODO does not work with std::vector<namespace::type>
     cython_tname = tname
     cython_tname = _remove_const_modifier(cython_tname)
     cython_tname = _remove_reference_modifier(cython_tname)
@@ -33,6 +32,7 @@ def _remove_reference_modifier(tname):
 
 
 def _remove_namespace(tname):
+    # TODO does not work with std::vector<namespace::type>
     return tname.split("::")[-1]
 
 

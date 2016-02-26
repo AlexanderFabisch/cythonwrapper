@@ -98,3 +98,12 @@ def test_factory():
         factory = CppAFactory()
         a = factory.make()
         assert_equal(5, a.get())
+
+
+def test_string_vector():
+    with cython_extension_from("stringvector.hpp"):
+        from factory import A
+        a = A()
+        substrings = ["AB", "CD", "EF"]
+        res = a.concat(substrings)
+        assert_equal(res, "ABCDEF")
