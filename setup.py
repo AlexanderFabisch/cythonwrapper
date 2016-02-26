@@ -9,11 +9,11 @@ import pywrap
 if __name__ == "__main__":
     setup(name='pywrap',
           version=pywrap.__version__,
-          author='Alexander Fabisch',
-          author_email='afabisch@googlemail.com',
-          url='TODO',
+          author=pywrap.__author__,
+          author_email=pywrap.__author_email__,
+          url=pywrap.__url__,
           description=pywrap.__description__,
-          long_description=open('README.rst').read(),
-          license='New BSD',
+          long_description=open("README.rst").read(),
+          license="New BSD",
           scripts=["bin" + os.sep + "pywrap"],
           packages=['pywrap'],)
