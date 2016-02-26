@@ -14,7 +14,7 @@ from . import defaultconfig as config
 from .cpptypeconv import (is_basic_type, is_type_with_automatic_conversion,
                           typename, cython_define_basic_inputarg,
                           cython_define_nparray1d_inputarg)
-from .tools import _intend_block
+from .utils import indent_block
 
 
 ci.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
@@ -246,7 +246,7 @@ class FunctionBase(object):
             includes, initial_args)
         body += self._call_cpp_function(call_args, result_type)
         body += self._output_type_conversion(result_type)
-        return self._signature(args) + os.linesep + _intend_block(body, 1)
+        return self._signature(args) + os.linesep + indent_block(body, 1)
 
     def _call_cpp_function(self, call_args, result_type=None):
         call = "self.thisptr.{fname}({args})".format(
@@ -315,8 +315,8 @@ class Method(FunctionBase):
         return method_str
 
     def to_pyx(self, includes):
-        return _intend_block(self.function_def(includes, initial_args=["self"],
-                             result_type=self.result_type), 1)
+        return indent_block(self.function_def(includes, initial_args=["self"],
+                            result_type=self.result_type), 1)
 
 
 class Constructor(FunctionBase):
@@ -338,7 +338,7 @@ class Constructor(FunctionBase):
         return const_str
 
     def to_pyx(self, includes):
-        return _intend_block(
+        return indent_block(
             self.function_def(includes, initial_args=["self"]), 1)
 
 

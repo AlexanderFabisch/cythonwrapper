@@ -1,5 +1,5 @@
 from pywrap.cython import Includes, Param, FunctionBase
-from pywrap.tools import assert_equal_linewise
+from pywrap.utils import assert_equal_linewise
 
 
 def test_simple_function_def():

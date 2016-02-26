@@ -1,6 +1,6 @@
 from pywrap.cpptypeconv import (typename, cython_define_basic_inputarg,
                                 cython_define_nparray1d_inputarg)
-from pywrap.tools import assert_equal_linewise
+from pywrap.utils import assert_equal_linewise
 from nose.tools import assert_equal
 
 
