@@ -12,7 +12,7 @@ if __name__ == "__main__":
           author='Alexander Fabisch',
           author_email='afabisch@googlemail.com',
           url='TODO',
-          description='Generator for Python and C++ wrappers',
+          description=pywrap.__description__,
           long_description=open('README.rst').read(),
           license='New BSD',
           scripts=["bin" + os.sep + "pywrap"],

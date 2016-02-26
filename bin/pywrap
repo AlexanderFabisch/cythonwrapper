@@ -1,19 +1,17 @@
 #!/usr/bin/env python
 
-import sys
+import argparse
+import pywrap
 import pywrap.cython as pycy
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        raise Exception("No filename given")
+    argparser = argparse.ArgumentParser(description=pywrap.__description__)
+    argparser.add_argument("header", type=str, help="C++ header file")
+    argparser.add_argument("outdir", type=str, nargs="?", default=".",
+                           help="output directory")
+    argparser.add_argument("--verbose", "-v", action="count",
+                           help="verbosity level")
+    args = argparser.parse_args()
 
-    try:
-        filename = sys.argv[1]
-        target = sys.argv[2]
-    except IndexError:
-        print("Usage: pywrap <header> <target>")
-        exit(1)
-    verbose = 0
-
-    pycy.write_cython_wrapper(filename, target, verbose)
+    pycy.write_cython_wrapper(args.header, args.outdir, args.verbose)
