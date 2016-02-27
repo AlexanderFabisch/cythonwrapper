@@ -32,8 +32,36 @@ def _remove_reference_modifier(tname):
 
 
 def _remove_namespace(tname):
-    # TODO does not work with std::vector<namespace::type>
-    return tname.split("::")[-1]
+    print tname
+    indices = _find_template_arg_indices(tname)
+    substrings = []
+    for start, end in indices:
+        tname_without_namespace = "::".join(tname[start:end].split("::")[1:])
+        substrings.append(tname_without_namespace)
+        print tname_without_namespace
+    # TODO concatenate substrings
+    return "".join(substrings)
+
+
+def _find_template_arg_indices(tname, indices=None, idx=0):
+    # TODO does not work with std::map<std::string, std::string>
+    if indices is None:
+        indices = [(0, len(tname))]
+
+    start = tname[idx:].find("<")
+    if start < 0:
+        return indices
+    else:
+        start += idx
+
+    indices = _find_template_arg_indices(tname, indices, idx=start + 1)
+    if indices[-1][1] < len(tname) and indices[-1][1] > start:
+        end = indices[-1][1] + tname[indices[-1][1]:].find(">")
+    else:
+        end = start + tname[start:].find(">")
+    indices.append((start, end))
+
+    return indices
 
 
 def _replace_angle_brackets(tname):
