@@ -1,6 +1,3 @@
-#ifndef TEST_HPP
-#define TEST_HPP
-
 #include <string>
 #include <vector>
 #include <sstream>
@@ -16,5 +13,3 @@ public:
         return ss.str();
     }
 };
-
-#endif TEST_HPP

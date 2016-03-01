@@ -180,10 +180,16 @@ class Includes:
         self.string = False
 
     def add_include_for(self, tname):
-        if tname == "bool":
+        if tname == "bool" or self._part_of_tname(tname, "bool"):
             self.boolean = True
-        elif tname == "string":
+        elif tname == "string" or self._part_of_tname(tname, "string"):
             self.string = True
+        elif tname == "vector" or self._part_of_tname(tname, "vector"):
+            self.vector = True
+
+    def _part_of_tname(self, tname, subtname):
+        return (tname == subtname or ("<" + subtname + ">") in tname
+                or tname.startswith(subtname))
 
     def _header(self):
         includes = ""
@@ -288,6 +294,12 @@ class FunctionBase(object):
                     argument.tipe, cppname, argument.name)
                 call_args.append(argument.name + "_array.shape[0]")
                 skip = True
+            elif argument.tipe.startswith("vector"):
+                body += cython_define_basic_inputarg(
+                    argument.tipe, cppname, argument.name) + os.linesep
+            else:
+                raise NotImplementedError("No known conversion for type %r"
+                                          % argument.tipe)
 
         return body, args, call_args
 

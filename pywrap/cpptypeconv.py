@@ -32,15 +32,19 @@ def _remove_reference_modifier(tname):
 
 
 def _remove_namespace(tname):
-    print tname
     indices = _find_template_arg_indices(tname)
-    substrings = []
-    for start, end in indices:
-        tname_without_namespace = "::".join(tname[start:end].split("::")[1:])
-        substrings.append(tname_without_namespace)
-        print tname_without_namespace
-    # TODO concatenate substrings
-    return "".join(substrings)
+    new_tname = tname
+    shrinked_amount = 0
+    for start, end in reversed(indices):
+        tname_with_namespace = new_tname[start:end - shrinked_amount]
+        if "::" not in tname_with_namespace:
+            continue
+        tname_without_namespace = "::".join(
+            tname_with_namespace.split("::")[1:])
+        shrinked_amount += len(tname_without_namespace) - (end - start)
+        new_tname = new_tname.replace(new_tname[start:end],
+                                      tname_without_namespace)
+    return new_tname
 
 
 def _find_template_arg_indices(tname, indices=None, idx=0):
@@ -52,9 +56,9 @@ def _find_template_arg_indices(tname, indices=None, idx=0):
     if start < 0:
         return indices
     else:
-        start += idx
+        start += idx + 1
 
-    indices = _find_template_arg_indices(tname, indices, idx=start + 1)
+    indices = _find_template_arg_indices(tname, indices, idx=start)
     if indices[-1][1] < len(tname) and indices[-1][1] > start:
         end = indices[-1][1] + tname[indices[-1][1]:].find(">")
     else:

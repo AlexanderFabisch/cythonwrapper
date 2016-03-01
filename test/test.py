@@ -102,8 +102,8 @@ def test_factory():
 
 def test_string_vector():
     with cython_extension_from("stringvector.hpp"):
-        from factory import A
-        a = A()
+        from stringvector import CppA
+        a = CppA()
         substrings = ["AB", "CD", "EF"]
         res = a.concat(substrings)
         assert_equal(res, "ABCDEF")
