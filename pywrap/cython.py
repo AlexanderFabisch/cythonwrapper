@@ -11,8 +11,8 @@ try:
 except:
     raise Exception("Install 'cython'.")
 from . import defaultconfig as config
-from .cpptypeconv import (is_basic_type, is_type_with_automatic_conversion,
-                          typename, cython_define_basic_inputarg,
+from .cpptypeconv import (is_type_with_automatic_conversion, typename,
+                          cython_define_basic_inputarg,
                           cython_define_nparray1d_inputarg)
 from .utils import indent_block
 
@@ -231,8 +231,10 @@ class Clazz:
                    "all others." % self.name)
             warnings.warn(msg)
         class_str = config.py_class_def % self.__dict__
-        consts_str = os.linesep.join([const.to_pyx(includes) for const in self.constructors])
-        methods_str = os.linesep.join([method.to_pyx(includes) for method in self.methods])
+        consts_str = os.linesep.join([const.to_pyx(includes)
+                                      for const in self.constructors])
+        methods_str = os.linesep.join([method.to_pyx(includes)
+                                       for method in self.methods])
         return class_str + os.linesep + consts_str + os.linesep + methods_str
 
 
