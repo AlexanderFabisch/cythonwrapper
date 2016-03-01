@@ -4,15 +4,6 @@ from pywrap.utils import assert_equal_linewise
 from nose.tools import assert_equal
 
 
-def assert_equal_linewise(actual, expected):
-    import os
-    actual_lines = actual.split(os.linesep)
-    expected_lines = expected.split(os.linesep)
-    assert_equal(len(actual_lines), len(expected_lines))
-    for i in range(len(actual_lines)):
-        assert_equal(actual_lines[i], expected_lines[i])
-
-
 def test_basic_typename():
     assert_equal(typename("unsigned int"), "unsigned int")
 
