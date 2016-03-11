@@ -13,7 +13,7 @@ if __name__ == "__main__":
           author_email=pywrap.__author_email__,
           url=pywrap.__url__,
           description=pywrap.__description__,
-          long_description=open("README.rst").read(),
+          long_description=open("README.md").read(),
           license="New BSD",
           scripts=["bin" + os.sep + "pywrap"],
           packages=['pywrap'],)

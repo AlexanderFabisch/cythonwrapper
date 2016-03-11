@@ -34,25 +34,25 @@ will even manage all the type conversions between C++ and Python for you.
 
 ## Install
 
-Install the package with::
+Install the package with:
 
     python setup.py install
 
 ## Usage
 
-We can generate a Python extension that wraps a library deined in a C++ header
-with::
+We can generate a Python extension that wraps a library defined in a C++ header
+with:
 
     pywrap <header> <target>
 
-The result is located in the directory <target> and can be build with::
+The result is located in the directory <target> and can be build with:
 
     python setup.py build_ext -i
 
 ## Documentation
 
 The docmentation of this project can be found in the directory `doc`. To
-build the documentation, run e.g. (on unix)::
+build the documentation, run e.g. (on unix):
 
     cd doc
     make html
