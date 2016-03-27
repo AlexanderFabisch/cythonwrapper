@@ -20,11 +20,11 @@ from .utils import indent_block
 ci.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
 
 
-def write_cython_wrapper(filename, target=".", verbose=0):
+def write_cython_wrapper(filenames, target=".", verbose=0):
     if not os.path.exists(target):
         os.makedirs(target)
 
-    results, cython_files = make_cython_wrapper(filename, target, verbose)
+    results, cython_files = make_cython_wrapper(filenames, target, verbose)
     write_files(results, target)
     cython(cython_files, target)
 
@@ -42,50 +42,58 @@ def cython(cython_files, target="."):
         os.system("cython --cplus %s" % inputfile)
 
 
-def make_cython_wrapper(filename, target=".", verbose=0):
+def make_cython_wrapper(filenames, target=".", verbose=0):
+    if isinstance(filenames, str):
+        filenames = [filenames]
+
     results = {}
+    files_to_cythonize = []
+    extensions = []
 
-    module = _derive_module_name_from(filename)
+    for filename in filenames:
+        module = _derive_module_name_from(filename)
 
-    pxd_filename = "_" + module + "." + config.pxd_file_ending
-    pyx_filename = module + "." + config.pyx_file_ending
+        pxd_filename = "_" + module + "." + config.pxd_file_ending
+        pyx_filename = module + "." + config.pyx_file_ending
 
-    header = _file_ending(filename) in config.cpp_header_endings
+        header = _file_ending(filename) in config.cpp_header_endings
 
-    tmpfile = filename
+        tmpfile = filename
 
-    if header:
-        tmpfile = filename + ".cc"
-        with open(tmpfile, "w") as f:
-            f.write(open(filename, "r").read())
+        if header:
+            tmpfile = filename + ".cc"
+            with open(tmpfile, "w") as f:
+                f.write(open(filename, "r").read())
 
-    ast = parse(tmpfile, module, verbose)
+        ast = parse(tmpfile, module, verbose)
 
-    extension = ast.to_pyx()
-    results[pyx_filename] = extension
-    if verbose >= 2:
-        print("= %s =" % pyx_filename)
-        print(extension)
+        extension = ast.to_pyx()
+        results[pyx_filename] = extension
+        if verbose >= 2:
+            print("= %s =" % pyx_filename)
+            print(extension)
 
-    declarations = ast.to_pxd()
-    if header:
-        relpath = os.path.relpath(filename, start=target)
-        declarations = declarations.replace(tmpfile, relpath)
-        os.remove(tmpfile)
-    results[pxd_filename] = declarations
+        declarations = ast.to_pxd()
+        header_relpath = os.path.relpath(filename, start=target)
+        if header:
+            sourcedir = os.path.relpath(".", start=target)
+            extensions.append(make_extension(
+                filename=header_relpath, module=module, sourcedir=sourcedir))
+            declarations = declarations.replace(tmpfile, header_relpath)
+            os.remove(tmpfile)
+        results[pxd_filename] = declarations
 
-    if verbose >= 2:
-        print("= %s =" % pxd_filename)
-        print(declarations)
+        if verbose >= 2:
+            print("= %s =" % pxd_filename)
+            print(declarations)
 
-    sourcedir = os.path.relpath(".", start=target)
-    setup = make_setup(filename=relpath, module=module, sourcedir=sourcedir)
+        # Files that will be cythonized
+        files_to_cythonize.append(pyx_filename)
+
+    setup = make_setup(extensions)
     results["setup.py"] = setup
 
-    # Files that will be cythonized
-    cython_files = [pyx_filename]
-
-    return results, cython_files
+    return results, files_to_cythonize
 
 
 def _file_ending(filename):
@@ -97,8 +105,13 @@ def _derive_module_name_from(filename):
     return filename.split(".")[0]
 
 
-def make_setup(**kwargs):
-    return config.setup_py % kwargs
+def make_extension(**kwargs):
+    return config.setup_extension % kwargs
+
+
+def make_setup(extensions):
+    extensions = "".join(extensions)
+    return config.setup_py % {"extensions": extensions}
 
 
 def parse(filename, module, verbose):

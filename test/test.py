@@ -1,23 +1,27 @@
 import pywrap.cython as pycy
 import os
 from sklearn.utils.testing import assert_warns_message
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_true
 import contextlib
 
 
 PREFIX = os.sep.join(__file__.split(os.sep)[:-1])
 
 
-def full_path(filename):
+def full_paths(filenames):
+    if isinstance(filenames, str):
+        filenames = [filenames]
+
     if PREFIX == "":
-        return filename
+        return filenames
     else:
-        return PREFIX + os.sep + filename
+        attach_prefix = lambda filename: PREFIX + os.sep + filename
+        return map(attach_prefix, filenames)
 
 
 @contextlib.contextmanager
-def cython_extension_from(header):
-    filenames = _write_cython_wrapper(full_path(header))
+def cython_extension_from(headers):
+    filenames = _write_cython_wrapper(full_paths(headers))
     _run_setup()
     try:
         yield
@@ -25,8 +29,9 @@ def cython_extension_from(header):
         _remove_files(filenames)
 
 
-def _write_cython_wrapper(filename, target=".", verbose=0):
-    results, cython_files = pycy.make_cython_wrapper(filename, target, verbose)
+def _write_cython_wrapper(filenames, target=".", verbose=0):
+    results, cython_files = pycy.make_cython_wrapper(
+        filenames, target, verbose)
     pycy.write_files(results)
     pycy.cython(cython_files)
 
@@ -49,7 +54,7 @@ def _remove_files(filenames):
 
 def test_twoctors():
     assert_warns_message(UserWarning, "'A' has more than one constructor",
-                         pycy.make_cython_wrapper, full_path("twoctors.hpp"))
+                         pycy.make_cython_wrapper, full_paths("twoctors.hpp"))
 
 
 def test_double_in_double_out():

@@ -18,15 +18,7 @@ py_class_def = """cdef class Cpp%(name)s:
             del self.thisptr
 """
 py_arg_def = "%(name)s"
-setup_py = """import os
-
-
-def configuration(parent_package='', top_path=None):
-    from numpy.distutils.misc_util import Configuration
-    import numpy
-
-    config = Configuration('.', parent_package, top_path)
-
+setup_extension = """
     config.add_extension(
         '%(module)s',
         sources=["%(module)s.cpp", "%(filename)s"],
@@ -35,6 +27,16 @@ def configuration(parent_package='', top_path=None):
         extra_compile_args=["-O3"],
         language="c++",
     )
+"""
+setup_py = """import os
+
+
+def configuration(parent_package='', top_path=None):
+    from numpy.distutils.misc_util import Configuration
+    import numpy
+
+    config = Configuration('.', parent_package, top_path)
+%(extensions)s
     return config
 
 if __name__ == '__main__':
