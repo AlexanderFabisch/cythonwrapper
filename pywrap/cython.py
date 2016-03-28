@@ -15,6 +15,7 @@ from .cpptypeconv import (is_type_with_automatic_conversion, typename,
                           cython_define_basic_inputarg,
                           cython_define_nparray1d_inputarg)
 from .utils import indent_block
+import warnings
 
 
 ci.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
@@ -46,58 +47,62 @@ def make_cython_wrapper(filenames, target=".", verbose=0):
     if isinstance(filenames, str):
         filenames = [filenames]
 
+    asts = _parse_files(filenames, verbose)
+
     results = {}
     files_to_cythonize = []
-    extensions = []
-
-    for filename in filenames:
-        module = _derive_module_name_from(filename)
-
-        pxd_filename = "_" + module + "." + config.pxd_file_ending
-        pyx_filename = module + "." + config.pyx_file_ending
-
-        header = _file_ending(filename) in config.cpp_header_endings
-
-        tmpfile = filename
-
-        if header:
-            tmpfile = filename + ".cc"
-            with open(tmpfile, "w") as f:
-                f.write(open(filename, "r").read())
-
-        ast = parse(tmpfile, module, verbose)
-
+    for module, ast in asts.items():
         extension = ast.to_pyx()
+        pyx_filename = module + "." + config.pyx_file_ending
         results[pyx_filename] = extension
+        files_to_cythonize.append(pyx_filename)
         if verbose >= 2:
             print("= %s =" % pyx_filename)
             print(extension)
 
         declarations = ast.to_pxd()
-        header_relpath = os.path.relpath(filename, start=target)
-        if header:
-            sourcedir = os.path.relpath(".", start=target)
-            extensions.append(make_extension(
-                filename=header_relpath, module=module, sourcedir=sourcedir))
-            declarations = declarations.replace(tmpfile, header_relpath)
-            os.remove(tmpfile)
+        pxd_filename = "_" + module + "." + config.pxd_file_ending
         results[pxd_filename] = declarations
-
         if verbose >= 2:
             print("= %s =" % pxd_filename)
             print(declarations)
 
-        # Files that will be cythonized
-        files_to_cythonize.append(pyx_filename)
-
-    setup = make_setup(extensions)
-    results["setup.py"] = setup
+    results["setup.py"] = _make_setup(filenames, target)
 
     return results, files_to_cythonize
 
 
-def _file_ending(filename):
-    return filename.split(".")[-1]
+def _parse_files(filenames, verbose):
+    asts = {}
+    extensions_setup = []
+    for filename in filenames:
+        module = _derive_module_name_from(filename)
+        is_header = _file_ending(filename) in config.cpp_header_endings
+
+        if is_header:  # Clang does not really parse headers
+            parsable_file = filename + ".cc"
+            with open(parsable_file, "w") as f:  # TODO look for cp in os
+                f.write(open(filename, "r").read())
+        else:
+            parsable_file = filename
+
+        asts[module] = parse(filename, parsable_file, module, verbose)
+
+        if is_header:
+            os.remove(parsable_file)
+
+    return asts
+
+
+def _make_setup(filenames, target):
+    sourcedir = os.path.relpath(".", start=target)
+    extensions_setup = []
+    for filename in filenames:
+        module = _derive_module_name_from(filename)
+        header_relpath = os.path.relpath(filename, start=target)
+        extensions_setup.append(make_extension(
+            filename=header_relpath, module=module, sourcedir=sourcedir))
+    return config.setup_py % {"extensions": "".join(extensions_setup)}
 
 
 def _derive_module_name_from(filename):
@@ -105,22 +110,21 @@ def _derive_module_name_from(filename):
     return filename.split(".")[0]
 
 
+def _file_ending(filename):
+    return filename.split(".")[-1]
+
+
 def make_extension(**kwargs):
     return config.setup_extension % kwargs
 
 
-def make_setup(extensions):
-    extensions = "".join(extensions)
-    return config.setup_py % {"extensions": extensions}
-
-
-def parse(filename, module, verbose):
+def parse(include_file, parsable_file, module, verbose):
     index = ci.Index.create()
-    translation_unit = index.parse(filename)
+    translation_unit = index.parse(parsable_file)
     cursor = translation_unit.cursor
 
     ast = AST(module)
-    ast.parse(cursor, filename, verbose)
+    ast.parse(cursor, parsable_file, include_file, verbose)
     return ast
 
 
@@ -133,14 +137,14 @@ class AST:
         self.classes = []
         self.includes = Includes(module)
 
-    def parse(self, node, filename, verbose=0):
+    def parse(self, node, parsable_file, include_file, verbose=0):
         namespace = self.namespace
         if verbose >= 2:
             print("Node: %s, %s" % (node.kind, node.displayname))
 
         if node.location.file is None:
             pass
-        elif node.location.file.name != filename:
+        elif node.location.file.name != parsable_file:
             return
         elif node.kind == ci.CursorKind.NAMESPACE:
             if self.namespace == "":
@@ -153,7 +157,8 @@ class AST:
             param = Param(node.displayname, tname)
             self.last_function.arguments.append(param)
         elif node.kind == ci.CursorKind.FUNCTION_DECL:
-            raise NotImplementedError("TODO functions are not implemented yet")
+            warnings.warn("TODO functions are not implemented yet; name: '%s'"
+                          % node.spelling)
         elif node.kind == ci.CursorKind.CXX_METHOD:
             tname = typename(node.result_type.spelling)
             self.includes.add_include_for(tname)
@@ -165,14 +170,14 @@ class AST:
             self.classes[-1].constructors.append(constructor)
             self.last_function = constructor
         elif node.kind == ci.CursorKind.CLASS_DECL:
-            clazz = Clazz(filename, self.namespace, node.displayname)
+            clazz = Clazz(include_file, self.namespace, node.displayname)
             self.classes.append(clazz)
         else:
             if verbose:
                 print("Unknown node: %s, %s" % (node.kind, node.displayname))
 
         for child in node.get_children():
-            self.parse(child, filename, verbose)
+            self.parse(child, parsable_file, include_file, verbose)
 
         self.namespace = namespace
 
