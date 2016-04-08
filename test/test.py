@@ -1,7 +1,7 @@
 import pywrap.cython as pycy
 import os
 from sklearn.utils.testing import assert_warns_message
-from nose.tools import assert_equal, assert_true
+from nose.tools import assert_equal
 import contextlib
 
 

@@ -1,5 +1,4 @@
 import os
-import warnings
 try:
     import clang.cindex as ci
 except:
