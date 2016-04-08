@@ -67,7 +67,7 @@ def _parse_files(filenames, verbose):
     asts = {}
     for filename in filenames:
         module = _derive_module_name_from(filename)
-        is_header = _file_ending(filename) in config.cpp_header_endings
+        is_header = file_ending(filename) in config.cpp_header_endings
 
         if is_header:  # Clang does not really parse headers
             parsable_file = filename + ".cc"
@@ -100,7 +100,7 @@ def _derive_module_name_from(filename):
     return filename.split(".")[0]
 
 
-def _file_ending(filename):
+def file_ending(filename):
     return filename.split(".")[-1]
 
 

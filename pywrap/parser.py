@@ -97,8 +97,8 @@ class Includes:
             self.vector = True
 
     def _part_of_tname(self, tname, subtname):
-        return (tname == subtname or ("<" + subtname + ">") in tname
-                or tname.startswith(subtname))
+        return (tname == subtname or ("<" + subtname + ">") in tname or
+                tname.startswith(subtname))
 
     def header(self):
         includes = ""

@@ -59,7 +59,7 @@ def _find_template_arg_indices(tname, indices=None, idx=0):
         start += idx + 1
 
     indices = _find_template_arg_indices(tname, indices, idx=start)
-    if indices[-1][1] < len(tname) and indices[-1][1] > start:
+    if len(tname) > indices[-1][1] > start:
         end = indices[-1][1] + tname[indices[-1][1]:].find(">")
     else:
         end = start + tname[start:].find(">")

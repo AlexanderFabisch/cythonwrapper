@@ -27,9 +27,9 @@ class CythonDeclarationExporter:
     def visit_class(self, clazz):
         class_str = config.class_def % clazz.__dict__
 
-        self.output += (os.linesep + class_str
-                        + os.linesep + os.linesep.join(self.ctors)
-                        + os.linesep + os.linesep.join(self.methods))
+        self.output += (os.linesep + class_str +
+                        os.linesep + os.linesep.join(self.ctors) +
+                        os.linesep + os.linesep.join(self.methods))
 
         self.ctors = []
         self.methods = []
@@ -67,6 +67,7 @@ class CythonImplementationExporter:
         self.ctors = []
         self.methods = []
         self.arguments = []
+        self.includes = None
 
     def visit_ast(self, ast):
         pass
@@ -81,9 +82,9 @@ class CythonImplementationExporter:
                    "all others." % clazz.name)
             warnings.warn(msg)
         class_str = config.py_class_def % clazz.__dict__
-        self.output += (os.linesep + os.linesep + class_str
-                        + os.linesep + os.linesep.join(self.ctors)
-                        + os.linesep + os.linesep.join(self.methods))
+        self.output += (os.linesep + os.linesep + class_str +
+                        os.linesep + os.linesep.join(self.ctors) +
+                        os.linesep + os.linesep.join(self.methods))
 
         self.ctors = []
         self.methods = []
