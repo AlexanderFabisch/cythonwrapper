@@ -1,4 +1,5 @@
-from pywrap.cython import Includes, Param, FunctionDefinition
+from pywrap.cython import FunctionDefinition
+from pywrap.parser import Includes, Param
 from pywrap.utils import assert_equal_linewise
 
 
