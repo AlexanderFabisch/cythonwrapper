@@ -6,6 +6,7 @@ import contextlib
 
 
 PREFIX = os.sep.join(__file__.split(os.sep)[:-1])
+SETUPPY_NAME = "setup_test.py"
 
 
 def full_paths(filenames):
@@ -32,6 +33,8 @@ def cython_extension_from(headers):
 def _write_cython_wrapper(filenames, target=".", verbose=0):
     results, cython_files = pycy.make_cython_wrapper(
         filenames, target, verbose)
+    results[SETUPPY_NAME] = results["setup.py"]
+    del results["setup.py"]
     pycy.write_files(results)
     pycy.cython(cython_files)
 
@@ -44,7 +47,7 @@ def _write_cython_wrapper(filenames, target=".", verbose=0):
 
 
 def _run_setup():
-    os.system("python setup.py build_ext -i")
+    os.system("python %s build_ext -i" % SETUPPY_NAME)
 
 
 def _remove_files(filenames):
