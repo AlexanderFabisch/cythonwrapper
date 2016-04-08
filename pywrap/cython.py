@@ -51,7 +51,9 @@ def make_cython_wrapper(filenames, target=".", verbose=0):
     results = {}
     files_to_cythonize = []
     for module, ast in asts.items():
-        extension = ast.to_pyx()
+        cie = CythonImplementationExporter()
+        ast.accept(cie)
+        extension = cie.export()
         pyx_filename = module + "." + config.pyx_file_ending
         results[pyx_filename] = extension
         files_to_cythonize.append(pyx_filename)
@@ -188,10 +190,6 @@ class AST:
         for clazz in self.classes:
             clazz.accept(exporter)
 
-    def to_pyx(self):
-        code = "\n".join([clazz.to_pyx(self.includes) for clazz in self.classes])
-        return self.includes.to_pyx() + os.linesep + os.linesep + code
-
 
 class Includes:
     def __init__(self, module):
@@ -230,9 +228,6 @@ class Includes:
     def accept(self, exporter):
         exporter.visit_includes(self)
 
-    def to_pyx(self):
-        return self.header()
-
 
 class Clazz:
     def __init__(self, filename, namespace, name):
@@ -248,19 +243,6 @@ class Clazz:
         for method in self.methods:
             method.accept(exporter)
         exporter.visit_class(self)
-
-    def to_pyx(self, includes):
-        if len(self.constructors) > 1:
-            msg = ("Class '%s' has more than one constructor. This is not "
-                   "compatible to Python. The last constructor will overwrite "
-                   "all others." % self.name)
-            warnings.warn(msg)
-        class_str = config.py_class_def % self.__dict__
-        consts_str = os.linesep.join([const.to_pyx(includes)
-                                      for const in self.constructors])
-        methods_str = os.linesep.join([method.to_pyx(includes)
-                                       for method in self.methods])
-        return class_str + os.linesep + consts_str + os.linesep + methods_str
 
 
 class FunctionBase(object):
@@ -340,20 +322,6 @@ return ret
 """ % cython_classname
 
 
-class Method(FunctionBase):
-    def __init__(self, name, result_type):
-        super(self.__class__, self).__init__(name)
-        self.result_type = result_type
-
-    def accept(self, exporter):
-        super(Method, self).accept(exporter)
-        exporter.visit_method(self)
-
-    def to_pyx(self, includes):
-        return indent_block(self.function_def(includes, initial_args=["self"],
-                            result_type=self.result_type), 1)
-
-
 class Constructor(FunctionBase):
     def __init__(self, name, class_name):
         super(self.__class__, self).__init__(name)
@@ -370,9 +338,15 @@ class Constructor(FunctionBase):
         super(Constructor, self).accept(exporter)
         exporter.visit_constructor(self)
 
-    def to_pyx(self, includes):
-        return indent_block(
-            self.function_def(includes, initial_args=["self"]), 1)
+
+class Method(FunctionBase):
+    def __init__(self, name, result_type):
+        super(self.__class__, self).__init__(name)
+        self.result_type = result_type
+
+    def accept(self, exporter):
+        super(Method, self).accept(exporter)
+        exporter.visit_method(self)
 
 
 class Param:
@@ -383,14 +357,11 @@ class Param:
     def accept(self, exporter):
         exporter.visit_param(self)
 
-    def to_pyx(self):
-        return config.py_arg_def % self.__dict__
-
 
 class CythonDeclarationExporter:
     """Export AST to Cython declaration file (.pxd).
 
-    This implements the visitor pattern.
+    This class implements the visitor pattern.
     """
     def __init__(self):
         self.output = ""
@@ -437,6 +408,59 @@ class CythonDeclarationExporter:
         return self.output
 
 
+class CythonImplementationExporter:
+    """Export AST to Cython implementation file (.pyx).
+
+    This class implements the visitor pattern.
+    """
+    def __init__(self):
+        self.output = ""
+        self.ctors = []
+        self.methods = []
+        self.arguments = []
+
+    def visit_ast(self, ast):
+        pass
+
+    def visit_includes(self, includes):
+        self.includes = includes
+
+    def visit_class(self, clazz):
+        if len(self.ctors) > 1:
+            msg = ("Class '%s' has more than one constructor. This is not "
+                   "compatible to Python. The last constructor will overwrite "
+                   "all others." % clazz.name)
+            warnings.warn(msg)
+        class_str = config.py_class_def % clazz.__dict__
+        self.output += (os.linesep + os.linesep + class_str
+                        + os.linesep + os.linesep.join(self.ctors)
+                        + os.linesep + os.linesep.join(self.methods))
+
+        self.ctors = []
+        self.methods = []
+
+    def visit_constructor(self, ctor):
+        const_str = indent_block(
+            ctor.function_def(self.includes, initial_args=["self"]), 1)
+        self.ctors.append(const_str)
+
+        self.arguments = []
+
+    def visit_method(self, method):
+        method_str = indent_block(method.function_def(
+            self.includes, initial_args=["self"],
+            result_type=method.result_type), 1)
+        self.methods.append(method_str)
+
+        self.arguments = []
+
+    def visit_param(self, param):
+        self.arguments.append(config.py_arg_def % param.__dict__)
+
+    def export(self):
+        return self.includes.header() + os.linesep + os.linesep + self.output
+
+
 def from_camel_case(name):
     new_name = str(name)
     i = 0
@@ -446,7 +470,3 @@ def from_camel_case(name):
             i += 1
         i += 1
     return new_name.lower()
-
-
-def to_pyx(obj):
-    return obj.to_pyx()
