@@ -23,3 +23,14 @@ def assert_equal_linewise(expected, actual, *args, **kwargs):
     assert_equal(len(expected_lines), len(actual_lines), *args, **kwargs)
     for eline, aline in zip(expected_lines, actual_lines):
         assert_equal(eline, aline, *args, **kwargs)
+
+
+def from_camel_case(name):
+    new_name = str(name)
+    i = 0
+    while i < len(new_name):
+        if new_name[i].isupper():
+            new_name = new_name[:i] + "_" + new_name[i:]
+            i += 1
+        i += 1
+    return new_name.lower()

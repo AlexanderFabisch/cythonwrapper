@@ -1,4 +1,5 @@
 import os
+
 try:
     import clang.cindex as ci
 except:
@@ -13,7 +14,7 @@ from . import defaultconfig as config
 from .cpptypeconv import (is_type_with_automatic_conversion, typename,
                           cython_define_basic_inputarg,
                           cython_define_nparray1d_inputarg)
-from .utils import indent_block
+from .utils import indent_block, from_camel_case
 import warnings
 
 
@@ -459,14 +460,3 @@ class CythonImplementationExporter:
 
     def export(self):
         return self.includes.header() + os.linesep + os.linesep + self.output
-
-
-def from_camel_case(name):
-    new_name = str(name)
-    i = 0
-    while i < len(new_name):
-        if new_name[i].isupper():
-            new_name = new_name[:i] + "_" + new_name[i:]
-            i += 1
-        i += 1
-    return new_name.lower()
