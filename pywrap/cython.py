@@ -59,7 +59,9 @@ def make_cython_wrapper(filenames, target=".", verbose=0):
             print("= %s =" % pyx_filename)
             print(extension)
 
-        declarations = ast.to_pxd()
+        cde = CythonDeclarationExporter()
+        ast.accept(cde)
+        declarations = cde.export()
         pxd_filename = "_" + module + "." + config.pxd_file_ending
         results[pxd_filename] = declarations
         if verbose >= 2:
@@ -180,8 +182,11 @@ class AST:
 
         self.namespace = namespace
 
-    def to_pxd(self):
-        return self.includes.to_pxd() + "\n".join(map(to_pxd, self.classes))
+    def accept(self, exporter):
+        exporter.visit_ast(self)
+        self.includes.accept(exporter)
+        for clazz in self.classes:
+            clazz.accept(exporter)
 
     def to_pyx(self):
         code = "\n".join([clazz.to_pyx(self.includes) for clazz in self.classes])
@@ -208,7 +213,7 @@ class Includes:
         return (tname == subtname or ("<" + subtname + ">") in tname
                 or tname.startswith(subtname))
 
-    def _header(self):
+    def header(self):
         includes = ""
         if self.numpy:
             includes += "cimport numpy as np" + os.linesep
@@ -222,11 +227,11 @@ class Includes:
         includes += "from _%s cimport *%s" % (self.module, os.linesep)
         return includes
 
-    def to_pxd(self):
-        return self._header()
+    def accept(self, exporter):
+        exporter.visit_includes(self)
 
     def to_pyx(self):
-        return self._header()
+        return self.header()
 
 
 class Clazz:
@@ -237,15 +242,12 @@ class Clazz:
         self.constructors = []
         self.methods = []
 
-    def to_pxd(self):
-        class_str = config.class_def % self.__dict__
-
-        if len(self.constructors) == 0 and len(self.methods) == 0:
-            return class_str + os.linesep
-
-        consts_str = os.linesep.join(map(to_pxd, self.constructors))
-        methods_str = os.linesep.join(map(to_pxd, self.methods))
-        return class_str + os.linesep + consts_str + os.linesep + methods_str
+    def accept(self, exporter):
+        for ctor in self.constructors:
+            ctor.accept(exporter)
+        for method in self.methods:
+            method.accept(exporter)
+        exporter.visit_class(self)
 
     def to_pyx(self, includes):
         if len(self.constructors) > 1:
@@ -272,6 +274,10 @@ class FunctionBase(object):
         body += self._call_cpp_function(call_args, result_type)
         body += self._output_type_conversion(result_type)
         return self._signature(args) + os.linesep + indent_block(body, 1)
+
+    def accept(self, exporter):
+        for arg in self.arguments:
+            arg.accept(exporter)
 
     def _call_cpp_function(self, call_args, result_type=None):
         call = "self.thisptr.{fname}({args})".format(
@@ -339,11 +345,9 @@ class Method(FunctionBase):
         super(self.__class__, self).__init__(name)
         self.result_type = result_type
 
-    def to_pxd(self):
-        method_dict = {"args": ", ".join(map(to_pxd, self.arguments))}
-        method_dict.update(self.__dict__)
-        method_str = config.method_def % method_dict
-        return method_str
+    def accept(self, exporter):
+        super(Method, self).accept(exporter)
+        exporter.visit_method(self)
 
     def to_pyx(self, includes):
         return indent_block(self.function_def(includes, initial_args=["self"],
@@ -362,11 +366,9 @@ class Constructor(FunctionBase):
     def _signature(self, args):
         return "def __init__(%s):" % ", ".join(args)
 
-    def to_pxd(self):
-        const_dict = {"args": ", ".join(map(to_pxd, self.arguments))}
-        const_dict.update(self.__dict__)
-        const_str = config.constructor_def % const_dict
-        return const_str
+    def accept(self, exporter):
+        super(Constructor, self).accept(exporter)
+        exporter.visit_constructor(self)
 
     def to_pyx(self, includes):
         return indent_block(
@@ -378,11 +380,61 @@ class Param:
         self.name = name
         self.tipe = tipe
 
-    def to_pxd(self):
-        return config.arg_def % self.__dict__
+    def accept(self, exporter):
+        exporter.visit_param(self)
 
     def to_pyx(self):
         return config.py_arg_def % self.__dict__
+
+
+class CythonDeclarationExporter:
+    """Export AST to Cython declaration file (.pxd).
+
+    This implements the visitor pattern.
+    """
+    def __init__(self):
+        self.output = ""
+        self.ctors = []
+        self.methods = []
+        self.arguments = []
+
+    def visit_ast(self, ast):
+        pass
+
+    def visit_includes(self, includes):
+        self.output += includes.header()
+
+    def visit_class(self, clazz):
+        class_str = config.class_def % clazz.__dict__
+
+        self.output += (os.linesep + class_str
+                        + os.linesep + os.linesep.join(self.ctors)
+                        + os.linesep + os.linesep.join(self.methods))
+
+        self.ctors = []
+        self.methods = []
+
+    def visit_constructor(self, ctor):
+        const_dict = {"args": ", ".join(self.arguments)}
+        const_dict.update(ctor.__dict__)
+        const_str = config.constructor_def % const_dict
+        self.ctors.append(const_str)
+
+        self.arguments = []
+
+    def visit_method(self, method):
+        method_dict = {"args": ", ".join(self.arguments)}
+        method_dict.update(method.__dict__)
+        method_str = config.method_def % method_dict
+        self.methods.append(method_str)
+
+        self.arguments = []
+
+    def visit_param(self, param):
+        self.arguments.append(config.arg_def % param.__dict__)
+
+    def export(self):
+        return self.output
 
 
 def from_camel_case(name):
@@ -394,10 +446,6 @@ def from_camel_case(name):
             i += 1
         i += 1
     return new_name.lower()
-
-
-def to_pxd(obj):
-    return obj.to_pxd()
 
 
 def to_pyx(obj):
