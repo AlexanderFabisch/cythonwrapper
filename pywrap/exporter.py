@@ -3,7 +3,8 @@ import warnings
 
 from . import defaultconfig as config
 from .cpptypeconv import is_type_with_automatic_conversion, \
-    cython_define_basic_inputarg, cython_define_nparray1d_inputarg
+    cython_define_basic_inputarg, cython_define_nparray1d_inputarg, \
+    cython_define_cpp_inputarg
 from .utils import indent_block, from_camel_case
 
 
@@ -62,7 +63,8 @@ class CythonImplementationExporter:
 
     This class implements the visitor pattern.
     """
-    def __init__(self):
+    def __init__(self, classes):
+        self.classes = classes
         self.output = ""
         self.ctors = []
         self.methods = []
@@ -92,7 +94,7 @@ class CythonImplementationExporter:
     def visit_constructor(self, ctor):
         function_def = ConstructorDefinition(
             ctor.class_name, ctor.name, ctor.arguments, self.includes,
-            initial_args=["self"]).make()
+            initial_args=["self"], classes=self.classes).make()
         self.ctors.append(indent_block(function_def, 1))
 
         self.arguments = []
@@ -100,7 +102,7 @@ class CythonImplementationExporter:
     def visit_method(self, method):
         function_def = FunctionDefinition(
             method.name, method.arguments, self.includes, ["self"],
-            method.result_type).make()
+            method.result_type, classes=self.classes).make()
         self.methods.append(indent_block(function_def, 1))
 
         self.arguments = []
@@ -113,36 +115,56 @@ class CythonImplementationExporter:
 
 
 class FunctionDefinition(object):
-    def __init__(self, name, arguments, includes, initial_args, result_type):
+    def __init__(self, name, arguments, includes, initial_args, result_type,
+                 classes):
         self.name = name
         self.arguments = arguments
         self.includes = includes
         self.initial_args = initial_args
         self.result_type = result_type
+        self.classes = classes
 
     def make(self):
-        body, args, call_args = self._input_type_conversions(
-            self.includes, self.initial_args)
-        body += self._call_cpp_function(call_args, self.result_type)
-        body += self._output_type_conversion(self.result_type)
-        return self._signature(args) + os.linesep + indent_block(body, 1)
+        body, call_args = self._input_type_conversions(self.includes)
+        body += self._call_cpp_function(call_args)
+        body += self._output_type_conversion()
+        return self._signature() + os.linesep + indent_block(body, 1)
 
-    def _call_cpp_function(self, call_args, result_type=None):
+    def _call_cpp_function(self, call_args):
         call = "self.thisptr.{fname}({args})".format(
             fname=self.name, args=", ".join(call_args))
-        if result_type != "void":
+        if self.result_type != "void":
             call = "cdef {result_type} result = {call}".format(
-                result_type=result_type, call=call)
+                result_type=self.result_type, call=call)
         return call + os.linesep
 
-    def _signature(self, args):
-        return "def %s(%s):" % (from_camel_case(self.name), ", ".join(args))
+    def _signature(self):
+        args = self._cython_signature_args()
+        return "cpdef %s(%s):" % (from_camel_case(self.name), ", ".join(args))
 
-    def _input_type_conversions(self, includes, initial_args):
+    def _cython_signature_args(self):
+        cython_signature_args = []
+        cython_signature_args.extend(self.initial_args)
+        skip = False
+        for arg in self.arguments:
+            if skip:
+                skip = False
+                continue
+            if is_type_with_automatic_conversion(arg.tipe):
+                tipe = arg.tipe
+            elif arg.tipe == "double *":
+                skip = True
+                tipe = "np.ndarray[double, ndim=1]"
+            elif arg.tipe in self.classes:
+                tipe = "Cpp" + arg.tipe
+            else:
+                tipe = ""
+            cython_signature_args.append("%s %s" % (tipe, arg.name))
+        return cython_signature_args
+
+    def _input_type_conversions(self, includes):
         body = ""
         call_args = []
-        args = []
-        args.extend(initial_args)
         skip = False
 
         for i in range(len(self.arguments)):
@@ -153,8 +175,8 @@ class FunctionDefinition(object):
             argument = self.arguments[i]
             cppname = "cpp_" + argument.name
 
-            args.append(argument.name)
-            call_args.append(cppname)
+            deref = False
+            additional_callarg = None
 
             if is_type_with_automatic_conversion(argument.tipe):
                 body += cython_define_basic_inputarg(
@@ -163,25 +185,41 @@ class FunctionDefinition(object):
                 includes.numpy = True
                 body += cython_define_nparray1d_inputarg(
                     argument.tipe, cppname, argument.name)
-                call_args.append(argument.name + "_array.shape[0]")
+                additional_callarg = argument.name + "_array.shape[0]"
                 skip = True
             elif argument.tipe.startswith("vector"):
                 body += cython_define_basic_inputarg(
                     argument.tipe, cppname, argument.name) + os.linesep
+            elif argument.tipe in self.classes:
+                # TODO import correct module if it is another one
+                body += cython_define_cpp_inputarg(
+                    argument.tipe, cppname, argument.name) + os.linesep
+                deref = True
             else:
                 raise NotImplementedError("No known conversion for type %r"
                                           % argument.tipe)
 
-        return body, args, call_args
+            if deref:
+                includes.add_include_for_deref()
+                call_arg = "deref(%s)" % cppname
+            else:
+                call_arg = cppname
 
-    def _output_type_conversion(self, result_type):
-        if result_type is None or result_type == "void":
+            call_args.append(call_arg)
+
+            if additional_callarg is not None:
+                call_args.append(additional_callarg)
+
+        return body, call_args
+
+    def _output_type_conversion(self):
+        if self.result_type is None or self.result_type == "void":
             return ""
-        elif is_type_with_automatic_conversion(result_type):
+        elif is_type_with_automatic_conversion(self.result_type):
             return "return result" + os.linesep
         else:
             # TODO only works with default constructor
-            cython_classname = "Cpp%s" % result_type.split()[0]
+            cython_classname = "Cpp%s" % self.result_type.split()[0]
             return """ret = %s()
 ret.thisptr = result
 return ret
@@ -189,14 +227,17 @@ return ret
 
 
 class ConstructorDefinition(FunctionDefinition):
-    def __init__(self, class_name, name, arguments, includes, initial_args):
+    def __init__(self, class_name, name, arguments, includes, initial_args,
+                 classes):
         super(ConstructorDefinition, self).__init__(
-            name, arguments, includes, initial_args, result_type=None)
+            name, arguments, includes, initial_args, result_type=None,
+            classes=classes)
         self.class_name = class_name
 
-    def _call_cpp_function(self, call_args, result_type):
+    def _call_cpp_function(self, call_args):
         return "self.thisptr = new %s(%s)%s" % (
             self.class_name, ", ".join(call_args), os.linesep)
 
-    def _signature(self, args):
+    def _signature(self):
+        args = self._cython_signature_args()
         return "def __init__(%s):" % ", ".join(args)

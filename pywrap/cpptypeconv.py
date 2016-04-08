@@ -76,6 +76,11 @@ def cython_define_basic_inputarg(cython_tname, cython_argname, python_argname):
     return "cdef %s %s = %s" % (cython_tname, cython_argname, python_argname)
 
 
+def cython_define_cpp_inputarg(cython_tname, cython_argname, python_argname):
+    return ("cdef %s* %s = %s.thisptr"
+            % (cython_tname, cython_argname, python_argname))
+
+
 def cython_define_nparray1d_inputarg(cython_tname, cython_argname,
                                      python_argname):
     return (

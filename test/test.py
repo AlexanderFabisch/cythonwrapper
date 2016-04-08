@@ -136,7 +136,8 @@ def _run_setup():
 
 def _remove_files(filenames):
     for f in filenames:
-        os.remove(f)
+        if os.path.exists(f):
+            os.remove(f)
 
 
 def test_twoctors():
@@ -156,7 +157,7 @@ def test_vector():
     with cython_extension_from("vector.hpp"):
         from vector import CppA
         a = CppA()
-        v = [2.0, 1.0, 3.0]
+        v = np.array([2.0, 1.0, 3.0])
         n = a.norm(v)
         assert_equal(n, 14.0)
 
@@ -199,3 +200,11 @@ def test_string_vector():
         substrings = ["AB", "CD", "EF"]
         res = a.concat(substrings)
         assert_equal(res, "ABCDEF")
+
+
+def test_complex_arg():
+    with cython_extension_from("complexarg.hpp"):
+        from complexarg import CppA, CppB
+        a = CppA()
+        b = CppB(a)
+        assert_equal(b.get_string(), "test")

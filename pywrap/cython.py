@@ -35,11 +35,12 @@ def make_cython_wrapper(filenames, target=".", verbose=0):
         filenames = [filenames]
 
     asts = _parse_files(filenames, verbose)
+    classes = _collect_classes(asts)
 
     results = {}
     files_to_cythonize = []
     for module, ast in asts.items():
-        cie = CythonImplementationExporter()
+        cie = CythonImplementationExporter(classes)
         ast.accept(cie)
         extension = cie.export()
         pyx_filename = module + "." + config.pyx_file_ending
@@ -82,6 +83,14 @@ def _parse_files(filenames, verbose):
             os.remove(parsable_file)
 
     return asts
+
+
+def _collect_classes(asts):
+    classes = {}
+    for module, ast in asts.items():
+        for clazz in ast.classes:
+            classes[clazz.name] = module
+    return classes
 
 
 def _make_setup(filenames, target):
