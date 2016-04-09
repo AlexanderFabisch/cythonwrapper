@@ -1,6 +1,7 @@
-import contextlib
 import os
+import sys
 import numpy as np
+from contextlib import contextmanager
 from nose.tools import assert_equal
 import pywrap.cython as pycy
 from pywrap.utils import assert_warns_message
@@ -20,7 +21,7 @@ def full_paths(filenames):
         return map(attach_prefix, filenames)
 
 
-@contextlib.contextmanager
+@contextmanager
 def cython_extension_from(headers):
     filenames = _write_cython_wrapper(full_paths(headers))
     _run_setup()
@@ -28,6 +29,21 @@ def cython_extension_from(headers):
         yield
     finally:
         _remove_files(filenames)
+
+
+@contextmanager
+def hidden_stdout():
+    sys.stdout.flush()
+    oldstdout_fno = os.dup(1)
+    devnull = os.open(os.devnull, os.O_WRONLY)
+    newstdout = os.dup(1)
+    os.dup2(devnull, 1)
+    os.close(devnull)
+    sys.stdout = os.fdopen(newstdout, 'w')
+    try:
+        yield
+    finally:
+        os.dup2(oldstdout_fno, 1)
 
 
 def _write_cython_wrapper(filenames, target=".", verbose=0):
@@ -47,7 +63,8 @@ def _write_cython_wrapper(filenames, target=".", verbose=0):
 
 
 def _run_setup():
-    os.system("python %s build_ext -i" % SETUPPY_NAME)
+    with hidden_stdout():
+        os.system("python %s build_ext -i" % SETUPPY_NAME)
 
 
 def _remove_files(filenames):
