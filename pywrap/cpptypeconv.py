@@ -87,14 +87,14 @@ def create_type_converter(tname, python_argname, classes):
         return AutomaticTypeConverter(tname, python_argname)
     elif tname == "double *":
         return DoubleArrayTypeConverter(python_argname)
-    elif tname.startswith("vector"):
-        return VectorTypeConverter(tname, python_argname)
+    elif tname.startswith("vector") or tname.startswith("map"):
+        return StlTypeConverter(tname, python_argname)
     elif tname in classes:
         return CythonTypeConverter(tname, python_argname)
     else:
         warnings.warn("No type converter available for type '%s', using the "
                       "Python object converter." % tname)
-        return PythonObjectConverter(python_argname)
+        return PythonObjectConverter(tname, python_argname)
 
 
 class AbstractTypeConverter(object):
@@ -197,7 +197,8 @@ class CythonTypeConverter(AbstractTypeConverter):
 
 
 class PythonObjectConverter(AbstractTypeConverter):
-    def __init__(self, python_argname):
+    def __init__(self, tname, python_argname):
+        self.tname = tname
         self.python_argname = python_argname
 
     def cython_signature(self):
@@ -210,17 +211,15 @@ class PythonObjectConverter(AbstractTypeConverter):
         pass
 
     def python_to_cpp(self):
-        raise NotImplementedError()
+        raise NotImplementedError(
+            "No known conversion from python type to '%s' (name: '%s')"
+            % (self.tname, self.python_argname))
 
     def cpp_call_args(self):
         return ["cpp_" + self.python_argname]
 
 
-class VectorTypeConverter(PythonObjectConverter):
-    def __init__(self, tname, python_argname):
-        super(VectorTypeConverter, self).__init__(python_argname)
-        self.tname = tname
-
+class StlTypeConverter(PythonObjectConverter):
     def python_to_cpp(self):
         cython_argname = "cpp_" + self.python_argname
         return cython_define_basic_inputarg(

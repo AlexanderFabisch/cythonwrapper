@@ -93,22 +93,30 @@ class Includes:
         self.boolean = False
         self.vector = False
         self.string = False
+        self.map = False
         self.deref = False
 
     def add_include_for(self, tname):
-        if tname == "bool" or self._part_of_tname(tname, "bool"):
+        if self._part_of_tname(tname, "bool"):
             self.boolean = True
-        elif tname == "string" or self._part_of_tname(tname, "string"):
+        if self._part_of_tname(tname, "string"):
             self.string = True
-        elif tname == "vector" or self._part_of_tname(tname, "vector"):
+        if self._part_of_tname(tname, "vector"):
             self.vector = True
+        if self._part_of_tname(tname, "map"):
+            self.map = True
 
     def add_include_for_deref(self):
         self.deref = True
 
     def _part_of_tname(self, tname, subtname):
-        return (tname == subtname or ("<" + subtname + ">") in tname or
-                tname.startswith(subtname))
+        return (tname == subtname or tname.startswith(subtname) or
+                ("<" + subtname + ">") in tname or
+                ("<" + subtname + ",") in tname or
+                (", " + subtname + ">") in tname or
+                ("[" + subtname + "]") in tname or
+                ("[" + subtname + ",") in tname or
+                (", " + subtname + "]") in tname)
 
     def header(self):
         includes = ""
@@ -121,6 +129,8 @@ class Includes:
             includes += "from libcpp.vector cimport vector" + os.linesep
         if self.string:
             includes += "from libcpp.string cimport string" + os.linesep
+        if self.map:
+            includes += "from libcpp.map cimport map" + os.linesep
         if self.deref:
             # TODO this is only required in the implementation
             includes += ("from cython.operator cimport dereference as deref" +

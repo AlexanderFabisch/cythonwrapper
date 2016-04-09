@@ -22,13 +22,14 @@ def full_paths(filenames):
 
 
 @contextmanager
-def cython_extension_from(headers):
+def cython_extension_from(headers, cleanup=True):
     filenames = _write_cython_wrapper(full_paths(headers))
     _run_setup()
     try:
         yield
     finally:
-        _remove_files(filenames)
+        if cleanup:
+            _remove_files(filenames)
 
 
 @contextmanager
@@ -148,3 +149,9 @@ def test_function():
         from function import cpp_fun1, cpp_fun2
         assert_equal(cpp_fun1(0), 0)
         assert_equal(cpp_fun2(), 1)
+
+def test_map():
+    with cython_extension_from("map.hpp"):
+        from map import cpp_lookup
+        m = {"test": 0}
+        assert_equal(cpp_lookup(m), 0)

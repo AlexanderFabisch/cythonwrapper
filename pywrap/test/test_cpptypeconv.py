@@ -20,6 +20,10 @@ def test_container_of_complex_type():
     assert_equal(typename("std::vector<std::string>"), "vector[string]")
 
 
+def test_map():
+    assert_equal(typename("std::map<std::string, int>"), "map[string, int]")
+
+
 def test_define_inputarg_basic():
     assert_equal_linewise(
         cython_define_basic_inputarg("int", "cpp_a", "a"),
