@@ -18,19 +18,21 @@ class CythonDeclarationExporter:
         self.ctors = []
         self.methods = []
         self.arguments = []
+        self.includes = None
 
     def visit_ast(self, ast):
         pass
 
     def visit_includes(self, includes):
-        self.output += includes.header()
+        self.includes = includes
 
     def visit_class(self, clazz):
-        class_str = config.class_def % clazz.__dict__
-
-        self.output += (os.linesep + class_str +
-                        os.linesep + os.linesep.join(self.ctors) +
-                        os.linesep + os.linesep.join(self.methods))
+        class_decl_parts = [config.class_def % clazz.__dict__,
+                            os.linesep.join(self.ctors),
+                            os.linesep.join(self.methods)]
+        class_decl_parts = [p for p in class_decl_parts if p != ""]
+        self.output += (os.linesep * 2 + os.linesep.join(class_decl_parts) +
+                        os.linesep)
 
         self.ctors = []
         self.methods = []
@@ -55,7 +57,7 @@ class CythonDeclarationExporter:
         self.arguments.append(config.arg_def % param.__dict__)
 
     def export(self):
-        return self.output
+        return self.includes.header() + self.output
 
 
 class CythonImplementationExporter:
@@ -83,10 +85,12 @@ class CythonImplementationExporter:
                    "compatible to Python. The last constructor will overwrite "
                    "all others." % clazz.name)
             warnings.warn(msg)
-        class_str = config.py_class_def % clazz.__dict__
-        self.output += (os.linesep + os.linesep + class_str +
-                        os.linesep + os.linesep.join(self.ctors) +
-                        os.linesep + os.linesep.join(self.methods))
+
+        class_def_parts = [config.py_class_def % clazz.__dict__,
+                           os.linesep.join(self.ctors),
+                           os.linesep.join(self.methods)]
+        class_def_parts = [p for p in class_def_parts if p != ""]
+        self.output += os.linesep * 2 + os.linesep.join(class_def_parts)
 
         self.ctors = []
         self.methods = []
@@ -111,7 +115,7 @@ class CythonImplementationExporter:
         self.arguments.append(config.py_arg_def % param.__dict__)
 
     def export(self):
-        return self.includes.header() + os.linesep + os.linesep + self.output
+        return self.includes.header() + self.output
 
 
 class FunctionDefinition(object):
@@ -222,8 +226,7 @@ class FunctionDefinition(object):
             cython_classname = "Cpp%s" % self.result_type.split()[0]
             return """ret = %s()
 ret.thisptr = result
-return ret
-""" % cython_classname
+return ret""" % cython_classname
 
 
 class ConstructorDefinition(FunctionDefinition):
