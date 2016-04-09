@@ -106,7 +106,7 @@ class CythonImplementationExporter:
         self.arguments = []
 
     def visit_method(self, method):
-        function_def = FunctionBaseDefinition(
+        function_def = MethodDefinition(
             method.name, method.arguments, self.includes, ["self"],
             method.result_type, classes=self.classes).make()
         self.methods.append(indent_block(function_def, 1))
@@ -126,7 +126,7 @@ class CythonImplementationExporter:
         return self.includes.header() + self.output
 
 
-class FunctionBaseDefinition(object):
+class FunctionDefinition(object):
     def __init__(self, name, arguments, includes, initial_args, result_type,
                  classes):
         self.name = name
@@ -156,7 +156,7 @@ class FunctionBaseDefinition(object):
             skip = type_converter.n_cpp_args() - 1
 
     def _call_cpp_function(self, call_args):
-        call = "self.thisptr.{fname}({args})".format(
+        call = "{fname}({args})".format(
             fname=self.name, args=", ".join(call_args))
         if self.result_type != "void":
             call = "cdef {result_type} result = {call}".format(
@@ -165,7 +165,7 @@ class FunctionBaseDefinition(object):
 
     def _signature(self):
         args = self._cython_signature_args()
-        return "cpdef %s(%s):" % (from_camel_case(self.name), ", ".join(args))
+        return "def cpp_%s(%s):" % (from_camel_case(self.name), ", ".join(args))
 
     def _cython_signature_args(self):
         cython_signature_args = []
@@ -197,7 +197,7 @@ class FunctionBaseDefinition(object):
                          "return ret") % cython_classname
 
 
-class ConstructorDefinition(FunctionBaseDefinition):
+class ConstructorDefinition(FunctionDefinition):
     def __init__(self, class_name, name, arguments, includes, initial_args,
                  classes):
         super(ConstructorDefinition, self).__init__(
@@ -214,9 +214,9 @@ class ConstructorDefinition(FunctionBaseDefinition):
         return "def __init__(%s):" % ", ".join(args)
 
 
-class FunctionDefinition(FunctionBaseDefinition):
+class MethodDefinition(FunctionDefinition):
     def _call_cpp_function(self, call_args):
-        call = "{fname}({args})".format(
+        call = "self.thisptr.{fname}({args})".format(
             fname=self.name, args=", ".join(call_args))
         if self.result_type != "void":
             call = "cdef {result_type} result = {call}".format(
@@ -225,4 +225,4 @@ class FunctionDefinition(FunctionBaseDefinition):
 
     def _signature(self):
         args = self._cython_signature_args()
-        return "def cpp_%s(%s):" % (from_camel_case(self.name), ", ".join(args))
+        return "cpdef %s(%s):" % (from_camel_case(self.name), ", ".join(args))
