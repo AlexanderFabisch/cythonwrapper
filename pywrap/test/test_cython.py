@@ -1,11 +1,11 @@
-from pywrap.exporter import FunctionDefinition
+from pywrap.exporter import FunctionBaseDefinition
 from pywrap.parser import Includes, Param
 from pywrap.utils import assert_equal_linewise, lines
 
 
 def test_simple_function_def():
     assert_equal_linewise(
-        FunctionDefinition(
+        FunctionBaseDefinition(
             "testfun", [], Includes("test_module"),
             initial_args=["self"], result_type="void",
             classes={}).make(),
@@ -15,7 +15,7 @@ def test_simple_function_def():
 
 
 def test_array_arg_function_def():
-    testfun = FunctionDefinition(
+    testfun = FunctionBaseDefinition(
         "testfun", [Param("a", "double *"), Param("aSize", "unsigned int")],
         Includes("test_module"), initial_args=["self"], result_type="void",
         classes={}).make()

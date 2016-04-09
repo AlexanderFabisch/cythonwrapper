@@ -1,5 +1,5 @@
 import numpy as np
-from test import CppFactory
+from test import CppFactory, cpp_shutdown
 
 
 fac = CppFactory()
@@ -13,3 +13,4 @@ vec2 = np.empty(3)
 a.get_vec(vec2)
 print(vec2)
 print(a.info())
+cpp_shutdown()

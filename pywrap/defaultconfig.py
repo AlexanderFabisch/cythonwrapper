@@ -6,6 +6,8 @@ class_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
     cdef cppclass %(name)s:"""
 method_def = "        %(result_type)s %(name)s(%(args)s)"
 constructor_def = "        %(name)s(%(args)s)"
+function_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
+    %(result_type)s %(name)s(%(args)s)"""
 arg_def = "%(tipe)s %(name)s"
 py_class_def = """cdef class Cpp%(name)s:
     cdef %(name)s *thisptr

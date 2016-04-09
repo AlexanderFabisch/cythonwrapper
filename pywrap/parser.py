@@ -26,6 +26,7 @@ class AST:
         self.module = module
         self.namespace = ""
         self.last_function = None
+        self.functions = []
         self.classes = []
         self.includes = Includes(module)
 
@@ -49,8 +50,12 @@ class AST:
             param = Param(node.displayname, tname)
             self.last_function.arguments.append(param)
         elif node.kind == ci.CursorKind.FUNCTION_DECL:
-            warnings.warn("TODO functions are not implemented yet; name: '%s'"
-                          % node.spelling)
+            tname = typename(node.result_type.spelling)
+            self.includes.add_include_for(tname)
+            function = Function(
+                include_file, self.namespace, node.spelling, tname)
+            self.functions.append(function)
+            self.last_function = function
         elif node.kind == ci.CursorKind.CXX_METHOD:
             tname = typename(node.result_type.spelling)
             self.includes.add_include_for(tname)
@@ -78,6 +83,8 @@ class AST:
         self.includes.accept(exporter)
         for clazz in self.classes:
             clazz.accept(exporter)
+        for fun in self.functions:
+            fun.accept(exporter)
 
 
 class Includes:
@@ -150,6 +157,18 @@ class FunctionBase(object):
     def accept(self, exporter):
         for arg in self.arguments:
             arg.accept(exporter)
+
+
+class Function(FunctionBase):
+    def __init__(self, filename, namespace, name, result_type):
+        super(self.__class__, self).__init__(name)
+        self.filename = filename
+        self.namespace = namespace
+        self.result_type = result_type
+
+    def accept(self, exporter):
+        super(Function, self).accept(exporter)
+        exporter.visit_function(self)
 
 
 class Constructor(FunctionBase):

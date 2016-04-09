@@ -40,7 +40,6 @@ class CythonDeclarationExporter:
         const_dict.update(ctor.__dict__)
         const_str = config.constructor_def % const_dict
         self.ctors.append(const_str)
-
         self.arguments = []
 
     def visit_method(self, method):
@@ -48,7 +47,13 @@ class CythonDeclarationExporter:
         method_dict.update(method.__dict__)
         method_str = config.method_def % method_dict
         self.methods.append(method_str)
+        self.arguments = []
 
+    def visit_function(self, function):
+        function_dict = {"args": ", ".join(self.arguments)}
+        function_dict.update(function.__dict__)
+        function_str = config.function_def % function_dict
+        self.output += (os.linesep * 2 + function_str + os.linesep)
         self.arguments = []
 
     def visit_param(self, param):
@@ -98,15 +103,20 @@ class CythonImplementationExporter:
             ctor.class_name, ctor.name, ctor.arguments, self.includes,
             initial_args=["self"], classes=self.classes).make()
         self.ctors.append(indent_block(function_def, 1))
-
         self.arguments = []
 
     def visit_method(self, method):
-        function_def = FunctionDefinition(
+        function_def = FunctionBaseDefinition(
             method.name, method.arguments, self.includes, ["self"],
             method.result_type, classes=self.classes).make()
         self.methods.append(indent_block(function_def, 1))
+        self.arguments = []
 
+    def visit_function(self, function):
+        function_def = FunctionDefinition(
+            function.name, function.arguments, self.includes, [],
+            function.result_type, classes=self.classes).make()
+        self.output += (os.linesep * 2 + function_def + os.linesep)
         self.arguments = []
 
     def visit_param(self, param):
@@ -116,7 +126,7 @@ class CythonImplementationExporter:
         return self.includes.header() + self.output
 
 
-class FunctionDefinition(object):
+class FunctionBaseDefinition(object):
     def __init__(self, name, arguments, includes, initial_args, result_type,
                  classes):
         self.name = name
@@ -187,7 +197,7 @@ class FunctionDefinition(object):
                          "return ret") % cython_classname
 
 
-class ConstructorDefinition(FunctionDefinition):
+class ConstructorDefinition(FunctionBaseDefinition):
     def __init__(self, class_name, name, arguments, includes, initial_args,
                  classes):
         super(ConstructorDefinition, self).__init__(
@@ -202,3 +212,17 @@ class ConstructorDefinition(FunctionDefinition):
     def _signature(self):
         args = self._cython_signature_args()
         return "def __init__(%s):" % ", ".join(args)
+
+
+class FunctionDefinition(FunctionBaseDefinition):
+    def _call_cpp_function(self, call_args):
+        call = "{fname}({args})".format(
+            fname=self.name, args=", ".join(call_args))
+        if self.result_type != "void":
+            call = "cdef {result_type} result = {call}".format(
+                result_type=self.result_type, call=call)
+        return call + os.linesep
+
+    def _signature(self):
+        args = self._cython_signature_args()
+        return "def cpp_%s(%s):" % (from_camel_case(self.name), ", ".join(args))

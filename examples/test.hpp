@@ -75,6 +75,11 @@ public:
     }
 };
 
+void shutdown()
+{
+    std::cout << "Shutting down" << std::endl;
+}
+
 }
 
 #endif TEST_HPP

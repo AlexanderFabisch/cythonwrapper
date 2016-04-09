@@ -141,3 +141,10 @@ def test_complex_arg():
         a = CppA()
         b = CppB(a)
         assert_equal(b.get_string(), "test")
+
+
+def test_function():
+    with cython_extension_from("function.hpp"):
+        from function import cpp_fun1, cpp_fun2
+        assert_equal(cpp_fun1(0), 0)
+        assert_equal(cpp_fun2(), 1)
