@@ -127,12 +127,25 @@ class FunctionDefinition(object):
         self.initial_args = initial_args
         self.result_type = result_type
         self.classes = classes
+        self.type_converters = []
 
     def make(self):
+        self._create_type_converters()
         body, call_args = self._input_type_conversions(self.includes)
         body += self._call_cpp_function(call_args)
         body += self._output_type_conversion()
         return self._signature() + os.linesep + indent_block(body, 1)
+
+    def _create_type_converters(self):
+        skip = 0
+        for arg in self.arguments:
+            if skip > 0:
+                skip -= 1
+                continue
+            type_converter = create_type_converter(
+                arg.tipe, arg.name, self.classes)
+            skip = type_converter.n_cpp_args() - 1
+            self.type_converters.append(type_converter)
 
     def _call_cpp_function(self, call_args):
         call = "self.thisptr.{fname}({args})".format(
@@ -149,14 +162,9 @@ class FunctionDefinition(object):
     def _cython_signature_args(self):
         cython_signature_args = []
         cython_signature_args.extend(self.initial_args)
-        skip = False
-        for arg in self.arguments:
-            if skip:
-                skip = False
-                continue
-            type_converter = create_type_converter(arg.tipe, self.classes)
-            tipe, skip = type_converter.cython_signature()
-            cython_signature_args.append("%s %s" % (tipe, arg.name))
+        for type_converter in self.type_converters:
+            arg = type_converter.cython_signature()
+            cython_signature_args.append(arg)
         return cython_signature_args
 
     def _input_type_conversions(self, includes):

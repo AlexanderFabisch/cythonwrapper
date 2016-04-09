@@ -94,40 +94,60 @@ cdef {cython_tname} {cython_argname} = &{array_argname}[0]
            array_argname=python_argname + "_array"))
 
 
-def create_type_converter(tname, classes):
+def create_type_converter(tname, python_argname, classes):
     if is_type_with_automatic_conversion(tname):
-        return AutomaticTypeConverter(tname)
+        return AutomaticTypeConverter(tname, python_argname)
     elif tname == "double *":
-        return DoubleArrayTypeConverter()
+        return DoubleArrayTypeConverter(python_argname)
     elif tname in classes:
-        return CythonTypeConverter(tname)
+        return CythonTypeConverter(tname, python_argname)
     else:
         warnings.warn("No type converter available for type '%s', using the "
                       "Python object converter." % tname)
-        return PythonObjectConverter()
+        return PythonObjectConverter(python_argname)
 
 
 class AutomaticTypeConverter(object):
-    def __init__(self, tname):
+    def __init__(self, tname, python_argname):
         self.tname = tname
+        self.python_argname = python_argname
 
     def cython_signature(self):
-        return self.tname, False
+        return "%s %s" % (self.tname, self.python_argname)
+
+    def n_cpp_args(self):
+        return 1
 
 
 class DoubleArrayTypeConverter(object):
+    def __init__(self, python_argname):
+        self.python_argname = python_argname
+
     def cython_signature(self):
-        return "np.ndarray[double, ndim=1]", True
+        return "np.ndarray[double, ndim=1] %s" % self.python_argname
+
+    def n_cpp_args(self):
+        return 2
 
 
 class CythonTypeConverter(object):
-    def __init__(self, tname):
+    def __init__(self, tname, python_argname):
         self.tname = tname
+        self.python_argname = python_argname
 
     def cython_signature(self):
-        return "Cpp" + self.tname, False
+        return "Cpp%s %s" % (self.tname, self.python_argname)
+
+    def n_cpp_args(self):
+        return 1
 
 
 class PythonObjectConverter(object):
+    def __init__(self, python_argname):
+        self.python_argname = python_argname
+
     def cython_signature(self):
-        return "object", False
+        return "object %s" % self.python_argname
+
+    def n_cpp_args(self):
+        return 1
