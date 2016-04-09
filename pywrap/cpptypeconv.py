@@ -1,3 +1,6 @@
+import warnings
+
+
 def is_basic_type(typename):
     # TODO This is not a complete list of the fundamental types. The reason is
     # that I don't know if they all will be converted correctly between Python
@@ -89,3 +92,42 @@ cdef {cython_tname} {cython_argname} = &{array_argname}[0]
 """.format(cython_tname=cython_tname, cython_argname=cython_argname,
            python_argname=python_argname,
            array_argname=python_argname + "_array"))
+
+
+def create_type_converter(tname, classes):
+    if is_type_with_automatic_conversion(tname):
+        return AutomaticTypeConverter(tname)
+    elif tname == "double *":
+        return DoubleArrayTypeConverter()
+    elif tname in classes:
+        return CythonTypeConverter(tname)
+    else:
+        warnings.warn("No type converter available for type '%s', using the "
+                      "Python object converter." % tname)
+        return PythonObjectConverter()
+
+
+class AutomaticTypeConverter(object):
+    def __init__(self, tname):
+        self.tname = tname
+
+    def cython_signature(self):
+        return self.tname, False
+
+
+class DoubleArrayTypeConverter(object):
+    def cython_signature(self):
+        return "np.ndarray[double, ndim=1]", True
+
+
+class CythonTypeConverter(object):
+    def __init__(self, tname):
+        self.tname = tname
+
+    def cython_signature(self):
+        return "Cpp" + self.tname, False
+
+
+class PythonObjectConverter(object):
+    def cython_signature(self):
+        return "object", False

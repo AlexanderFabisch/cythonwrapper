@@ -4,7 +4,7 @@ import warnings
 from . import defaultconfig as config
 from .cpptypeconv import is_type_with_automatic_conversion, \
     cython_define_basic_inputarg, cython_define_nparray1d_inputarg, \
-    cython_define_cpp_inputarg
+    cython_define_cpp_inputarg, create_type_converter
 from .utils import indent_block, from_camel_case
 
 
@@ -154,15 +154,8 @@ class FunctionDefinition(object):
             if skip:
                 skip = False
                 continue
-            if is_type_with_automatic_conversion(arg.tipe):
-                tipe = arg.tipe
-            elif arg.tipe == "double *":
-                skip = True
-                tipe = "np.ndarray[double, ndim=1]"
-            elif arg.tipe in self.classes:
-                tipe = "Cpp" + arg.tipe
-            else:
-                tipe = ""
+            type_converter = create_type_converter(arg.tipe, self.classes)
+            tipe, skip = type_converter.cython_signature()
             cython_signature_args.append("%s %s" % (tipe, arg.name))
         return cython_signature_args
 
