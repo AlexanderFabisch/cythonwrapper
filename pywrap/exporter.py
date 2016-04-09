@@ -144,8 +144,8 @@ class FunctionDefinition(object):
                 continue
             type_converter = create_type_converter(
                 arg.tipe, arg.name, self.classes)
-            skip = type_converter.n_cpp_args() - 1
             self.type_converters.append(type_converter)
+            skip = type_converter.n_cpp_args() - 1
 
     def _call_cpp_function(self, call_args):
         call = "self.thisptr.{fname}({args})".format(
@@ -170,51 +170,10 @@ class FunctionDefinition(object):
     def _input_type_conversions(self, includes):
         body = ""
         call_args = []
-        skip = False
-
-        for i in range(len(self.arguments)):
-            if skip:
-                skip = False
-                continue
-
-            argument = self.arguments[i]
-            cppname = "cpp_" + argument.name
-
-            deref = False
-            additional_callarg = None
-
-            if is_type_with_automatic_conversion(argument.tipe):
-                body += cython_define_basic_inputarg(
-                    argument.tipe, cppname, argument.name) + os.linesep
-            elif argument.tipe == "double *":
-                includes.numpy = True
-                body += cython_define_nparray1d_inputarg(
-                    argument.tipe, cppname, argument.name)
-                additional_callarg = argument.name + "_array.shape[0]"
-                skip = True
-            elif argument.tipe.startswith("vector"):
-                body += cython_define_basic_inputarg(
-                    argument.tipe, cppname, argument.name) + os.linesep
-            elif argument.tipe in self.classes:
-                # TODO import correct module if it is another one
-                body += cython_define_cpp_inputarg(
-                    argument.tipe, cppname, argument.name) + os.linesep
-                deref = True
-            else:
-                raise NotImplementedError("No known conversion for type %r"
-                                          % argument.tipe)
-
-            if deref:
-                includes.add_include_for_deref()
-                call_arg = "deref(%s)" % cppname
-            else:
-                call_arg = cppname
-
-            call_args.append(call_arg)
-
-            if additional_callarg is not None:
-                call_args.append(additional_callarg)
-
+        for type_converter in self.type_converters:
+            type_converter.add_includes(includes)
+            body += type_converter.python_to_cpp() + os.linesep
+            call_args.extend(type_converter.cpp_call_args())
         return body, call_args
 
     def _output_type_conversion(self):

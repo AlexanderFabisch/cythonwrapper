@@ -30,5 +30,4 @@ def test_cython_define_nparray1d_inputarg():
     assert_equal_linewise(
         cython_define_nparray1d_inputarg("double *", "cpp_a", "a"),
         """cdef np.ndarray[double, ndim=1] a_array = np.asarray(a)
-cdef double * cpp_a = &a_array[0]
-""")
+cdef double * cpp_a = &a_array[0]""")
