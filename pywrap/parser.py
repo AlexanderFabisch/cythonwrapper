@@ -6,7 +6,6 @@ except:
                     "Note that a recent operating system is required, e.g. "
                     "Ubuntu 14.04.")
 import os
-import warnings
 from .cpptypeconv import typename
 
 

@@ -30,10 +30,7 @@ setup_extension = """
         language="c++",
     )
 """
-setup_py = """import os
-
-
-def configuration(parent_package='', top_path=None):
+setup_py = """def configuration(parent_package='', top_path=None):
     from numpy.distutils.misc_util import Configuration
     import numpy
 

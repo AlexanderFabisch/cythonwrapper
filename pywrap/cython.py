@@ -72,7 +72,7 @@ def _parse_files(filenames, verbose):
 
         if is_header:  # Clang does not really parse headers
             parsable_file = filename + ".cc"
-            with open(parsable_file, "w") as f:  # TODO look for cp in os
+            with open(parsable_file, "w") as f:
                 f.write(open(filename, "r").read())
         else:
             parsable_file = filename
