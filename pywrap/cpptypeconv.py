@@ -1,5 +1,6 @@
 import warnings
 from abc import ABCMeta, abstractmethod
+from .utils import lines
 
 
 def is_basic_type(typename):
@@ -157,10 +158,14 @@ class DoubleArrayTypeConverter(AbstractTypeConverter):
         includes.numpy = True
 
     def python_to_cpp(self):
-        return ("""cdef np.ndarray[double, ndim=1] {python_argname}_array = np.asarray({python_argname})
-cdef {cython_tname} {cython_argname} = &{python_argname}_array[0]""".format(
-                cython_tname="double *", cython_argname="cpp_" + self.python_argname,
-                python_argname=self.python_argname))
+        return (lines(
+            "cdef np.ndarray[double, ndim=1] {python_argname}_array = "
+            "np.asarray({python_argname})",
+            "cdef {cython_tname} {cython_argname} = "
+            "&{python_argname}_array[0]").format(
+            cython_tname="double *",
+            cython_argname="cpp_" + self.python_argname,
+            python_argname=self.python_argname))
 
     def cpp_call_args(self):
         return ["cpp_" + self.python_argname,

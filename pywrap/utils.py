@@ -5,6 +5,10 @@ from functools import partial
 import numpy as np
 
 
+def lines(*args):
+    return os.linesep.join(args)
+
+
 def indent_block(block, level):
     lines = block.split(os.linesep)
     indented_lines = map(partial(_indent_line, level=level), lines)

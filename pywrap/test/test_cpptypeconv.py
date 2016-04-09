@@ -1,6 +1,6 @@
 from pywrap.cpptypeconv import (typename, cython_define_basic_inputarg,
                                 DoubleArrayTypeConverter)
-from pywrap.utils import assert_equal_linewise
+from pywrap.utils import assert_equal_linewise, lines
 from nose.tools import assert_equal
 
 
@@ -29,5 +29,5 @@ def test_define_inputarg_basic():
 def test_cython_define_nparray1d_inputarg():
     conv = DoubleArrayTypeConverter("a")
     assert_equal_linewise(conv.python_to_cpp(),
-        """cdef np.ndarray[double, ndim=1] a_array = np.asarray(a)
-cdef double * cpp_a = &a_array[0]""")
+        lines("cdef np.ndarray[double, ndim=1] a_array = np.asarray(a)",
+              "cdef double * cpp_a = &a_array[0]"""))

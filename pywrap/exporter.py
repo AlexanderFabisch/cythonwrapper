@@ -1,10 +1,9 @@
 import os
 import warnings
-
 from . import defaultconfig as config
 from .cpptypeconv import (is_type_with_automatic_conversion,
                           create_type_converter)
-from .utils import indent_block, from_camel_case
+from .utils import lines, indent_block, from_camel_case
 
 
 class CythonDeclarationExporter:
@@ -183,9 +182,9 @@ class FunctionDefinition(object):
         else:
             # TODO only works with default constructor
             cython_classname = "Cpp%s" % self.result_type.split()[0]
-            return """ret = %s()
-ret.thisptr = result
-return ret""" % cython_classname
+            return lines("ret = %s()",
+                         "ret.thisptr = result",
+                         "return ret") % cython_classname
 
 
 class ConstructorDefinition(FunctionDefinition):
