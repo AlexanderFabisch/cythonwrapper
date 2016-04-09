@@ -2,9 +2,8 @@ import os
 import warnings
 
 from . import defaultconfig as config
-from .cpptypeconv import is_type_with_automatic_conversion, \
-    cython_define_basic_inputarg, cython_define_nparray1d_inputarg, \
-    cython_define_cpp_inputarg, create_type_converter
+from .cpptypeconv import (is_type_with_automatic_conversion,
+                          create_type_converter)
 from .utils import indent_block, from_camel_case
 
 

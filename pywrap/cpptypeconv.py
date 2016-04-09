@@ -79,20 +79,6 @@ def cython_define_basic_inputarg(cython_tname, cython_argname, python_argname):
     return "cdef %s %s = %s" % (cython_tname, cython_argname, python_argname)
 
 
-def cython_define_cpp_inputarg(cython_tname, cython_argname, python_argname):
-    return ("cdef %s* %s = %s.thisptr"
-            % (cython_tname, cython_argname, python_argname))
-
-
-def cython_define_nparray1d_inputarg(cython_tname, cython_argname,
-                                     python_argname):
-    return (
-"""cdef np.ndarray[double, ndim=1] {array_argname} = np.asarray({python_argname})
-cdef {cython_tname} {cython_argname} = &{array_argname}[0]""".format(
-    cython_tname=cython_tname, cython_argname=cython_argname,
-    python_argname=python_argname, array_argname=python_argname + "_array"))
-
-
 def create_type_converter(tname, python_argname, classes):
     # TODO extend with plugin mechanism
     if is_type_with_automatic_conversion(tname):
@@ -146,9 +132,10 @@ class DoubleArrayTypeConverter(object):
         includes.numpy = True
 
     def python_to_cpp(self):
-        cython_argname = "cpp_" + self.python_argname
-        return cython_define_nparray1d_inputarg(
-            "double *", cython_argname, self.python_argname)
+        return ("""cdef np.ndarray[double, ndim=1] {python_argname}_array = np.asarray({python_argname})
+cdef {cython_tname} {cython_argname} = &{python_argname}_array[0]""".format(
+                cython_tname="double *", cython_argname="cpp_" + self.python_argname,
+                python_argname=self.python_argname))
 
     def cpp_call_args(self):
         return ["cpp_" + self.python_argname,
@@ -172,8 +159,8 @@ class CythonTypeConverter(object):
 
     def python_to_cpp(self):
         cython_argname = "cpp_" + self.python_argname
-        return cython_define_cpp_inputarg(
-            self.tname, cython_argname, self.python_argname)
+        return ("cdef %s* %s = %s.thisptr"
+                % (self.tname, cython_argname, self.python_argname))
 
     def cpp_call_args(self):
         return ["deref(cpp_%s)" % self.python_argname]
