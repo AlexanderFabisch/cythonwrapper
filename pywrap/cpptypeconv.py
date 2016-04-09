@@ -1,4 +1,5 @@
 import warnings
+from abc import ABCMeta, abstractmethod
 
 
 def is_basic_type(typename):
@@ -95,7 +96,31 @@ def create_type_converter(tname, python_argname, classes):
         return PythonObjectConverter(python_argname)
 
 
-class AutomaticTypeConverter(object):
+class AbstractTypeConverter(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def cython_signature(self):
+        """Representation for Cython signature."""
+
+    @abstractmethod
+    def n_cpp_args(self):
+        """Number of C++ arguments that are covered by this converter."""
+
+    @abstractmethod
+    def add_includes(self, includes):
+        """Add includes for this conversion."""
+
+    @abstractmethod
+    def python_to_cpp(self):
+        """Convert Cython object to C++ object."""
+
+    @abstractmethod
+    def cpp_call_args(self):
+        """Representation for C++ function call."""
+
+
+class AutomaticTypeConverter(AbstractTypeConverter):
     def __init__(self, tname, python_argname):
         self.tname = tname
         self.python_argname = python_argname
@@ -118,7 +143,7 @@ class AutomaticTypeConverter(object):
         return ["cpp_" + self.python_argname]
 
 
-class DoubleArrayTypeConverter(object):
+class DoubleArrayTypeConverter(AbstractTypeConverter):
     def __init__(self, python_argname):
         self.python_argname = python_argname
 
@@ -142,7 +167,7 @@ cdef {cython_tname} {cython_argname} = &{python_argname}_array[0]""".format(
                 self.python_argname + "_array.shape[0]"]
 
 
-class CythonTypeConverter(object):
+class CythonTypeConverter(AbstractTypeConverter):
     def __init__(self, tname, python_argname):
         self.tname = tname
         self.python_argname = python_argname
@@ -166,7 +191,7 @@ class CythonTypeConverter(object):
         return ["deref(cpp_%s)" % self.python_argname]
 
 
-class PythonObjectConverter(object):
+class PythonObjectConverter(AbstractTypeConverter):
     def __init__(self, python_argname):
         self.python_argname = python_argname
 
