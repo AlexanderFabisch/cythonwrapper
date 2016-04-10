@@ -145,7 +145,7 @@ class FunctionDefinition(object):
         self._create_type_converters()
         body, call_args = self._input_type_conversions(self.includes)
         body += self._call_cpp_function(call_args)
-        body += self._output_type_conversion()
+        body += self.output_type_converter.return_output()
         return self._signature() + os.linesep + indent_block(body, 1)
 
     def _create_type_converters(self):
@@ -156,8 +156,12 @@ class FunctionDefinition(object):
                 continue
             type_converter = create_type_converter(
                 arg.tipe, arg.name, self.classes)
+            type_converter.add_includes(self.includes)
             self.type_converters.append(type_converter)
             skip = type_converter.n_cpp_args() - 1
+        self.output_type_converter = create_type_converter(
+            self.result_type, None, self.classes)
+        self.output_type_converter.add_includes(self.includes)
 
     def _call_cpp_function(self, call_args):
         call = "{fname}({args})".format(
@@ -183,22 +187,9 @@ class FunctionDefinition(object):
         body = ""
         call_args = []
         for type_converter in self.type_converters:
-            type_converter.add_includes(includes)
             body += type_converter.python_to_cpp() + os.linesep
             call_args.extend(type_converter.cpp_call_args())
         return body, call_args
-
-    def _output_type_conversion(self):
-        if self.result_type is None or self.result_type == "void":
-            return ""
-        elif is_type_with_automatic_conversion(self.result_type):
-            return "return result" + os.linesep
-        else:
-            # TODO only works with default constructor
-            cython_classname = "Cpp%s" % self.result_type.split()[0]
-            return lines("ret = %s()",
-                         "ret.thisptr = result",
-                         "return ret") % cython_classname
 
 
 class ConstructorDefinition(FunctionDefinition):

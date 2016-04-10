@@ -155,3 +155,11 @@ def test_map():
         from map import cpp_lookup
         m = {"test": 0}
         assert_equal(cpp_lookup(m), 0)
+
+
+def test_parts():
+    with cython_extension_from(["part1.hpp", "part2.hpp"], cleanup=False):
+        from part1 import CppClassA
+        a = CppClassA()
+        b = a.make()
+        assert_true(b.result())

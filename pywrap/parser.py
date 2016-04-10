@@ -92,13 +92,14 @@ class AST:
 
 class Includes:
     def __init__(self, module):
-        self.module = module
         self.numpy = False
         self.boolean = False
         self.vector = False
         self.string = False
         self.map = False
         self.deref = False
+        self.cppmodules = set([module])
+        self.cythonmodules = set()
 
     def add_include_for(self, tname):
         if self._part_of_tname(tname, "bool"):
@@ -112,6 +113,12 @@ class Includes:
 
     def add_include_for_deref(self):
         self.deref = True
+
+    def add_include_for_cppmodule(self, cppmodule):
+        self.cppmodules.add(cppmodule)
+
+    def add_include_for_cythonmodule(self, cythonmodule):
+        self.cythonmodules.add(cythonmodule)
 
     def _part_of_tname(self, tname, subtname):
         return (tname == subtname or tname.startswith(subtname) or
@@ -139,7 +146,10 @@ class Includes:
             # TODO this is only required in the implementation
             includes += ("from cython.operator cimport dereference as deref" +
                          os.linesep)
-        includes += "from _%s cimport *%s" % (self.module, os.linesep)
+        for cppmodule in self.cppmodules:
+            includes += "from _%s cimport *%s" % (cppmodule, os.linesep)
+        for cythonmodule in self.cythonmodules:
+            includes += "from %s import *%s" % (cythonmodule, os.linesep)
         return includes
 
     def accept(self, exporter):

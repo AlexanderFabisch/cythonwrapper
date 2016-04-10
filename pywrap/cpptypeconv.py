@@ -1,3 +1,4 @@
+import os
 import warnings
 from abc import ABCMeta, abstractmethod
 from .utils import lines
@@ -83,14 +84,19 @@ def cython_define_basic_inputarg(cython_tname, cython_argname, python_argname):
 
 def create_type_converter(tname, python_argname, classes):
     # TODO extend with plugin mechanism
-    if is_type_with_automatic_conversion(tname):
+    if tname is None or tname == "void":
+        return VoidTypeConverter()
+    elif is_type_with_automatic_conversion(tname):
         return AutomaticTypeConverter(tname, python_argname)
     elif tname == "double *":
         return DoubleArrayTypeConverter(python_argname)
     elif tname.startswith("vector") or tname.startswith("map"):
         return StlTypeConverter(tname, python_argname)
     elif tname in classes:
-        return CythonTypeConverter(tname, python_argname)
+        return CythonTypeConverter(tname, python_argname, module=classes[tname])
+    elif tname.split()[0] in classes:
+        return CppPointerTypeConverter(
+            tname, python_argname, module=classes[tname.split()[0]])
     else:
         warnings.warn("No type converter available for type '%s', using the "
                       "Python object converter." % tname)
@@ -120,6 +126,10 @@ class AbstractTypeConverter(object):
     def cpp_call_args(self):
         """Representation for C++ function call."""
 
+    @abstractmethod
+    def return_output(self):
+        """Return output of a C++ function in Cython."""
+
 
 class AutomaticTypeConverter(AbstractTypeConverter):
     def __init__(self, tname, python_argname):
@@ -142,6 +152,29 @@ class AutomaticTypeConverter(AbstractTypeConverter):
 
     def cpp_call_args(self):
         return ["cpp_" + self.python_argname]
+
+    def return_output(self):
+        return "return result" + os.linesep
+
+
+class VoidTypeConverter(AbstractTypeConverter):
+    def cython_signature(self):
+        raise NotImplementedError()
+
+    def n_cpp_args(self):
+        raise NotImplementedError()
+
+    def add_includes(self, includes):
+        pass
+
+    def python_to_cpp(self):
+        raise NotImplementedError()
+
+    def cpp_call_args(self):
+        raise NotImplementedError()
+
+    def return_output(self):
+        return ""
 
 
 class DoubleArrayTypeConverter(AbstractTypeConverter):
@@ -171,11 +204,15 @@ class DoubleArrayTypeConverter(AbstractTypeConverter):
         return ["cpp_" + self.python_argname,
                 self.python_argname + "_array.shape[0]"]
 
+    def return_output(self):
+        raise NotImplementedError()
+
 
 class CythonTypeConverter(AbstractTypeConverter):
-    def __init__(self, tname, python_argname):
+    def __init__(self, tname, python_argname, module):
         self.tname = tname
         self.python_argname = python_argname
+        self.module = module
 
     def cython_signature(self):
         return "Cpp%s %s" % (self.tname, self.python_argname)
@@ -185,7 +222,7 @@ class CythonTypeConverter(AbstractTypeConverter):
 
     def add_includes(self, includes):
         includes.add_include_for_deref()
-        # TODO import correct module if it is another one
+        includes.add_include_for_cppmodule(self.module)
 
     def python_to_cpp(self):
         cython_argname = "cpp_" + self.python_argname
@@ -194,6 +231,39 @@ class CythonTypeConverter(AbstractTypeConverter):
 
     def cpp_call_args(self):
         return ["deref(cpp_%s)" % self.python_argname]
+
+    def return_output(self):
+        raise NotImplementedError()
+
+
+class CppPointerTypeConverter(AbstractTypeConverter):
+    def __init__(self, tname, python_argname, module):
+        self.tname = tname
+        self.python_argname = python_argname
+        self.module = module
+
+    def cython_signature(self):
+        raise NotImplementedError()
+
+    def n_cpp_args(self):
+        raise NotImplementedError()
+
+    def add_includes(self, includes):
+        includes.add_include_for_cppmodule(self.module)
+        includes.add_include_for_cythonmodule(self.module)
+
+    def python_to_cpp(self):
+        raise NotImplementedError()
+
+    def cpp_call_args(self):
+        raise NotImplementedError()
+
+    def return_output(self):
+        # TODO only works with default constructor
+        cython_classname = "Cpp%s" % self.tname.split()[0]
+        return lines("ret = %s()",
+                     "ret.thisptr = result",
+                     "return ret") % cython_classname
 
 
 class PythonObjectConverter(AbstractTypeConverter):
@@ -217,6 +287,9 @@ class PythonObjectConverter(AbstractTypeConverter):
 
     def cpp_call_args(self):
         return ["cpp_" + self.python_argname]
+
+    def return_output(self):
+        raise NotImplementedError()
 
 
 class StlTypeConverter(PythonObjectConverter):
