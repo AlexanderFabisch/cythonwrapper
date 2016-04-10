@@ -113,11 +113,15 @@ class CythonImplementationExporter:
         self.arguments = []
 
     def visit_function(self, function):
-        function_def = FunctionDefinition(
-            function.name, function.arguments, self.includes, [],
-            function.result_type, classes=self.classes).make()
-        self.output += (os.linesep * 2 + function_def + os.linesep)
-        self.arguments = []
+        try:
+            function_def = FunctionDefinition(
+                function.name, function.arguments, self.includes, [],
+                function.result_type, classes=self.classes).make()
+            self.output += (os.linesep * 2 + function_def + os.linesep)
+        except NotImplementedError as e:
+            warnings.warn(e.message + " Ignoring function '%s'" % function.name)
+        finally:
+            self.arguments = []
 
     def visit_param(self, param):
         self.arguments.append(config.py_arg_def % param.__dict__)

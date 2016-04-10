@@ -6,6 +6,7 @@ except:
                     "Note that a recent operating system is required, e.g. "
                     "Ubuntu 14.04.")
 import os
+import warnings
 from .cpptypeconv import typename
 
 
@@ -68,6 +69,9 @@ class AST:
         elif node.kind == ci.CursorKind.CLASS_DECL:
             clazz = Clazz(include_file, self.namespace, node.displayname)
             self.classes.append(clazz)
+        elif node.kind == ci.CursorKind.STRUCT_DECL:
+            warnings.warn("Cannot handle structs yet, '%s' won't be available."
+                          % node.spelling)
         else:
             if verbose:
                 print("Unknown node: %s, %s" % (node.kind, node.displayname))
