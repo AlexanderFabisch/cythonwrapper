@@ -102,10 +102,9 @@ def create_type_converter(tname, python_argname, classes):
     elif tname.startswith("vector") or tname.startswith("map"):
         return StlTypeConverter(tname, python_argname)
     elif tname in classes:
-        return CythonTypeConverter(tname, python_argname, module=classes[tname])
+        return CythonTypeConverter(tname, python_argname)
     elif _is_pointer(tname) and _type_without_pointer(tname) in classes:
-        return CppPointerTypeConverter(
-            tname, python_argname, module=classes[tname.split()[0]])
+        return CppPointerTypeConverter(tname, python_argname)
     else:
         warnings.warn("No type converter available for type '%s', using the "
                       "Python object converter." % tname)
@@ -231,10 +230,9 @@ class DoubleArrayTypeConverter(AbstractTypeConverter):
 
 
 class CythonTypeConverter(AbstractTypeConverter):
-    def __init__(self, tname, python_argname, module):
+    def __init__(self, tname, python_argname):
         self.tname = tname
         self.python_argname = python_argname
-        self.module = module
 
     def cython_signature(self):
         return "%s %s" % (self.tname, self.python_argname)
@@ -261,11 +259,10 @@ class CythonTypeConverter(AbstractTypeConverter):
 
 
 class CppPointerTypeConverter(AbstractTypeConverter):
-    def __init__(self, tname, python_argname, module):
+    def __init__(self, tname, python_argname):
         self.tname = tname
         self.tname_wo_ptr = _type_without_pointer(tname)
         self.python_argname = python_argname
-        self.module = module
 
     def cython_signature(self):
         return "%s %s" % (self.tname_wo_ptr, self.python_argname)

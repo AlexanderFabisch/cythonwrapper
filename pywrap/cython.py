@@ -102,11 +102,7 @@ def _parse_files(filenames, verbose):
 
 
 def _collect_classes(asts):
-    classes = {}
-    for module, ast in asts.items():
-        for clazz in ast.classes:
-            classes[clazz.name] = module
-    return classes
+    return [clazz.name for _, ast in asts.items() for clazz in ast.classes]
 
 
 def _generate_extension(modulename, asts, classes, verbose):
