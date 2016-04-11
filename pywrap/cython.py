@@ -30,9 +30,38 @@ def cython(cython_files, target="."):
         os.system("cython --cplus %s" % inputfile)
 
 
-def make_cython_wrapper(filenames, target=".", verbose=0):
+def make_cython_wrapper(filenames, modulename=None, target=".", verbose=0):
+    """Make Cython wrapper for C++ files.
+
+    Parameters
+    ----------
+    filenames : list or string
+        C++ files
+
+    modulename : string, optional (default: name of the only header)
+        Name of the module
+
+    target : string, optional (default: ".")
+        Target directory
+
+    verbose : int, optional (default: 0)
+        Verbosity level
+
+    Returns
+    -------
+    results : dict
+        Mapping from filename to generated file content
+
+    files_to_cythonize : list
+        Files that we have to convert with Cython
+    """
     if isinstance(filenames, str):
         filenames = [filenames]
+    if len(filenames) == 1 and modulename is None:
+        modulename = _derive_module_name_from(filenames[0])
+    if modulename is None:
+        raise ValueError("Please give a module name when there are multiple "
+                         "C++ files that you want to wrap.")
 
     asts = _parse_files(filenames, verbose)
     classes = _collect_classes(asts)

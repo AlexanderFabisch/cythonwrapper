@@ -22,8 +22,8 @@ def full_paths(filenames):
 
 
 @contextmanager
-def cython_extension_from(headers, cleanup=True):
-    filenames = _write_cython_wrapper(full_paths(headers))
+def cython_extension_from(headers, modulename=None, cleanup=True):
+    filenames = _write_cython_wrapper(full_paths(headers), modulename)
     _run_setup()
     try:
         yield
@@ -47,9 +47,9 @@ def hidden_stdout():
         os.dup2(oldstdout_fno, 1)
 
 
-def _write_cython_wrapper(filenames, target=".", verbose=0):
+def _write_cython_wrapper(filenames, modulename, verbose=0):
     results, cython_files = pycy.make_cython_wrapper(
-        filenames, target, verbose)
+        filenames, modulename=modulename, target=".", verbose=verbose)
     results[SETUPPY_NAME] = results["setup.py"]
     del results["setup.py"]
     pycy.write_files(results)
@@ -158,7 +158,8 @@ def test_map():
 
 
 def test_parts():
-    with cython_extension_from(["indeppart1.hpp", "indeppart2.hpp"], cleanup=False):
+    with cython_extension_from(["indeppart1.hpp", "indeppart2.hpp"],
+                               modulename="combined", cleanup=False):
         from indeppart1 import CppClassA
         a = CppClassA()
         assert_false(a.result())
