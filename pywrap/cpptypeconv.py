@@ -250,7 +250,6 @@ class CppPointerTypeConverter(AbstractTypeConverter):
 
     def add_includes(self, includes):
         includes.add_include_for_cppmodule(self.module)
-        includes.add_include_for_cythonmodule(self.module)
 
     def python_to_cpp(self):
         raise NotImplementedError()

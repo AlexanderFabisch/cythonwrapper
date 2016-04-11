@@ -2,7 +2,7 @@ import os
 import sys
 import numpy as np
 from contextlib import contextmanager
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_true, assert_false
 import pywrap.cython as pycy
 from pywrap.utils import assert_warns_message
 
@@ -158,8 +158,10 @@ def test_map():
 
 
 def test_parts():
-    with cython_extension_from(["part1.hpp", "part2.hpp"], cleanup=False):
-        from part1 import CppClassA
+    with cython_extension_from(["indeppart1.hpp", "indeppart2.hpp"], cleanup=False):
+        from indeppart1 import CppClassA
         a = CppClassA()
-        b = a.make()
+        assert_false(a.result())
+        from indeppart2 import CppClassB
+        b = CppClassB()
         assert_true(b.result())
