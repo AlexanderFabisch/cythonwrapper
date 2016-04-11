@@ -26,8 +26,10 @@ class AST:
         self.module = module
         self.namespace = ""
         self.last_function = None
+        self.last_type = None
         self.functions = []
         self.classes = []
+        self.structs = []
         self.includes = Includes(module)
 
     def parse(self, node, parsable_file, include_file, verbose=0):
@@ -69,9 +71,16 @@ class AST:
         elif node.kind == ci.CursorKind.CLASS_DECL:
             clazz = Clazz(include_file, self.namespace, node.displayname)
             self.classes.append(clazz)
+            self.last_type = clazz
         elif node.kind == ci.CursorKind.STRUCT_DECL:
-            warnings.warn("Cannot handle structs yet, '%s' won't be available."
-                          % node.spelling)
+            struct = Struct(include_file, self.namespace, node.displayname)
+            self.structs.append(struct)
+            self.last_type = struct
+        elif node.kind == ci.CursorKind.FIELD_DECL:
+            tname = typename(node.type.spelling)
+            self.includes.add_include_for(tname)
+            field = Field(node.displayname, tname)
+            self.last_type.fields.append(field)
         else:
             if verbose:
                 print("Unknown node: %s, %s" % (node.kind, node.displayname))
@@ -84,6 +93,8 @@ class AST:
     def accept(self, exporter):
         exporter.visit_ast(self)
         self.includes.accept(exporter)
+        for struct in self.structs:
+            struct.accept(exporter)
         for clazz in self.classes:
             clazz.accept(exporter)
         for fun in self.functions:
@@ -156,6 +167,19 @@ class Includes:
         exporter.visit_includes(self)
 
 
+class Struct:
+    def __init__(self, filename, namespace, name):
+        self.filename = filename
+        self.namespace = namespace
+        self.name = name
+        self.fields = []
+
+    def accept(self, exporter):
+        for field in self.fields:
+            field.accept(exporter)
+        exporter.visit_struct(self)
+
+
 class Clazz:
     def __init__(self, filename, namespace, name):
         self.filename = filename
@@ -163,6 +187,7 @@ class Clazz:
         self.name = name
         self.constructors = []
         self.methods = []
+        self.fields = []
 
     def accept(self, exporter):
         for ctor in self.constructors:
@@ -221,3 +246,12 @@ class Param:
 
     def accept(self, exporter):
         exporter.visit_param(self)
+
+
+class Field:
+    def __init__(self, name, tipe):
+        self.name = name
+        self.tipe = tipe
+
+    def accept(self, exporter):
+        exporter.visit_field(self)

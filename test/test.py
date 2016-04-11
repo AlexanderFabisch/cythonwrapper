@@ -182,3 +182,8 @@ def test_dependent_parts():
         a = A()
         b = a.make()
         assert_equal(b.get_value(), 5)
+
+
+def test_struct():
+    with cython_extension_from("struct.hpp"):
+        import struct

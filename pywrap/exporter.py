@@ -16,6 +16,7 @@ class CythonDeclarationExporter:
         self.ctors = []
         self.methods = []
         self.arguments = []
+        self.fields = []
         self.includes = None
 
     def visit_ast(self, ast):
@@ -24,11 +25,27 @@ class CythonDeclarationExporter:
     def visit_includes(self, includes):
         self.includes = includes
 
+    def visit_struct(self, struct):
+        struct_decl_parts = [config.struct_def % struct.__dict__,
+                             os.linesep.join(self.fields)]
+        struct_decl_parts = [p for p in struct_decl_parts if p != ""]
+        empty_body = len(self.fields) == 0
+        if empty_body:
+            struct_decl_parts.append(" " * 8 + "pass")
+        self.output += (os.linesep * 2 + os.linesep.join(struct_decl_parts) +
+                        os.linesep * 2)
+
+    def visit_field(self, field):
+        self.fields.append(config.field_def % field.__dict__)
+
     def visit_class(self, clazz):
         class_decl_parts = [config.class_def % clazz.__dict__,
                             os.linesep.join(self.ctors),
                             os.linesep.join(self.methods)]
         class_decl_parts = [p for p in class_decl_parts if p != ""]
+        empty_body = len(self.methods) == 0 and len(self.ctors) == 0
+        if empty_body:
+            class_decl_parts.append(" " * 8 + "pass")
         self.output += (os.linesep * 2 + os.linesep.join(class_decl_parts) +
                         os.linesep * 2)
 
@@ -81,6 +98,12 @@ class CythonImplementationExporter:
 
     def visit_includes(self, includes):
         self.includes = includes
+
+    def visit_struct(self, struct):
+        warnings.warn("struct implementation not available")
+
+    def visit_field(self, field):
+        warnings.warn("field implementation not available")
 
     def visit_class(self, clazz):
         if len(self.ctors) > 1:

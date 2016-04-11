@@ -4,11 +4,14 @@ pxd_file_ending = "pxd"
 
 class_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
     cdef cppclass %(name)s:"""
+struct_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
+    cdef struct %(name)s:"""
 method_def = "        %(result_type)s %(name)s(%(args)s)"
 constructor_def = "        %(name)s(%(args)s)"
 function_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
     %(result_type)s %(name)s(%(args)s)"""
 arg_def = "%(tipe)s %(name)s"
+field_def = "        %(tipe)s %(name)s"
 py_class_def = """cdef class %(name)s:
     cdef cpp.%(name)s * thisptr
 
