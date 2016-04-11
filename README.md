@@ -40,14 +40,24 @@ Install the package with:
 
 ## Usage
 
-We can generate a Python extension that wraps a library defined in a C++ header
+We can generate a Python extension that wraps a library defined in C++ header
 with:
 
-    pywrap <header> <modulename> <target>
+    pywrap <headers> --modulename <name> --outdir <directory>
 
 The result is located in the directory <target> and can be build with:
 
     python setup.py build_ext -i
+
+If this is a header only library we can now simply do the following in
+Python:
+
+```python
+from <name> import *
+```
+
+If we must link against a library or we have to compile C++ source files, we
+will have to add that to the `setup.py` that has been generated.
 
 ## Documentation
 
