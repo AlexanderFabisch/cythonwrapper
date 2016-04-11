@@ -93,7 +93,8 @@ class CythonImplementationExporter:
                            os.linesep.join(self.ctors),
                            os.linesep.join(self.methods)]
         class_def_parts = [p for p in class_def_parts if p != ""]
-        self.output += os.linesep * 2 + os.linesep.join(class_def_parts)
+        self.output += (os.linesep * 2 + os.linesep.join(class_def_parts) +
+                        os.linesep * 2)
 
         self.ctors = []
         self.methods = []

@@ -157,7 +157,7 @@ def test_map():
         assert_equal(cpp_lookup(m), 0)
 
 
-def test_parts():
+def test_independent_parts():
     with cython_extension_from(["indeppart1.hpp", "indeppart2.hpp"],
                                modulename="combined"):
         from combined import CppClassA, CppClassB
@@ -165,3 +165,12 @@ def test_parts():
         assert_false(a.result())
         b = CppClassB()
         assert_true(b.result())
+
+
+def test_dependent_parts():
+    with cython_extension_from(["deppart1.hpp", "deppart2.hpp"],
+                               modulename="depcombined"):
+        from depcombined import CppA
+        a = CppA()
+        b = a.make()
+        assert_equal(b.get_value(), 5)
