@@ -82,6 +82,15 @@ def cython_define_basic_inputarg(cython_tname, cython_argname, python_argname):
     return "cdef %s %s = %s" % (cython_tname, cython_argname, python_argname)
 
 
+def _is_pointer(tname):
+    parts = tname.split()
+    return len(parts) == 2 and parts[1] == "*"
+
+
+def _type_without_pointer(tname):
+    return tname.split()[0]
+
+
 def create_type_converter(tname, python_argname, classes):
     # TODO extend with plugin mechanism
     if tname is None or tname == "void":
@@ -94,7 +103,7 @@ def create_type_converter(tname, python_argname, classes):
         return StlTypeConverter(tname, python_argname)
     elif tname in classes:
         return CythonTypeConverter(tname, python_argname, module=classes[tname])
-    elif tname.split()[0] in classes:
+    elif _is_pointer(tname) and _type_without_pointer(tname) in classes:
         return CppPointerTypeConverter(
             tname, python_argname, module=classes[tname.split()[0]])
     else:
@@ -254,33 +263,35 @@ class CythonTypeConverter(AbstractTypeConverter):
 class CppPointerTypeConverter(AbstractTypeConverter):
     def __init__(self, tname, python_argname, module):
         self.tname = tname
+        self.tname_wo_ptr = _type_without_pointer(tname)
         self.python_argname = python_argname
         self.module = module
 
     def cython_signature(self):
-        raise NotImplementedError()
+        return "%s %s" % (self.tname_wo_ptr, self.python_argname)
 
     def n_cpp_args(self):
-        raise NotImplementedError()
+        return 1
 
     def add_includes(self, includes):
         pass
 
     def python_to_cpp(self):
-        raise NotImplementedError()
+        cython_argname = "cpp_" + self.python_argname
+        return ("cdef %s %s = %s.thisptr"
+                % (self.cpp_type_decl(), cython_argname, self.python_argname))
 
     def cpp_call_args(self):
-        raise NotImplementedError()
+        return ["cpp_%s" % self.python_argname]
 
     def cpp_type_decl(self):
         return "cpp.%s" % self.tname
 
     def return_output(self):
         # TODO only works with default constructor
-        cython_classname = self.tname.split()[0]
-        return lines("ret = %s()",
+        return lines("ret = %s()" % self.tname_wo_ptr,
                      "ret.thisptr = result",
-                     "return ret") % cython_classname
+                     "return ret")
 
 
 class PythonObjectConverter(AbstractTypeConverter):
@@ -309,7 +320,7 @@ class PythonObjectConverter(AbstractTypeConverter):
         return self.tname
 
     def return_output(self):
-        raise NotImplementedError()
+        return "return result" + os.linesep
 
 
 class StlTypeConverter(PythonObjectConverter):

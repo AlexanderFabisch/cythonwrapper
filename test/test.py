@@ -144,6 +144,14 @@ def test_complex_arg():
         assert_equal(b.get_string(), "test")
 
 
+def test_complex_ptr_arg():
+    with cython_extension_from("complexptrarg.hpp"):
+        from complexptrarg import CppA, CppB
+        a = CppA()
+        b = CppB(a)
+        assert_equal(b.get_string(), "test")
+
+
 def test_function():
     with cython_extension_from("function.hpp"):
         from function import fun1, fun2
