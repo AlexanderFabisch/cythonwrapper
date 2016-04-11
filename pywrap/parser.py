@@ -98,7 +98,6 @@ class Includes:
         self.string = False
         self.map = False
         self.deref = False
-        self.cythonmodules = set()
 
     def add_include_for(self, tname):
         if self._part_of_tname(tname, "bool"):
@@ -113,9 +112,6 @@ class Includes:
     def add_include_for_deref(self):
         self.deref = True
 
-    def add_include_for_cythonmodule(self, cythonmodule):
-        self.cythonmodules.add(cythonmodule)
-
     def _part_of_tname(self, tname, subtname):
         return (tname == subtname or tname.startswith(subtname) or
                 ("<" + subtname + ">") in tname or
@@ -125,7 +121,19 @@ class Includes:
                 ("[" + subtname + ",") in tname or
                 (", " + subtname + "]") in tname)
 
-    def header(self):
+    def declarations_import(self):
+        includes = ""
+        if self.boolean:
+            includes += "from libcpp cimport bool" + os.linesep
+        if self.vector:
+            includes += "from libcpp.vector cimport vector" + os.linesep
+        if self.string:
+            includes += "from libcpp.string cimport string" + os.linesep
+        if self.map:
+            includes += "from libcpp.map cimport map" + os.linesep
+        return includes
+
+    def implementations_import(self):
         includes = ""
         if self.numpy:
             includes += "cimport numpy as np" + os.linesep
@@ -139,12 +147,9 @@ class Includes:
         if self.map:
             includes += "from libcpp.map cimport map" + os.linesep
         if self.deref:
-            # TODO this is only required in the implementation
             includes += ("from cython.operator cimport dereference as deref" +
                          os.linesep)
         includes += "from _declarations cimport *" + os.linesep
-        for cythonmodule in self.cythonmodules:
-            includes += "from %s import *%s" % (cythonmodule, os.linesep)
         return includes
 
     def accept(self, exporter):

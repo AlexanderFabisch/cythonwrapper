@@ -60,7 +60,7 @@ class CythonDeclarationExporter:
         self.arguments.append(config.arg_def % param.__dict__)
 
     def export(self):
-        return self.includes.header() + self.output
+        return self.includes.declarations_import() + self.output
 
 
 class CythonImplementationExporter:
@@ -128,7 +128,7 @@ class CythonImplementationExporter:
         self.arguments.append(config.py_arg_def % param.__dict__)
 
     def export(self):
-        return self.includes.header() + self.output
+        return self.includes.implementations_import() + self.output
 
 
 class FunctionDefinition(object):
