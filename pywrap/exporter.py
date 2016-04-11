@@ -107,11 +107,15 @@ class CythonImplementationExporter:
         self.arguments = []
 
     def visit_method(self, method):
-        function_def = MethodDefinition(
-            method.name, method.arguments, self.includes, ["self"],
-            method.result_type, classes=self.classes).make()
-        self.methods.append(indent_block(function_def, 1))
-        self.arguments = []
+        try:
+            function_def = MethodDefinition(
+                method.name, method.arguments, self.includes, ["self"],
+                method.result_type, classes=self.classes).make()
+            self.methods.append(indent_block(function_def, 1))
+        except NotImplementedError as e:
+            warnings.warn(e.message + " Ignoring method '%s'" % method.name)
+        finally:
+            self.arguments = []
 
     def visit_function(self, function):
         try:
