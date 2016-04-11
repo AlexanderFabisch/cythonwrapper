@@ -67,26 +67,12 @@ def make_cython_wrapper(filenames, modulename=None, target=".", verbose=0):
     classes = _collect_classes(asts)
 
     results = {}
-    files_to_cythonize = []
-    for module, ast in asts.items():
-        cie = CythonImplementationExporter(classes)
-        ast.accept(cie)
-        extension = cie.export()
-        pyx_filename = module + "." + config.pyx_file_ending
-        results[pyx_filename] = extension
-        files_to_cythonize.append(pyx_filename)
-        if verbose >= 2:
-            print("= %s =" % pyx_filename)
-            print(extension)
+    ext_results, files_to_cythonize = _generate_extension(
+        asts, classes, verbose)
+    results.update(ext_results)
 
-        cde = CythonDeclarationExporter()
-        ast.accept(cde)
-        declarations = cde.export()
-        pxd_filename = "_" + module + "." + config.pxd_file_ending
-        results[pxd_filename] = declarations
-        if verbose >= 2:
-            print("= %s =" % pxd_filename)
-            print(declarations)
+    decl_results = _generate_declarations(asts, verbose)
+    results.update(decl_results)
 
     results["setup.py"] = _make_setup(filenames, target)
 
@@ -120,6 +106,36 @@ def _collect_classes(asts):
         for clazz in ast.classes:
             classes[clazz.name] = module
     return classes
+
+
+def _generate_extension(asts, classes, verbose):
+    results = {}
+    files_to_cythonize = []
+    for module, ast in asts.items():
+        cie = CythonImplementationExporter(classes)
+        ast.accept(cie)
+        extension = cie.export()
+        pyx_filename = module + "." + config.pyx_file_ending
+        results[pyx_filename] = extension
+        files_to_cythonize.append(pyx_filename)
+        if verbose >= 2:
+            print("= %s =" % pyx_filename)
+            print(extension)
+    return results, files_to_cythonize
+
+
+def _generate_declarations(asts, verbose):
+    results = {}
+    for module, ast in asts.items():
+        cde = CythonDeclarationExporter()
+        ast.accept(cde)
+        declarations = cde.export()
+        pxd_filename = "_" + module + "." + config.pxd_file_ending
+        results[pxd_filename] = declarations
+        if verbose >= 2:
+            print("= %s =" % pxd_filename)
+            print(declarations)#
+    return results
 
 
 def _make_setup(filenames, target):
