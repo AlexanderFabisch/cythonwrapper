@@ -8,11 +8,12 @@ from .parser import parse
 from .exporter import CythonDeclarationExporter, CythonImplementationExporter
 
 
-def write_cython_wrapper(filenames, target=".", verbose=0):
+def write_cython_wrapper(filenames, modulename=None, target=".", verbose=0):
     if not os.path.exists(target):
         os.makedirs(target)
 
-    results, cython_files = make_cython_wrapper(filenames, target, verbose)
+    results, cython_files = make_cython_wrapper(
+        filenames, modulename, target, verbose)
     write_files(results, target)
     cython(cython_files, target)
 

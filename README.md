@@ -43,7 +43,7 @@ Install the package with:
 We can generate a Python extension that wraps a library defined in a C++ header
 with:
 
-    pywrap <header> <target>
+    pywrap <header> <modulename> <target>
 
 The result is located in the directory <target> and can be build with:
 

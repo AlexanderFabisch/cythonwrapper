@@ -8,10 +8,14 @@ import pywrap.cython as pycy
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description=pywrap.__description__)
     argparser.add_argument("header", type=str, help="C++ header file")
+    argparser.add_argument(
+        "modulename", type=str, nargs="?", default=None,
+        help="Name of the extension module that will be generated")
     argparser.add_argument("outdir", type=str, nargs="?", default=".",
                            help="output directory")
     argparser.add_argument("--verbose", "-v", action="count",
                            help="verbosity level")
     args = argparser.parse_args()
 
-    pycy.write_cython_wrapper(args.header, args.outdir, args.verbose)
+    pycy.write_cython_wrapper(
+        args.header, args.modulename, args.outdir, args.verbose)
