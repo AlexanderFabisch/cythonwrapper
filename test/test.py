@@ -159,10 +159,9 @@ def test_map():
 
 def test_parts():
     with cython_extension_from(["indeppart1.hpp", "indeppart2.hpp"],
-                               modulename="combined", cleanup=False):
-        from indeppart1 import CppClassA
+                               modulename="combined"):
+        from combined import CppClassA, CppClassB
         a = CppClassA()
         assert_false(a.result())
-        from indeppart2 import CppClassB
         b = CppClassB()
         assert_true(b.result())

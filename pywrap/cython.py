@@ -69,13 +69,13 @@ def make_cython_wrapper(filenames, modulename=None, target=".", verbose=0):
 
     results = {}
     ext_results, files_to_cythonize = _generate_extension(
-        asts, classes, verbose)
+        modulename, asts, classes, verbose)
     results.update(ext_results)
 
     decl_results = _generate_declarations(asts, verbose)
     results.update(decl_results)
 
-    results["setup.py"] = _make_setup(filenames, target)
+    results["setup.py"] = _make_setup(filenames, modulename, target)
 
     return results, files_to_cythonize
 
@@ -109,19 +109,20 @@ def _collect_classes(asts):
     return classes
 
 
-def _generate_extension(asts, classes, verbose):
+def _generate_extension(modulename, asts, classes, verbose):
     results = {}
     files_to_cythonize = []
+    extension = ""
     for module, ast in asts.items():
         cie = CythonImplementationExporter(classes)
         ast.accept(cie)
-        extension = cie.export()
-        pyx_filename = module + "." + config.pyx_file_ending
-        results[pyx_filename] = extension
-        files_to_cythonize.append(pyx_filename)
-        if verbose >= 2:
-            print("= %s =" % pyx_filename)
-            print(extension)
+        extension += cie.export()
+    pyx_filename = modulename + "." + config.pyx_file_ending
+    results[pyx_filename] = extension
+    files_to_cythonize.append(pyx_filename)
+    if verbose >= 2:
+        print("= %s =" % pyx_filename)
+        print(extension)
     return results, files_to_cythonize
 
 
@@ -140,15 +141,14 @@ def _generate_declarations(asts, verbose):
     return results
 
 
-def _make_setup(filenames, target):
+def _make_setup(filenames, modulename, target):
     sourcedir = os.path.relpath(".", start=target)
-    extensions_setup = []
-    for filename in filenames:
-        module = _derive_module_name_from(filename)
-        header_relpath = os.path.relpath(filename, start=target)
-        extensions_setup.append(make_extension(
-            filename=header_relpath, module=module, sourcedir=sourcedir))
-    return config.setup_py % {"extensions": "".join(extensions_setup)}
+    header_relpaths = [os.path.relpath(filename, start=target)
+                       for filename in filenames]
+    extension_setup = make_extension(
+        filename=", ".join(header_relpaths), module=modulename,
+        sourcedir=sourcedir)
+    return config.setup_py % {"extensions": extension_setup}
 
 
 def _derive_module_name_from(filename):
