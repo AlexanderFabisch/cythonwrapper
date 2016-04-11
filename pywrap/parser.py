@@ -149,7 +149,7 @@ class Includes:
         if self.deref:
             includes += ("from cython.operator cimport dereference as deref" +
                          os.linesep)
-        includes += "from _declarations cimport *" + os.linesep
+        includes += "cimport _declarations as cpp" + os.linesep
         return includes
 
     def accept(self, exporter):

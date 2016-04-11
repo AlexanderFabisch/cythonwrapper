@@ -165,7 +165,7 @@ class FunctionDefinition(object):
         self.output_type_converter.add_includes(self.includes)
 
     def _call_cpp_function(self, call_args):
-        call = "{fname}({args})".format(
+        call = "cpp.{fname}({args})".format(
             fname=self.name, args=", ".join(call_args))
         if self.result_type != "void":
             call = "cdef {result_type} result = {call}".format(
@@ -202,7 +202,7 @@ class ConstructorDefinition(FunctionDefinition):
         self.class_name = class_name
 
     def _call_cpp_function(self, call_args):
-        return "self.thisptr = new %s(%s)%s" % (
+        return "self.thisptr = new cpp.%s(%s)%s" % (
             self.class_name, ", ".join(call_args), os.linesep)
 
     def _signature(self):
@@ -216,7 +216,8 @@ class MethodDefinition(FunctionDefinition):
             fname=self.name, args=", ".join(call_args))
         if self.result_type != "void":
             call = "cdef {result_type} result = {call}".format(
-                result_type=self.result_type, call=call)
+                result_type=self.output_type_converter.cpp_type_decl(),
+                call=call)
         return call + os.linesep
 
     def _signature(self):
