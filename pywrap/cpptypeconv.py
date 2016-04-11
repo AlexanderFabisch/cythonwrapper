@@ -222,7 +222,6 @@ class CythonTypeConverter(AbstractTypeConverter):
 
     def add_includes(self, includes):
         includes.add_include_for_deref()
-        includes.add_include_for_cppmodule(self.module)
 
     def python_to_cpp(self):
         cython_argname = "cpp_" + self.python_argname
@@ -249,7 +248,7 @@ class CppPointerTypeConverter(AbstractTypeConverter):
         raise NotImplementedError()
 
     def add_includes(self, includes):
-        includes.add_include_for_cppmodule(self.module)
+        pass
 
     def python_to_cpp(self):
         raise NotImplementedError()

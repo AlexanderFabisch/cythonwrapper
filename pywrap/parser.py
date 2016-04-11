@@ -98,7 +98,6 @@ class Includes:
         self.string = False
         self.map = False
         self.deref = False
-        self.cppmodules = set([module])
         self.cythonmodules = set()
 
     def add_include_for(self, tname):
@@ -113,9 +112,6 @@ class Includes:
 
     def add_include_for_deref(self):
         self.deref = True
-
-    def add_include_for_cppmodule(self, cppmodule):
-        self.cppmodules.add(cppmodule)
 
     def add_include_for_cythonmodule(self, cythonmodule):
         self.cythonmodules.add(cythonmodule)
@@ -146,8 +142,7 @@ class Includes:
             # TODO this is only required in the implementation
             includes += ("from cython.operator cimport dereference as deref" +
                          os.linesep)
-        for cppmodule in self.cppmodules:
-            includes += "from _%s cimport *%s" % (cppmodule, os.linesep)
+        includes += "from _declarations cimport *" + os.linesep
         for cythonmodule in self.cythonmodules:
             includes += "from %s import *%s" % (cythonmodule, os.linesep)
         return includes

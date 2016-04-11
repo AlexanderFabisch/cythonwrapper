@@ -126,15 +126,16 @@ def _generate_extension(asts, classes, verbose):
 
 def _generate_declarations(asts, verbose):
     results = {}
+    declarations = ""
     for module, ast in asts.items():
         cde = CythonDeclarationExporter()
         ast.accept(cde)
-        declarations = cde.export()
-        pxd_filename = "_" + module + "." + config.pxd_file_ending
-        results[pxd_filename] = declarations
-        if verbose >= 2:
-            print("= %s =" % pxd_filename)
-            print(declarations)#
+        declarations += cde.export()
+    pxd_filename = "_declarations." + config.pxd_file_ending
+    results[pxd_filename] = declarations
+    if verbose >= 2:
+        print("= %s =" % pxd_filename)
+        print(declarations)
     return results
 
 

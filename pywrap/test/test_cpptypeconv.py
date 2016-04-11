@@ -1,8 +1,7 @@
 from pywrap.cpptypeconv import (typename, cython_define_basic_inputarg,
-                                DoubleArrayTypeConverter, CythonTypeConverter)
-from pywrap.parser import Includes
+                                DoubleArrayTypeConverter)
 from pywrap.utils import assert_equal_linewise, lines
-from nose.tools import assert_equal, assert_in
+from nose.tools import assert_equal
 
 
 def test_basic_typename():
@@ -37,16 +36,3 @@ def test_cython_define_nparray1d_inputarg():
         conv.python_to_cpp(),
         lines("cdef np.ndarray[double, ndim=1] a_array = np.asarray(a)",
               "cdef double * cpp_a = &a_array[0]"""))
-
-
-def test_add_include_for_cppmodule():
-    conv = CythonTypeConverter("Test", "test", "testmodule")
-    inc = Includes("thismodule")
-    conv.add_includes(inc)
-    assert_in("testmodule", inc.cppmodules)
-    assert_equal_linewise(
-        inc.header(),
-        lines("from cython.operator cimport dereference as deref",
-              "from _testmodule cimport *",
-              "from _thismodule cimport *",
-              ""))
