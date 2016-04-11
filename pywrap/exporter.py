@@ -174,7 +174,7 @@ class FunctionDefinition(object):
 
     def _signature(self):
         args = self._cython_signature_args()
-        return "def cpp_%s(%s):" % (from_camel_case(self.name), ", ".join(args))
+        return "def %s(%s):" % (from_camel_case(self.name), ", ".join(args))
 
     def _cython_signature_args(self):
         cython_signature_args = []

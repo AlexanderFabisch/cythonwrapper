@@ -81,16 +81,16 @@ def test_twoctors():
 
 def test_double_in_double_out():
     with cython_extension_from("doubleindoubleout.hpp"):
-        from doubleindoubleout import CppA
-        a = CppA()
+        from doubleindoubleout import A
+        a = A()
         d = 3.213
         assert_equal(d + 2.0, a.plus2(d))
 
 
 def test_vector():
     with cython_extension_from("vector.hpp"):
-        from vector import CppA
-        a = CppA()
+        from vector import A
+        a = A()
         v = np.array([2.0, 1.0, 3.0])
         n = a.norm(v)
         assert_equal(n, 14.0)
@@ -98,39 +98,39 @@ def test_vector():
 
 def test_bool_in_bool_out():
     with cython_extension_from("boolinboolout.hpp"):
-        from boolinboolout import CppA
-        a = CppA()
+        from boolinboolout import A
+        a = A()
         b = False
         assert_equal(not b, a.neg(b))
 
 
 def test_string_in_string_out():
     with cython_extension_from("stringinstringout.hpp"):
-        from stringinstringout import CppA
-        a = CppA()
+        from stringinstringout import A
+        a = A()
         s = "This is a sentence"
         assert_equal(s + ".", a.end(s))
 
 
 def test_constructor_args():
     with cython_extension_from("constructorargs.hpp"):
-        from constructorargs import CppA
-        a = CppA(11, 7)
+        from constructorargs import A
+        a = A(11, 7)
         assert_equal(18, a.sum())
 
 
 def test_factory():
     with cython_extension_from("factory.hpp"):
-        from factory import CppAFactory
-        factory = CppAFactory()
+        from factory import AFactory
+        factory = AFactory()
         a = factory.make()
         assert_equal(5, a.get())
 
 
 def test_string_vector():
     with cython_extension_from("stringvector.hpp"):
-        from stringvector import CppA
-        a = CppA()
+        from stringvector import A
+        a = A()
         substrings = ["AB", "CD", "EF"]
         res = a.concat(substrings)
         assert_equal(res, "ABCDEF")
@@ -138,39 +138,39 @@ def test_string_vector():
 
 def test_complex_arg():
     with cython_extension_from("complexarg.hpp"):
-        from complexarg import CppA, CppB
-        a = CppA()
-        b = CppB(a)
+        from complexarg import A, B
+        a = A()
+        b = B(a)
         assert_equal(b.get_string(), "test")
 
 
 def test_function():
     with cython_extension_from("function.hpp"):
-        from function import cpp_fun1, cpp_fun2
-        assert_equal(cpp_fun1(0), 0)
-        assert_equal(cpp_fun2(), 1)
+        from function import fun1, fun2
+        assert_equal(fun1(0), 0)
+        assert_equal(fun2(), 1)
 
 def test_map():
     with cython_extension_from("map.hpp"):
-        from map import cpp_lookup
+        from map import lookup
         m = {"test": 0}
-        assert_equal(cpp_lookup(m), 0)
+        assert_equal(lookup(m), 0)
 
 
 def test_independent_parts():
     with cython_extension_from(["indeppart1.hpp", "indeppart2.hpp"],
                                modulename="combined"):
-        from combined import CppClassA, CppClassB
-        a = CppClassA()
+        from combined import ClassA, ClassB
+        a = ClassA()
         assert_false(a.result())
-        b = CppClassB()
+        b = ClassB()
         assert_true(b.result())
 
 
 def test_dependent_parts():
     with cython_extension_from(["deppart1.hpp", "deppart2.hpp"],
                                modulename="depcombined"):
-        from depcombined import CppA
-        a = CppA()
+        from depcombined import A
+        a = A()
         b = a.make()
         assert_equal(b.get_value(), 5)

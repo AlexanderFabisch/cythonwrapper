@@ -20,8 +20,8 @@ public:
 ... and you would be able to use it in Python just like
 
 ```python
-from myheader import CppA
-a = CppA()
+from myheader import A
+a = A()
 b = 3.213
 c = a.plus2(b)
 ```

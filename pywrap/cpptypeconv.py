@@ -228,7 +228,7 @@ class CythonTypeConverter(AbstractTypeConverter):
         self.module = module
 
     def cython_signature(self):
-        return "Cpp%s %s" % (self.tname, self.python_argname)
+        return "%s %s" % (self.tname, self.python_argname)
 
     def n_cpp_args(self):
         return 1
@@ -277,7 +277,7 @@ class CppPointerTypeConverter(AbstractTypeConverter):
 
     def return_output(self):
         # TODO only works with default constructor
-        cython_classname = "Cpp%s" % self.tname.split()[0]
+        cython_classname = self.tname.split()[0]
         return lines("ret = %s()",
                      "ret.thisptr = result",
                      "return ret") % cython_classname

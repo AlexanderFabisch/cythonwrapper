@@ -1,8 +1,8 @@
 import numpy as np
-from test import CppFactory, cpp_shutdown
+from test import Factory, shutdown
 
 
-fac = CppFactory()
+fac = Factory()
 a = fac.make()
 vec = np.array([0.1, 0.5, 0.9])
 print("Empty: %s" % a.is_empty())
@@ -13,4 +13,4 @@ vec2 = np.empty(3)
 a.get_vec(vec2)
 print(vec2)
 print(a.info())
-cpp_shutdown()
+shutdown()
