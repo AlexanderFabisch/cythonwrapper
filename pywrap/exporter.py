@@ -91,6 +91,7 @@ class CythonImplementationExporter:
         self.ctors = []
         self.methods = []
         self.arguments = []
+        self.fields = []
         self.includes = None
 
     def visit_ast(self, ast):
@@ -100,10 +101,24 @@ class CythonImplementationExporter:
         self.includes = includes
 
     def visit_struct(self, struct):
-        warnings.warn("struct implementation not available")
+        struct_def_parts = [config.py_struct_def % struct.__dict__,
+                            os.linesep.join(self.fields)]
+        struct_def_parts = [p for p in struct_def_parts if p != ""]
+        self.output += (os.linesep * 2 + os.linesep.join(struct_def_parts) +
+                        os.linesep * 2)
 
     def visit_field(self, field):
-        warnings.warn("field implementation not available")
+        # TODO refactor
+        field_def = """
+    %(name)s = property(get_%(name)s, set_%(name)s)
+
+    cpdef get_%(name)s(self):
+        return self.thisptr.%(name)s
+
+    cpdef set_%(name)s(self, %(name)s):
+        self.thisptr.%(name)s = %(name)s
+""" % {"name": field.name} + os.linesep
+        self.fields.append(field_def)
 
     def visit_class(self, clazz):
         if len(self.ctors) > 1:

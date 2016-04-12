@@ -185,5 +185,8 @@ def test_dependent_parts():
 
 
 def test_struct():
-    with cython_extension_from("struct.hpp"):
-        import struct
+    with cython_extension_from("mystruct.hpp", cleanup=False):
+        from mystruct import A
+        a = A()
+        a.a = 5
+        assert_equal(a.a, 5)

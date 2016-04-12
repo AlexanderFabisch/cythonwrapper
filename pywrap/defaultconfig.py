@@ -12,6 +12,7 @@ function_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
     %(result_type)s %(name)s(%(args)s)"""
 arg_def = "%(tipe)s %(name)s"
 field_def = "        %(tipe)s %(name)s"
+
 py_class_def = """cdef class %(name)s:
     cdef cpp.%(name)s * thisptr
 
@@ -21,6 +22,9 @@ py_class_def = """cdef class %(name)s:
     def __dealloc__(self):
         if self.thisptr != NULL:
             del self.thisptr
+"""
+py_struct_def = """cdef class %(name)s:
+    cdef cpp.%(name)s thisptr
 """
 py_arg_def = "%(name)s"
 setup_extension = """
