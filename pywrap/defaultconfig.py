@@ -5,7 +5,7 @@ pxd_file_ending = "pxd"
 class_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
     cdef cppclass %(name)s:"""
 struct_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
-    cdef struct %(name)s:"""
+    cdef cppclass %(name)s:"""
 method_def = "        %(result_type)s %(name)s(%(args)s)"
 constructor_def = "        %(name)s(%(args)s)"
 function_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
@@ -24,7 +24,13 @@ py_class_def = """cdef class %(name)s:
             del self.thisptr
 """
 py_struct_def = """cdef class %(name)s:
-    cdef cpp.%(name)s thisptr
+    cdef cpp.%(name)s * thisptr
+
+    def __cinit__(self):
+        self.thisptr = new cpp.%(name)s()
+
+    def __dealloc__(self):
+        del self.thisptr
 """
 py_arg_def = "%(name)s"
 setup_extension = """

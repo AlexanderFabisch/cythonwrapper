@@ -186,7 +186,10 @@ def test_dependent_parts():
 
 def test_struct():
     with cython_extension_from("mystruct.hpp"):
-        from mystruct import A
+        from mystruct import A, print_mystruct
         a = A()
         a.a = 5
+        a.b = [1.0, 2.0, 3.0]
         assert_equal(a.a, 5)
+        assert_equal(a.b, [1.0, 2.0, 3.0])
+        assert_equal(print_mystruct(a), "a = 5, b[0] = 1, b[1] = 2, b[2] = 3, ")
