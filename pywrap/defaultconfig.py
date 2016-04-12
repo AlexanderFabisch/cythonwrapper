@@ -33,6 +33,13 @@ py_struct_def = """cdef class %(name)s:
         del self.thisptr
 """
 py_arg_def = "%(name)s"
+py_field_def = """    %(name)s = property(get_%(name)s, set_%(name)s)
+
+    cpdef get_%(name)s(self):
+        return self.thisptr.%(name)s
+
+    cpdef set_%(name)s(self, %(name)s):
+        self.thisptr.%(name)s = %(name)s"""
 setup_extension = """
     config.add_extension(
         '%(module)s',

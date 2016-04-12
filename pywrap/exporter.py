@@ -108,16 +108,7 @@ class CythonImplementationExporter:
                         os.linesep * 2)
 
     def visit_field(self, field):
-        # TODO refactor
-        field_def = """
-    %(name)s = property(get_%(name)s, set_%(name)s)
-
-    cpdef get_%(name)s(self):
-        return self.thisptr.%(name)s
-
-    cpdef set_%(name)s(self, %(name)s):
-        self.thisptr.%(name)s = %(name)s
-""" % {"name": field.name} + os.linesep
+        field_def = config.py_field_def % {"name": field.name} + os.linesep
         self.fields.append(field_def)
 
     def visit_class(self, clazz):
