@@ -1,3 +1,5 @@
-
+.idea
+cover
+.coverage
 *.pyc
 build
