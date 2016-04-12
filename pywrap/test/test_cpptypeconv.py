@@ -1,5 +1,5 @@
-from pywrap.cpptypeconv import (typename, cython_define_basic_inputarg,
-                                DoubleArrayTypeConverter)
+from pywrap.type_conversion import (typename, cython_define_basic_inputarg,
+                                    DoubleArrayTypeConverter)
 from pywrap.utils import assert_equal_linewise, lines
 from nose.tools import assert_equal
 

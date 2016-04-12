@@ -1,8 +1,8 @@
 import os
 import warnings
 from . import defaultconfig as config
-from .cpptypeconv import (is_type_with_automatic_conversion,
-                          create_type_converter)
+from .type_conversion import (is_type_with_automatic_conversion,
+                              create_type_converter)
 from .utils import lines, indent_block, from_camel_case
 
 

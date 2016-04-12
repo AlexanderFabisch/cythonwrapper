@@ -7,7 +7,7 @@ except:
                     "Ubuntu 14.04.")
 import os
 import warnings
-from .cpptypeconv import typename
+from .type_conversion import typename
 
 
 def parse(include_file, parsable_file, module, verbose):
