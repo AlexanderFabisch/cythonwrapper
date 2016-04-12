@@ -185,7 +185,7 @@ def test_dependent_parts():
 
 
 def test_struct():
-    with cython_extension_from("mystruct.hpp", cleanup=False):
+    with cython_extension_from("mystruct.hpp"):
         from mystruct import A
         a = A()
         a.a = 5
