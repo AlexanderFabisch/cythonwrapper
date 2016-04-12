@@ -6,7 +6,6 @@ except:
                     "Note that a recent operating system is required, e.g. "
                     "Ubuntu 14.04.")
 import os
-import warnings
 from .type_conversion import typename
 
 
@@ -50,7 +49,8 @@ class AST:
             tname = typename(node.type.spelling)
             self.includes.add_include_for(tname)
             param = Param(node.displayname, tname)
-            self.last_function.arguments.append(param)
+            if self.last_function is not None:
+                self.last_function.arguments.append(param)
         elif node.kind == ci.CursorKind.FUNCTION_DECL:
             tname = typename(node.result_type.spelling)
             self.includes.add_include_for(tname)
@@ -91,7 +91,6 @@ class AST:
         self.namespace = namespace
 
     def accept(self, exporter):
-        exporter.visit_ast(self)
         self.includes.accept(exporter)
         for struct in self.structs:
             struct.accept(exporter)
@@ -99,6 +98,7 @@ class AST:
             clazz.accept(exporter)
         for fun in self.functions:
             fun.accept(exporter)
+        exporter.visit_ast(self)
 
 
 class Includes:

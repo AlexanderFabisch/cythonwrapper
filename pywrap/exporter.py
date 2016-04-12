@@ -129,11 +129,15 @@ class CythonImplementationExporter:
         self.methods = []
 
     def visit_constructor(self, ctor):
-        function_def = ConstructorDefinition(
-            ctor.class_name, ctor.name, ctor.arguments, self.includes,
-            initial_args=["self"], classes=self.classes).make()
-        self.ctors.append(indent_block(function_def, 1))
-        self.arguments = []
+        try:
+            function_def = ConstructorDefinition(
+                ctor.class_name, ctor.name, ctor.arguments, self.includes,
+                initial_args=["self"], classes=self.classes).make()
+            self.ctors.append(indent_block(function_def, 1))
+        except NotImplementedError as e:
+            warnings.warn(e.message + " Ignoring method '%s'" % ctor.name)
+        finally:
+            self.arguments = []
 
     def visit_method(self, method):
         try:
