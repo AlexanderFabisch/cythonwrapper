@@ -213,7 +213,7 @@ class FunctionDefinition(object):
         cython_signature_args = []
         cython_signature_args.extend(self.initial_args)
         for type_converter in self.type_converters:
-            arg = type_converter.cython_signature()
+            arg = type_converter.python_type_decl()
             cython_signature_args.append(arg)
         return cython_signature_args
 

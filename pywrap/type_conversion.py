@@ -115,14 +115,9 @@ class AbstractTypeConverter(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def cython_signature(self):
-        """Representation for Cython signature."""
-
-    @abstractmethod
     def n_cpp_args(self):
         """Number of C++ arguments that are covered by this converter."""
 
-    @abstractmethod
     def add_includes(self, includes):
         """Add includes for this conversion."""
 
@@ -134,13 +129,17 @@ class AbstractTypeConverter(object):
     def cpp_call_args(self):
         """Representation for C++ function call."""
 
+    def return_output(self):
+        """Return output of a C++ function in Cython."""
+        return "return result" + os.linesep
+
+    @abstractmethod
+    def python_type_decl(self):
+        """Representation for Cython signature."""
+
     @abstractmethod
     def cpp_type_decl(self):
         """C++ type declaration."""
-
-    @abstractmethod
-    def return_output(self):
-        """Return output of a C++ function in Cython."""
 
 
 class AutomaticTypeConverter(AbstractTypeConverter):
@@ -148,39 +147,27 @@ class AutomaticTypeConverter(AbstractTypeConverter):
         self.tname = tname
         self.python_argname = python_argname
 
-    def cython_signature(self):
-        return "%s %s" % (self.tname, self.python_argname)
-
     def n_cpp_args(self):
         return 1
 
-    def add_includes(self, includes):
-        pass
+    def cpp_call_args(self):
+        return ["cpp_" + self.python_argname]
 
     def python_to_cpp(self):
         cython_argname = "cpp_" + self.python_argname
         return cython_define_basic_inputarg(
             self.tname, cython_argname, self.python_argname)
 
-    def cpp_call_args(self):
-        return ["cpp_" + self.python_argname]
+    def python_type_decl(self):
+        return "%s %s" % (self.tname, self.python_argname)
 
     def cpp_type_decl(self):
         return self.tname
 
-    def return_output(self):
-        return "return result" + os.linesep
-
 
 class VoidTypeConverter(AbstractTypeConverter):
-    def cython_signature(self):
-        raise NotImplementedError()
-
     def n_cpp_args(self):
         raise NotImplementedError()
-
-    def add_includes(self, includes):
-        pass
 
     def python_to_cpp(self):
         raise NotImplementedError()
@@ -188,19 +175,19 @@ class VoidTypeConverter(AbstractTypeConverter):
     def cpp_call_args(self):
         raise NotImplementedError()
 
-    def cpp_type_decl(self):
+    def return_output(self):
         return ""
 
-    def return_output(self):
+    def python_type_decl(self):
+        raise NotImplementedError()
+
+    def cpp_type_decl(self):
         return ""
 
 
 class DoubleArrayTypeConverter(AbstractTypeConverter):
     def __init__(self, python_argname):
         self.python_argname = python_argname
-
-    def cython_signature(self):
-        return "np.ndarray[double, ndim=1] %s" % self.python_argname
 
     def n_cpp_args(self):
         return 2
@@ -222,20 +209,20 @@ class DoubleArrayTypeConverter(AbstractTypeConverter):
         return ["cpp_" + self.python_argname,
                 self.python_argname + "_array.shape[0]"]
 
-    def cpp_type_decl(self):
-        return "double *"
-
     def return_output(self):
         raise NotImplementedError()
+
+    def python_type_decl(self):
+        return "np.ndarray[double, ndim=1] %s" % self.python_argname
+
+    def cpp_type_decl(self):
+        return "double *"
 
 
 class CythonTypeConverter(AbstractTypeConverter):
     def __init__(self, tname, python_argname):
         self.tname = tname
         self.python_argname = python_argname
-
-    def cython_signature(self):
-        return "%s %s" % (self.tname, self.python_argname)
 
     def n_cpp_args(self):
         return 1
@@ -251,11 +238,14 @@ class CythonTypeConverter(AbstractTypeConverter):
     def cpp_call_args(self):
         return ["deref(cpp_%s)" % self.python_argname]
 
-    def cpp_type_decl(self):
-        return "cpp.%s" % self.tname
-
     def return_output(self):
         raise NotImplementedError()
+
+    def python_type_decl(self):
+        return "%s %s" % (self.tname, self.python_argname)
+
+    def cpp_type_decl(self):
+        return "cpp.%s" % self.tname
 
 
 class CppPointerTypeConverter(AbstractTypeConverter):
@@ -264,14 +254,8 @@ class CppPointerTypeConverter(AbstractTypeConverter):
         self.tname_wo_ptr = _type_without_pointer(tname)
         self.python_argname = python_argname
 
-    def cython_signature(self):
-        return "%s %s" % (self.tname_wo_ptr, self.python_argname)
-
     def n_cpp_args(self):
         return 1
-
-    def add_includes(self, includes):
-        pass
 
     def python_to_cpp(self):
         cython_argname = "cpp_" + self.python_argname
@@ -281,14 +265,17 @@ class CppPointerTypeConverter(AbstractTypeConverter):
     def cpp_call_args(self):
         return ["cpp_%s" % self.python_argname]
 
-    def cpp_type_decl(self):
-        return "cpp.%s" % self.tname
-
     def return_output(self):
         # TODO only works with default constructor
         return lines("ret = %s()" % self.tname_wo_ptr,
                      "ret.thisptr = result",
                      "return ret")
+
+    def python_type_decl(self):
+        return "%s %s" % (self.tname_wo_ptr, self.python_argname)
+
+    def cpp_type_decl(self):
+        return "cpp.%s" % self.tname
 
 
 class PythonObjectConverter(AbstractTypeConverter):
@@ -296,14 +283,8 @@ class PythonObjectConverter(AbstractTypeConverter):
         self.tname = tname
         self.python_argname = python_argname
 
-    def cython_signature(self):
-        return "object %s" % self.python_argname
-
     def n_cpp_args(self):
         return 1
-
-    def add_includes(self, includes):
-        pass
 
     def python_to_cpp(self):
         raise NotImplementedError(
@@ -313,18 +294,18 @@ class PythonObjectConverter(AbstractTypeConverter):
     def cpp_call_args(self):
         return ["cpp_" + self.python_argname]
 
+    def python_type_decl(self):
+        return "object %s" % self.python_argname
+
     def cpp_type_decl(self):
         return self.tname
 
-    def return_output(self):
-        return "return result" + os.linesep
-
 
 class StlTypeConverter(PythonObjectConverter):
+    def cpp_call_args(self):
+        return ["cpp_" + self.python_argname]
+
     def python_to_cpp(self):
         cython_argname = "cpp_" + self.python_argname
         return cython_define_basic_inputarg(
             self.tname, cython_argname, self.python_argname)
-
-    def cpp_call_args(self):
-        return ["cpp_" + self.python_argname]
