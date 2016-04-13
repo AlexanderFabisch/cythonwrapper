@@ -124,10 +124,13 @@ class CythonImplementationExporter:
                    "compatible to Python. The last constructor will overwrite "
                    "all others." % clazz.name)
             warnings.warn(msg)
+        elif len(self.ctors) == 0:
+            self.ctors.append(config.py_default_ctor % clazz.__dict__)
 
         class_def_parts = [config.py_class_def % clazz.__dict__,
                            os.linesep.join(self.ctors),
                            os.linesep.join(self.methods)]
+
         class_def_parts = [p for p in class_def_parts if p != ""]
         self.output += (os.linesep * 2 + os.linesep.join(class_def_parts) +
                         os.linesep * 2)

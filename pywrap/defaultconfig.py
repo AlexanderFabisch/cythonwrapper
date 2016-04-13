@@ -50,6 +50,9 @@ py_struct_def = """cdef class %(name)s:
     def __dealloc__(self):
         del self.thisptr
 """
+py_default_ctor = """    def __init__(cpp.%(name)s self):
+        self.thisptr = new cpp.%(name)s()
+"""
 py_arg_def = "%(name)s"
 py_field_def = """    %(name)s = property(get_%(name)s, set_%(name)s)
 

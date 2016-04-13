@@ -205,3 +205,10 @@ def test_operators():
         assert_equal(op - 1, 4)
         assert_equal(op * 2, 10)
         assert_equal(op / 5, 1)
+
+
+def test_no_default_constructor():
+    with cython_extension_from("nodefaultctor.hpp"):
+        from nodefaultctor import A
+        a = A()
+        a.set_member(5)
