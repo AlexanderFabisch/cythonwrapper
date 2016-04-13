@@ -201,3 +201,7 @@ def test_operators():
         op = Operators()
         assert_equal(op(2), 4)
         assert_equal(op[2], 2)
+        assert_equal(op + 1, 6)
+        assert_equal(op - 1, 4)
+        assert_equal(op * 2, 10)
+        assert_equal(op / 5, 1)

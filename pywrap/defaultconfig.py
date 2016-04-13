@@ -1,10 +1,24 @@
 cpp_header_endings = ["h", "hh", "hpp"]
 pyx_file_ending = "pyx"
 pxd_file_ending = "pxd"
-operators = {"operator()": "__call__",
-             "operator[]": "__getitem__"}
-call_operators = {"operator()": "call",
-                  "operator[]": "get"}
+# TODO extend operator mapping:
+# http://docs.cython.org/src/reference/special_methods_table.html
+operators = {
+    "operator()": "__call__",
+    "operator[]": "__getitem__",
+    "operator+": "__add__",
+    "operator-": "__sub__",
+    "operator*": "__mul__",
+    "operator/": "__div__"
+}
+call_operators = {
+    "operator()": "call",
+    "operator[]": "getitem",
+    "operator+": "add",
+    "operator-": "sub",
+    "operator*": "mul",
+    "operator/": "div"
+}
 
 class_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
     cdef cppclass %(name)s:"""

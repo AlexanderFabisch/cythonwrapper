@@ -139,7 +139,8 @@ class CythonImplementationExporter:
         try:
             function_def = ConstructorDefinition(
                 ctor.class_name, ctor.name, ctor.arguments, self.includes,
-                initial_args=["self"], classes=self.classes).make()
+                initial_args=[ctor.class_name + " self"],
+                classes=self.classes).make()
             self.ctors.append(indent_block(function_def, 1))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % ctor.name)
@@ -149,8 +150,9 @@ class CythonImplementationExporter:
     def visit_method(self, method):
         try:
             method_def = MethodDefinition(
-                method.name, method.arguments, self.includes, ["self"],
-                method.result_type, classes=self.classes).make()
+                method.name, method.arguments, self.includes,
+                [method.class_name + " self"], method.result_type,
+                classes=self.classes).make()
             self.methods.append(indent_block(method_def, 1))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % method.name)

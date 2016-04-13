@@ -61,7 +61,7 @@ class AST:
         elif node.kind == ci.CursorKind.CXX_METHOD:
             tname = typename(node.result_type.spelling)
             self.includes.add_include_for(tname)
-            method = Method(node.spelling, tname)
+            method = Method(node.spelling, tname, self.classes[-1].name)
             self.classes[-1].methods.append(method)
             self.last_function = method
         elif node.kind == ci.CursorKind.CONSTRUCTOR:
@@ -230,9 +230,10 @@ class Constructor(FunctionBase):
 
 
 class Method(FunctionBase):
-    def __init__(self, name, result_type):
+    def __init__(self, name, result_type, class_name):
         super(self.__class__, self).__init__(name)
         self.result_type = result_type
+        self.class_name = class_name
 
     def accept(self, exporter):
         super(Method, self).accept(exporter)
