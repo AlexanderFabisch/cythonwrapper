@@ -58,13 +58,15 @@ class AST:
                 include_file, self.namespace, node.spelling, tname)
             self.functions.append(function)
             self.last_function = function
-        elif node.kind == ci.CursorKind.CXX_METHOD:
+        elif (node.kind == ci.CursorKind.CXX_METHOD and
+                  node.access_specifier == ci.AccessSpecifier.PUBLIC):
             tname = typename(node.result_type.spelling)
             self.includes.add_include_for(tname)
             method = Method(node.spelling, tname, self.classes[-1].name)
             self.classes[-1].methods.append(method)
             self.last_function = method
-        elif node.kind == ci.CursorKind.CONSTRUCTOR:
+        elif (node.kind == ci.CursorKind.CONSTRUCTOR and
+                  node.access_specifier == ci.AccessSpecifier.PUBLIC):
             constructor = Constructor(node.spelling, self.classes[-1].name)
             self.classes[-1].constructors.append(constructor)
             self.last_function = constructor
