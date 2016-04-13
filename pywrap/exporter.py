@@ -1,9 +1,8 @@
 import os
 import warnings
 from . import defaultconfig as config
-from .type_conversion import (is_type_with_automatic_conversion,
-                              create_type_converter)
-from .utils import lines, indent_block, from_camel_case
+from .type_conversion import create_type_converter
+from .utils import indent_block, from_camel_case
 
 
 class CythonDeclarationExporter:
@@ -25,20 +24,12 @@ class CythonDeclarationExporter:
     def visit_includes(self, includes):
         self.includes = includes
 
-    def visit_struct(self, struct):
-        struct_decl_parts = [config.struct_def % struct.__dict__,
-                             os.linesep.join(self.fields)]
-        struct_decl_parts = [p for p in struct_decl_parts if p != ""]
-        empty_body = len(self.fields) == 0
-        if empty_body:
-            struct_decl_parts.append(" " * 8 + "pass")
-        self.output += (os.linesep * 2 + os.linesep.join(struct_decl_parts) +
-                        os.linesep * 2)
     def visit_field(self, field):
         self.fields.append(config.field_def % field.__dict__)
 
     def visit_class(self, clazz):
         class_decl_parts = [config.class_def % clazz.__dict__,
+                            os.linesep.join(self.fields),
                             os.linesep.join(self.ctors),
                             os.linesep.join(self.methods)]
         class_decl_parts = [p for p in class_decl_parts if p != ""]
@@ -48,6 +39,7 @@ class CythonDeclarationExporter:
         self.output += (os.linesep * 2 + os.linesep.join(class_decl_parts) +
                         os.linesep * 2)
 
+        self.fields = []
         self.ctors = []
         self.methods = []
 
@@ -107,13 +99,6 @@ class CythonImplementationExporter:
     def visit_includes(self, includes):
         self.includes = includes
 
-    def visit_struct(self, struct):
-        struct_def_parts = [config.py_struct_def % struct.__dict__,
-                            os.linesep.join(self.fields)]
-        struct_def_parts = [p for p in struct_def_parts if p != ""]
-        self.output += (os.linesep * 2 + os.linesep.join(struct_def_parts) +
-                        os.linesep * 2)
-
     def visit_field(self, field):
         field_def = config.py_field_def % {"name": field.name} + os.linesep
         self.fields.append(field_def)
@@ -128,6 +113,7 @@ class CythonImplementationExporter:
             self.ctors.append(config.py_default_ctor % clazz.__dict__)
 
         class_def_parts = [config.py_class_def % clazz.__dict__,
+                           os.linesep.join(self.fields),
                            os.linesep.join(self.ctors),
                            os.linesep.join(self.methods)]
 

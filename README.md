@@ -77,6 +77,6 @@ You can get the latest sources with:
 
 ### Testing
 
-You can use nosetests to run the tests of this project in the root directory::
+You can use nosetests to run the tests of this project in the root directory:
 
     nosetests

@@ -73,10 +73,11 @@ class AST:
             self.classes.append(clazz)
             self.last_type = clazz
         elif node.kind == ci.CursorKind.STRUCT_DECL:
-            struct = Struct(include_file, self.namespace, node.displayname)
-            self.structs.append(struct)
-            self.last_type = struct
-        elif node.kind == ci.CursorKind.FIELD_DECL:
+            clazz = Clazz(include_file, self.namespace, node.displayname)
+            self.classes.append(clazz)
+            self.last_type = clazz
+        elif (node.kind == ci.CursorKind.FIELD_DECL and
+                  node.access_specifier == ci.AccessSpecifier.PUBLIC):
             tname = typename(node.type.spelling)
             self.includes.add_include_for(tname)
             field = Field(node.displayname, tname)
@@ -167,19 +168,6 @@ class Includes:
         exporter.visit_includes(self)
 
 
-class Struct:
-    def __init__(self, filename, namespace, name):
-        self.filename = filename
-        self.namespace = namespace
-        self.name = name
-        self.fields = []
-
-    def accept(self, exporter):
-        for field in self.fields:
-            field.accept(exporter)
-        exporter.visit_struct(self)
-
-
 class Clazz:
     def __init__(self, filename, namespace, name):
         self.filename = filename
@@ -190,6 +178,8 @@ class Clazz:
         self.fields = []
 
     def accept(self, exporter):
+        for field in self.fields:
+            field.accept(exporter)
         for ctor in self.constructors:
             ctor.accept(exporter)
         for method in self.methods:
