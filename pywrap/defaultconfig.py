@@ -1,6 +1,10 @@
 cpp_header_endings = ["h", "hh", "hpp"]
 pyx_file_ending = "pyx"
 pxd_file_ending = "pxd"
+operators = {"operator()": "__call__",
+             "operator[]": "__get_item__"}
+call_operators = {"operator()": "call",
+                  "operator[]": "get"}
 
 class_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
     cdef cppclass %(name)s:"""

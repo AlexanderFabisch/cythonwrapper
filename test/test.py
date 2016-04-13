@@ -193,3 +193,11 @@ def test_struct():
         assert_equal(a.a, 5)
         assert_equal(a.b, [1.0, 2.0, 3.0])
         assert_equal(print_mystruct(a), "a = 5, b[0] = 1, b[1] = 2, b[2] = 3, ")
+
+
+def test_operators():
+    with cython_extension_from("cppoperators.hpp"):
+        from cppoperators import Operators
+        op = Operators()
+        assert_equal(op(2), 4)
+        assert_equal(op[2], 2)

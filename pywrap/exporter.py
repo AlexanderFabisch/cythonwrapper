@@ -34,7 +34,6 @@ class CythonDeclarationExporter:
             struct_decl_parts.append(" " * 8 + "pass")
         self.output += (os.linesep * 2 + os.linesep.join(struct_decl_parts) +
                         os.linesep * 2)
-
     def visit_field(self, field):
         self.fields.append(config.field_def % field.__dict__)
 
@@ -62,6 +61,7 @@ class CythonDeclarationExporter:
     def visit_method(self, method):
         method_dict = {"args": ", ".join(self.arguments)}
         method_dict.update(method.__dict__)
+        method_dict["name"] = map_method_decl(method_dict["name"])
         method_str = config.method_def % method_dict
         self.methods.append(method_str)
         self.arguments = []
@@ -78,6 +78,13 @@ class CythonDeclarationExporter:
 
     def export(self):
         return self.includes.declarations_import() + self.output
+
+
+def map_method_decl(method_name):
+    if method_name in config.call_operators:
+        return "%s \"%s\"" % (config.call_operators[method_name], method_name)
+    else:
+        return method_name
 
 
 class CythonImplementationExporter:
@@ -250,7 +257,7 @@ class ConstructorDefinition(FunctionDefinition):
 class MethodDefinition(FunctionDefinition):
     def _call_cpp_function(self, call_args):
         call = "self.thisptr.{fname}({args})".format(
-            fname=self.name, args=", ".join(call_args))
+            fname=self._python_call_method(), args=", ".join(call_args))
         if self.result_type != "void":
             call = "cdef {result_type} result = {call}".format(
                 result_type=self.output_type_converter.cpp_type_decl(),
@@ -259,4 +266,16 @@ class MethodDefinition(FunctionDefinition):
 
     def _signature(self):
         args = self._cython_signature_args()
-        return "cpdef %s(%s):" % (from_camel_case(self.name), ", ".join(args))
+        return "cpdef %s(%s):" % (self._python_method_name(), ", ".join(args))
+
+    def _python_call_method(self):
+        if self.name in config.call_operators:
+            return config.call_operators[self.name]
+        else:
+            return self.name
+
+    def _python_method_name(self):
+        if self.name in config.operators:
+            return config.operators[self.name]
+        else:
+            return from_camel_case(self.name)
