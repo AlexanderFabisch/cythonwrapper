@@ -266,7 +266,17 @@ class MethodDefinition(FunctionDefinition):
 
     def _signature(self):
         args = self._cython_signature_args()
-        return "cpdef %s(%s):" % (self._python_method_name(), ", ".join(args))
+        method_name = self._python_method_name()
+        def_prefix = self._def_prefix(method_name)
+        return "%s %s(%s):" % (def_prefix, method_name, ", ".join(args))
+
+    def _def_prefix(self, method_name):
+        special_method = (method_name.startswith("__") and
+                          method_name.endswith("__"))
+        if special_method:
+            return "def"
+        else:
+            return "cpdef"
 
     def _python_call_method(self):
         if self.name in config.call_operators:

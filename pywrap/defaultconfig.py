@@ -2,7 +2,7 @@ cpp_header_endings = ["h", "hh", "hpp"]
 pyx_file_ending = "pyx"
 pxd_file_ending = "pxd"
 operators = {"operator()": "__call__",
-             "operator[]": "__get_item__"}
+             "operator[]": "__getitem__"}
 call_operators = {"operator()": "call",
                   "operator[]": "get"}
 
