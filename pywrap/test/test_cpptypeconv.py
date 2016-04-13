@@ -31,7 +31,7 @@ def test_define_inputarg_basic():
 
 
 def test_cython_define_nparray1d_inputarg():
-    conv = DoubleArrayTypeConverter("a")
+    conv = DoubleArrayTypeConverter("double *", "a", [])
     assert_equal_linewise(
         conv.python_to_cpp(),
         lines("cdef np.ndarray[double, ndim=1] a_array = np.asarray(a)",
