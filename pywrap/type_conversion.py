@@ -92,8 +92,10 @@ def _type_without_pointer(tname):
 
 
 def create_type_converter(tname, python_argname, classes):
-    # TODO extend with plugin mechanism
-    for Converter in registered_converters:
+    converters = []
+    converters.extend(registered_converters)
+    converters.extend(default_converters)
+    for Converter in converters:
         converter = Converter(tname, python_argname, classes)
         if converter.matches():
             return converter
@@ -318,7 +320,9 @@ class StlTypeConverter(PythonObjectConverter):
             self.tname, cython_argname, self.python_argname)
 
 
-registered_converters = [
+default_converters = [
     AutomaticTypeConverter, VoidTypeConverter, DoubleArrayTypeConverter,
     CythonTypeConverter, CppPointerTypeConverter, StlTypeConverter,
     PythonObjectConverter]
+
+registered_converters = []
