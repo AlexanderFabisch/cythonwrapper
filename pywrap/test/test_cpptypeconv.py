@@ -28,11 +28,3 @@ def test_define_inputarg_basic():
     assert_equal_linewise(
         cython_define_basic_inputarg("int", "cpp_a", "a"),
         "cdef int cpp_a = a")
-
-
-def test_cython_define_nparray1d_inputarg():
-    conv = DoubleArrayTypeConverter("double *", "a", [])
-    assert_equal_linewise(
-        conv.python_to_cpp(),
-        lines("cdef np.ndarray[double, ndim=1] a_array = np.asarray(a)",
-              "cdef double * cpp_a = &a_array[0]"""))

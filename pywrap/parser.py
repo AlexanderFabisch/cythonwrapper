@@ -6,6 +6,7 @@ except:
                     "Note that a recent operating system is required, e.g. "
                     "Ubuntu 14.04.")
 import os
+import warnings
 from .type_conversion import typename
 
 
@@ -58,18 +59,21 @@ class AST:
                 include_file, self.namespace, node.spelling, tname)
             self.functions.append(function)
             self.last_function = function
-        elif (node.kind == ci.CursorKind.CXX_METHOD and
-                  node.access_specifier == ci.AccessSpecifier.PUBLIC):
-            tname = typename(node.result_type.spelling)
-            self.includes.add_include_for(tname)
-            method = Method(node.spelling, tname, self.classes[-1].name)
-            self.classes[-1].methods.append(method)
-            self.last_function = method
-        elif (node.kind == ci.CursorKind.CONSTRUCTOR and
-                  node.access_specifier == ci.AccessSpecifier.PUBLIC):
-            constructor = Constructor(node.spelling, self.classes[-1].name)
-            self.classes[-1].constructors.append(constructor)
-            self.last_function = constructor
+        elif node.kind == ci.CursorKind.FUNCTION_TEMPLATE:
+            self.last_function = DummyFunction()
+            warnings.warn("Templates are not implemented yet")
+        elif node.kind == ci.CursorKind.CXX_METHOD:
+            if node.access_specifier == ci.AccessSpecifier.PUBLIC:
+                tname = typename(node.result_type.spelling)
+                self.includes.add_include_for(tname)
+                method = Method(node.spelling, tname, self.classes[-1].name)
+                self.classes[-1].methods.append(method)
+                self.last_function = method
+        elif node.kind == ci.CursorKind.CONSTRUCTOR:
+            if node.access_specifier == ci.AccessSpecifier.PUBLIC:
+                constructor = Constructor(node.spelling, self.classes[-1].name)
+                self.classes[-1].constructors.append(constructor)
+                self.last_function = constructor
         elif node.kind == ci.CursorKind.CLASS_DECL:
             clazz = Clazz(include_file, self.namespace, node.displayname)
             self.classes.append(clazz)
@@ -78,12 +82,12 @@ class AST:
             clazz = Clazz(include_file, self.namespace, node.displayname)
             self.classes.append(clazz)
             self.last_type = clazz
-        elif (node.kind == ci.CursorKind.FIELD_DECL and
-                  node.access_specifier == ci.AccessSpecifier.PUBLIC):
-            tname = typename(node.type.spelling)
-            self.includes.add_include_for(tname)
-            field = Field(node.displayname, tname)
-            self.last_type.fields.append(field)
+        elif node.kind == ci.CursorKind.FIELD_DECL:
+            if node.access_specifier == ci.AccessSpecifier.PUBLIC:
+                tname = typename(node.type.spelling)
+                self.includes.add_include_for(tname)
+                field = Field(node.displayname, tname)
+                self.last_type.fields.append(field)
         else:
             if verbose:
                 print("Unknown node: %s, %s" % (node.kind, node.displayname))
@@ -230,6 +234,14 @@ class Method(FunctionBase):
     def accept(self, exporter):
         super(Method, self).accept(exporter)
         exporter.visit_method(self)
+
+
+class DummyFunction(FunctionBase):
+    def __init__(self):
+        super(DummyFunction, self).__init__("")
+
+    def accept(self, exporter):
+        pass
 
 
 class Param:

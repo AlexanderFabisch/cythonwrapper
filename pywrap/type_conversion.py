@@ -91,12 +91,12 @@ def _type_without_pointer(tname):
     return tname.split()[0]
 
 
-def create_type_converter(tname, python_argname, classes):
+def create_type_converter(tname, python_argname, classes, context=None):
     converters = []
     converters.extend(registered_converters)
     converters.extend(default_converters)
     for Converter in converters:
-        converter = Converter(tname, python_argname, classes)
+        converter = Converter(tname, python_argname, classes, context)
         if converter.matches():
             return converter
     raise NotImplementedError(
@@ -107,10 +107,11 @@ def create_type_converter(tname, python_argname, classes):
 class AbstractTypeConverter(object):
     __metaclass__ = ABCMeta
 
-    def __init__(self, tname, python_argname, classes):
+    def __init__(self, tname, python_argname, classes, context=None):
         self.tname = tname
         self.python_argname = python_argname
         self.classes = classes
+        self.context = context
 
     @abstractmethod
     def matches(self):
@@ -191,7 +192,11 @@ class AutomaticTypeConverter(AbstractTypeConverter):
 
 class DoubleArrayTypeConverter(AbstractTypeConverter):
     def matches(self):
-        return self.tname == "double *"
+        if self.context is None:
+            return False
+        args, index = self.context
+        next_arg_is_int = len(args) >= index + 2 and args[index + 1]
+        return self.tname == "double *" and next_arg_is_int
 
     def n_cpp_args(self):
         return 2
@@ -200,18 +205,11 @@ class DoubleArrayTypeConverter(AbstractTypeConverter):
         includes.numpy = True
 
     def python_to_cpp(self):
-        return (lines(
-            "cdef np.ndarray[double, ndim=1] {python_argname}_array = "
-            "np.asarray({python_argname})",
-            "cdef {cython_tname} {cython_argname} = "
-            "&{python_argname}_array[0]").format(
-            cython_tname=self.cpp_type_decl(),
-            cython_argname="cpp_" + self.python_argname,
-            python_argname=self.python_argname))
+        return ""
 
     def cpp_call_args(self):
-        return ["cpp_" + self.python_argname,
-                self.python_argname + "_array.shape[0]"]
+        return ["&%s[0]" % self.python_argname,
+                self.python_argname + ".shape[0]"]
 
     def return_output(self):
         raise NotImplementedError()
@@ -252,9 +250,9 @@ class CythonTypeConverter(AbstractTypeConverter):
 
 
 class CppPointerTypeConverter(AbstractTypeConverter):
-    def __init__(self, tname, python_argname, classes):
+    def __init__(self, tname, python_argname, classes, context=None):
         super(CppPointerTypeConverter, self).__init__(
-            tname, python_argname, classes)
+            tname, python_argname, classes, context)
         self.tname_wo_ptr = _type_without_pointer(tname)
 
     def matches(self):

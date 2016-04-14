@@ -186,12 +186,12 @@ class FunctionDefinition(object):
 
     def _create_type_converters(self):
         skip = 0
-        for arg in self.arguments:
+        for i, arg in enumerate(self.arguments):
             if skip > 0:
                 skip -= 1
                 continue
             type_converter = create_type_converter(
-                arg.tipe, arg.name, self.classes)
+                arg.tipe, arg.name, self.classes, (self.arguments, i))
             type_converter.add_includes(self.includes)
             self.type_converters.append(type_converter)
             skip = type_converter.n_cpp_args() - 1

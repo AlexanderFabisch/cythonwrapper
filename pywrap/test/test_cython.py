@@ -21,7 +21,6 @@ def test_array_arg_function_def():
         classes={}).make()
     assert_equal_linewise(testfun,
         lines("cpdef testfun(self, np.ndarray[double, ndim=1] a):",
-              "    cdef np.ndarray[double, ndim=1] a_array = np.asarray(a)",
-              "    cdef double * cpp_a = &a_array[0]",
-              "    self.thisptr.testfun(cpp_a, a_array.shape[0])",
+              "",
+              "    self.thisptr.testfun(&a[0], a.shape[0])",
               ""))
