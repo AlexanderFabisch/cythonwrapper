@@ -215,7 +215,6 @@ class DoubleArrayTypeConverter(AbstractTypeConverter):
             return False
         args, index = self.context
         next_arg_is_int = len(args) >= index + 2 and args[index + 1]
-        print next_arg_is_int, self.tname
         return self.tname == "double *" and next_arg_is_int
 
     def n_cpp_args(self):
