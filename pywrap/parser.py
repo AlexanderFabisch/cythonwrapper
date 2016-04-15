@@ -30,6 +30,7 @@ class AST:
         self.functions = []
         self.classes = []
         self.structs = []
+        self.typedefs = []
         self.includes = Includes(module)
 
     def parse(self, node, parsable_file, include_file, verbose=0):
@@ -88,6 +89,12 @@ class AST:
                 self.includes.add_include_for(tname)
                 field = Field(node.displayname, tname)
                 self.last_type.fields.append(field)
+        elif node.kind == ci.CursorKind.TYPEDEF_DECL:
+            tname = node.displayname
+            underlying_tname = typename(node.underlying_typedef_type.spelling)
+            self.includes.add_include_for(tname)
+            self.typedefs.append(Typedef(include_file, self.namespace, tname,
+                                         underlying_tname))
         else:
             if verbose:
                 print("Unknown node: %s, %s" % (node.kind, node.displayname))
@@ -99,6 +106,8 @@ class AST:
 
     def accept(self, exporter):
         self.includes.accept(exporter)
+        for typedef in self.typedefs:
+            typedef.accept(exporter)
         for struct in self.structs:
             struct.accept(exporter)
         for clazz in self.classes:
@@ -172,6 +181,17 @@ class Includes:
 
     def accept(self, exporter):
         exporter.visit_includes(self)
+
+
+class Typedef:
+    def __init__(self, filename, namespace, tipe, underlying_type):
+        self.filename = filename
+        self.namespace = namespace
+        self.tipe = tipe
+        self.underlying_type = underlying_type
+
+    def accept(self, exporter):
+        exporter.visit_typedef(self)
 
 
 class Clazz:

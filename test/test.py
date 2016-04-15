@@ -212,3 +212,9 @@ def test_no_default_constructor():
         from nodefaultctor import A
         a = A()
         a.set_member(5)
+
+
+def test_typedef():
+    with cython_extension_from("typedef.hpp"):
+        from typedef import fun
+        assert_equal(fun(1.0), 2.0)

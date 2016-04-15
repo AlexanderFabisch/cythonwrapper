@@ -24,6 +24,9 @@ class CythonDeclarationExporter:
     def visit_includes(self, includes):
         self.includes = includes
 
+    def visit_typedef(self, typedef):
+        self.output += config.typedef_def % typedef.__dict__ + os.linesep
+
     def visit_field(self, field):
         self.fields.append(config.field_def % field.__dict__)
 
@@ -84,8 +87,9 @@ class CythonImplementationExporter:
 
     This class implements the visitor pattern.
     """
-    def __init__(self, classes):
+    def __init__(self, classes, typedefs):
         self.classes = classes
+        self.typedefs = typedefs
         self.output = ""
         self.ctors = []
         self.methods = []
@@ -99,8 +103,11 @@ class CythonImplementationExporter:
     def visit_includes(self, includes):
         self.includes = includes
 
+    def visit_typedef(self, typedef):
+        pass
+
     def visit_field(self, field):
-        field_def = config.py_field_def % {"name": field.name} + os.linesep
+        field_def = config.py_field_def % field.__dict__ + os.linesep
         self.fields.append(field_def)
 
     def visit_class(self, clazz):
@@ -129,7 +136,7 @@ class CythonImplementationExporter:
             function_def = ConstructorDefinition(
                 ctor.class_name, ctor.name, ctor.arguments, self.includes,
                 initial_args=[ctor.class_name + " self"],
-                classes=self.classes).make()
+                classes=self.classes, typedefs=self.typedefs).make()
             self.ctors.append(indent_block(function_def, 1))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % ctor.name)
@@ -141,7 +148,7 @@ class CythonImplementationExporter:
             method_def = MethodDefinition(
                 method.name, method.arguments, self.includes,
                 [method.class_name + " self"], method.result_type,
-                classes=self.classes).make()
+                classes=self.classes, typedefs=self.typedefs).make()
             self.methods.append(indent_block(method_def, 1))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % method.name)
@@ -152,7 +159,8 @@ class CythonImplementationExporter:
         try:
             function_def = FunctionDefinition(
                 function.name, function.arguments, self.includes, [],
-                function.result_type, classes=self.classes).make()
+                function.result_type, classes=self.classes,
+                typedefs=self.typedefs).make()
             self.output += (os.linesep * 2 + function_def + os.linesep)
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring function '%s'" % function.name)
@@ -168,13 +176,14 @@ class CythonImplementationExporter:
 
 class FunctionDefinition(object):
     def __init__(self, name, arguments, includes, initial_args, result_type,
-                 classes):
+                 classes, typedefs):
         self.name = name
         self.arguments = arguments
         self.includes = includes
         self.initial_args = initial_args
         self.result_type = result_type
         self.classes = classes
+        self.typedefs = typedefs
         self.type_converters = []
 
     def make(self):
@@ -191,12 +200,13 @@ class FunctionDefinition(object):
                 skip -= 1
                 continue
             type_converter = create_type_converter(
-                arg.tipe, arg.name, self.classes, (self.arguments, i))
+                arg.tipe, arg.name, self.classes, self.typedefs,
+                (self.arguments, i))
             type_converter.add_includes(self.includes)
             self.type_converters.append(type_converter)
             skip = type_converter.n_cpp_args() - 1
         self.output_type_converter = create_type_converter(
-            self.result_type, None, self.classes)
+            self.result_type, None, self.classes, self.typedefs)
         self.output_type_converter.add_includes(self.includes)
 
     def _call_cpp_function(self, call_args):
@@ -204,7 +214,8 @@ class FunctionDefinition(object):
             fname=self.name, args=", ".join(call_args))
         if self.result_type != "void":
             call = "cdef {result_type} result = {call}".format(
-                result_type=self.result_type, call=call)
+                result_type=self.output_type_converter.cpp_type_decl(),
+                call=call)
         return call + os.linesep
 
     def _signature(self):
@@ -230,10 +241,10 @@ class FunctionDefinition(object):
 
 class ConstructorDefinition(FunctionDefinition):
     def __init__(self, class_name, name, arguments, includes, initial_args,
-                 classes):
+                 classes, typedefs):
         super(ConstructorDefinition, self).__init__(
             name, arguments, includes, initial_args, result_type=None,
-            classes=classes)
+            classes=classes, typedefs=typedefs)
         self.class_name = class_name
 
     def _call_cpp_function(self, call_args):

@@ -20,6 +20,8 @@ call_operators = {
     "operator/": "div"
 }
 
+typedef_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
+    ctypedef %(underlying_type)s %(tipe)s"""
 class_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
     cdef cppclass %(name)s:"""
 method_def = "        %(result_type)s %(name)s(%(args)s)"
