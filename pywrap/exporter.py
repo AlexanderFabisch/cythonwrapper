@@ -128,6 +128,7 @@ class CythonImplementationExporter:
         self.output += (os.linesep * 2 + os.linesep.join(class_def_parts) +
                         os.linesep * 2)
 
+        self.fields = []
         self.ctors = []
         self.methods = []
 

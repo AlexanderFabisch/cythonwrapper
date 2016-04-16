@@ -186,13 +186,17 @@ def test_dependent_parts():
 
 def test_struct():
     with cython_extension_from("mystruct.hpp"):
-        from mystruct import A, print_mystruct
+        from mystruct import A, print_mystruct_a, B, print_mystruct_b
         a = A()
         a.a = 5
-        a.b = [1.0, 2.0, 3.0]
+        a.b = [1.0, 2.0]
         assert_equal(a.a, 5)
-        assert_equal(a.b, [1.0, 2.0, 3.0])
-        assert_equal(print_mystruct(a), "a = 5, b[0] = 1, b[1] = 2, b[2] = 3, ")
+        assert_equal(a.b, [1.0, 2.0])
+        assert_equal(print_mystruct_a(a), "a = 5, b[0] = 1, b[1] = 2, ")
+        b = B()
+        b.a = 10
+        assert_equal(b.a, 10)
+        assert_equal(print_mystruct_b(b), "a = 10")
 
 
 def test_operators():

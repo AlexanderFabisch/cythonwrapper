@@ -27,6 +27,7 @@ class AST:
         self.namespace = ""
         self.last_function = None
         self.last_type = None
+        self.unnamed_struct = None
         self.functions = []
         self.classes = []
         self.structs = []
@@ -38,6 +39,7 @@ class AST:
         if verbose >= 2:
             print("Node: %s, %s" % (node.kind, node.displayname))
 
+        parse_children = True
         if node.location.file is None:
             pass
         elif node.location.file.name != parsable_file:
@@ -80,9 +82,14 @@ class AST:
             self.classes.append(clazz)
             self.last_type = clazz
         elif node.kind == ci.CursorKind.STRUCT_DECL:
-            clazz = Clazz(include_file, self.namespace, node.displayname)
-            self.classes.append(clazz)
-            self.last_type = clazz
+            if node.displayname == "" and self.unnamed_struct is None:
+                self.unnamed_struct = Clazz(
+                    include_file, self.namespace, node.displayname)
+                self.last_type = self.unnamed_struct
+            else:
+                clazz = Clazz(include_file, self.namespace, node.displayname)
+                self.classes.append(clazz)
+                self.last_type = clazz
         elif node.kind == ci.CursorKind.FIELD_DECL:
             if node.access_specifier == ci.AccessSpecifier.PUBLIC:
                 tname = typename(node.type.spelling)
@@ -91,16 +98,29 @@ class AST:
                 self.last_type.fields.append(field)
         elif node.kind == ci.CursorKind.TYPEDEF_DECL:
             tname = node.displayname
-            underlying_tname = typename(node.underlying_typedef_type.spelling)
-            self.includes.add_include_for(tname)
-            self.typedefs.append(Typedef(include_file, self.namespace, tname,
-                                         underlying_tname))
+            underlying_tname = node.underlying_typedef_type.spelling
+            if "struct " + tname == underlying_tname:
+                if self.unnamed_struct is None:
+                    raise LookupError("Struct typedef does not match any "
+                                      "unnamed struct")
+                self.unnamed_struct.name = tname
+                self.classes.append(self.unnamed_struct)
+                self.unnamed_struct = None
+                self.last_type = None
+                parse_children = False
+            else:
+                self.includes.add_include_for(underlying_tname)
+                self.typedefs.append(Typedef(include_file, self.namespace,
+                                             tname, typename(underlying_tname)))
+        elif node.kind == ci.CursorKind.COMPOUND_STMT:
+            parse_children = False
         else:
             if verbose:
-                print("Unknown node: %s, %s" % (node.kind, node.displayname))
+                print("Ignored node: %s, %s" % (node.kind, node.displayname))
 
-        for child in node.get_children():
-            self.parse(child, parsable_file, include_file, verbose)
+        if parse_children:
+            for child in node.get_children():
+                self.parse(child, parsable_file, include_file, verbose)
 
         self.namespace = namespace
 
