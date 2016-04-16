@@ -164,7 +164,7 @@ class CythonImplementationExporter:
     def visit_function(self, function):
         try:
             function_def = FunctionDefinition(
-                function.name, function.arguments, self.includes, [],
+                function.name, function.arguments, self.includes,
                 function.result_type, classes=self.classes,
                 typedefs=self.typedefs).make()
             self.output += (os.linesep * 2 + function_def + os.linesep)
@@ -181,12 +181,12 @@ class CythonImplementationExporter:
 
 
 class FunctionDefinition(object):
-    def __init__(self, name, arguments, includes, initial_args, result_type,
-                 classes, typedefs):
+    def __init__(self, name, arguments, includes, result_type, classes,
+                 typedefs):
         self.name = name
         self.arguments = arguments
         self.includes = includes
-        self.initial_args = initial_args
+        self.initial_args = []
         self.result_type = result_type
         self.classes = classes
         self.typedefs = typedefs
@@ -249,10 +249,10 @@ class FunctionDefinition(object):
 class ConstructorDefinition(FunctionDefinition):
     def __init__(self, class_name, name, arguments, includes, classes,
                  typedefs):
-        initial_args = ["%s self" % class_name]
         super(ConstructorDefinition, self).__init__(
-            name, arguments, includes, initial_args, result_type=None,
+            name, arguments, includes, result_type=None,
             classes=classes, typedefs=typedefs)
+        self.initial_args = ["%s self" % class_name]
         self.class_name = class_name
 
     def _call_cpp_function(self, call_args):
@@ -267,10 +267,9 @@ class ConstructorDefinition(FunctionDefinition):
 class MethodDefinition(FunctionDefinition):
     def __init__(self, class_name, name, arguments, includes, result_type,
                  classes, typedefs):
-        initial_args = ["%s self" % class_name]
         super(MethodDefinition, self).__init__(
-            name, arguments, includes, initial_args, result_type, classes,
-            typedefs)
+            name, arguments, includes, result_type, classes, typedefs)
+        self.initial_args = ["%s self" % class_name]
 
     def _call_cpp_function(self, call_args):
         call = "self.thisptr.{fname}({args})".format(
