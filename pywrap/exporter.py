@@ -107,14 +107,18 @@ class CythonImplementationExporter:
         pass
 
     def visit_field(self, field):
-        setter_def = SetterDefinition(
-            field, self.includes, self.classes, self.typedefs).make()
-        getter_def = GetterDefinition(
-            field, self.includes, self.classes, self.typedefs).make()
-        field_def_parts = [config.py_field_def % field.__dict__,
-                           indent_block(getter_def, 1),
-                           indent_block(setter_def, 1)]
-        self.fields.append(os.linesep.join(field_def_parts))
+        try:
+            setter_def = SetterDefinition(
+                field, self.includes, self.classes, self.typedefs).make()
+            getter_def = GetterDefinition(
+                field, self.includes, self.classes, self.typedefs).make()
+            field_def_parts = [config.py_field_def
+                               % {"name": from_camel_case(field.name)},
+                               indent_block(getter_def, 1),
+                               indent_block(setter_def, 1)]
+            self.fields.append(os.linesep.join(field_def_parts))
+        except NotImplementedError as e:
+            warnings.warn(e.message + " Ignoring field '%s'" % field.name)
 
     def visit_class(self, clazz):
         if len(self.ctors) > 1:
