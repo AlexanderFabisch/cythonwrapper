@@ -100,6 +100,48 @@ def create_type_converter(tname, python_argname, classes, typedefs,
 
 
 class AbstractTypeConverter(object):
+    """Type converter interface.
+
+    A type converter defines everything that is required to handle conversions
+    from a C++ type to a Python type. It will be used to define Cython
+    functions that wrap C++ code. These are constructors, methods, getters,
+    setters and free functions. You can define your own type converter
+    and add it to the list 'registered_converters' this module.
+
+    Here is an example with a method definition:
+
+    .. code-block:: python
+
+        from libcpp.vector cimport vector
+
+        ...
+
+            cpdef my_function(cpp.MyType self, object a, double b):
+                cdef vector[double] cpp_a = a
+                cdef double cpp_b = b
+                cdef int result = self.thisptr.myFunction(cpp_a, cpp_b)
+                return result
+
+    Parts
+    -----
+    add_includes     - add required includes for the converter, in this example
+                       we need to import vector for the parameter 'a'
+    matches          - for a given C++ argument, the function tells if the
+                       converter can be used
+    n_cpp_args       - number of C++ arguments that are covered by the Python
+                       object, is 1 for each parameter of the function, e.g.
+                       'a' and 'b'
+    python_to_cpp    - conversion from Python type to C++ type, e.g.
+                       'cdef vector[double] cpp_a = a'
+    cpp_call_args    - name of the arguments that will be used to call the
+                       C++ function, e.g. 'cpp_a' and 'cpp_b'
+    return_output    - converts and returns output, simply 'return result' if
+                       no conversion is required
+    cpp_type_decl    - decleration of C++ type to declare the type of the output
+                       of the C++ function call, e.g. 'int'
+    python_type_decl - decleration of the Python type to declare the types
+                       in the signature of the Python function
+    """
     __metaclass__ = ABCMeta
 
     def __init__(self, tname, python_argname, classes, typedefs, context=None):
@@ -133,8 +175,8 @@ class AbstractTypeConverter(object):
         return "return result" + os.linesep
 
     @abstractmethod
-    def cpp_type_decl(self):
-        """Representation for C++ type declaration."""
+    def python_type_decl(self):
+        """Python type decleration."""
 
     @abstractmethod
     def cpp_type_decl(self):
@@ -158,11 +200,11 @@ class VoidTypeConverter(AbstractTypeConverter):
     def return_output(self, copy=True):
         return ""
 
-    def cpp_type_decl(self):
-        return typedef_prefix(self.tname, self.typedefs)
-
     def python_type_decl(self):
         raise NotImplementedError()
+
+    def cpp_type_decl(self):
+        return typedef_prefix(self.tname, self.typedefs)
 
 
 class AutomaticTypeConverter(AbstractTypeConverter):
