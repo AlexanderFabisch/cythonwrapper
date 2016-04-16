@@ -1,5 +1,5 @@
 import os
-import warnings
+import re
 from abc import ABCMeta, abstractmethod
 from .utils import lines
 
@@ -38,40 +38,21 @@ def _remove_reference_modifier(tname):
 
 
 def _remove_namespace(tname):
-    indices = _find_template_arg_indices(tname)
-    new_tname = tname
-    shrinked_amount = 0
-    for start, end in reversed(indices):
-        tname_with_namespace = new_tname[start:end - shrinked_amount]
-        if "::" not in tname_with_namespace:
-            continue
-        tname_without_namespace = "::".join(
-            tname_with_namespace.split("::")[1:])
-        shrinked_amount += len(tname_without_namespace) - (end - start)
-        new_tname = new_tname.replace(new_tname[start:end],
-                                      tname_without_namespace)
-    return new_tname
+    result = tname
+    while "::" in result:
+        parts = result.split("::")
+        head = parts[0]
+        tail = "::".join(parts[1:])
 
+        last_sep = head.rfind(", ")
+        last_open = head.rfind("<")
+        if last_sep >= 0 and last_sep > last_open:
+            head = head[:last_sep + 2]
+        else:
+            head = head[:last_open + 1]
 
-def _find_template_arg_indices(tname, indices=None, idx=0):
-    # TODO does not work with std::map<std::string, std::string>
-    if indices is None:
-        indices = [(0, len(tname))]
-
-    start = tname[idx:].find("<")
-    if start < 0:
-        return indices
-    else:
-        start += idx + 1
-
-    indices = _find_template_arg_indices(tname, indices, idx=start)
-    if len(tname) > indices[-1][1] > start:
-        end = indices[-1][1] + tname[indices[-1][1]:].find(">")
-    else:
-        end = start + tname[start:].find(">")
-    indices.append((start, end))
-
-    return indices
+        result = head + tail
+    return result
 
 
 def _replace_angle_brackets(tname):

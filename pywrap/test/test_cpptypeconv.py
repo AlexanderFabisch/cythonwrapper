@@ -1,6 +1,5 @@
-from pywrap.type_conversion import (typename, cython_define_basic_inputarg,
-                                    DoubleArrayTypeConverter)
-from pywrap.utils import assert_equal_linewise, lines
+from pywrap.type_conversion import typename, cython_define_basic_inputarg
+from pywrap.utils import assert_equal_linewise
 from nose.tools import assert_equal
 
 
@@ -22,6 +21,16 @@ def test_container_of_complex_type():
 
 def test_map():
     assert_equal(typename("std::map<std::string, int>"), "map[string, int]")
+
+
+def test_map_str_to_str():
+    assert_equal(typename("std::map<std::string, std::string>"),
+                 "map[string, string]")
+
+def test_complex_hierarchy():
+    tname = ("std::map<std::string, "
+             "std::vector<std::map<double, std::string> > >")
+    assert_equal(typename(tname), "map[string, vector[map[double, string] ] ]")
 
 
 def test_define_inputarg_basic():
