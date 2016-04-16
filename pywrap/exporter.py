@@ -219,10 +219,10 @@ class FunctionDefinition(object):
     def _call_cpp_function(self, call_args):
         call = "cpp.{fname}({args})".format(
             fname=self.name, args=", ".join(call_args))
-        if self.result_type != "void":
-            call = "cdef {result_type} result = {call}".format(
-                result_type=self.output_type_converter.cpp_type_decl(),
-                call=call)
+        cpp_type_decl = self.output_type_converter.cpp_type_decl()
+        if cpp_type_decl != "":
+            call = "{cpp_type_decl} result = {call}".format(
+                cpp_type_decl=cpp_type_decl, call=call)
         return call + os.linesep
 
     def _signature(self):
@@ -274,10 +274,10 @@ class MethodDefinition(FunctionDefinition):
     def _call_cpp_function(self, call_args):
         call = "self.thisptr.{fname}({args})".format(
             fname=self._python_call_method(), args=", ".join(call_args))
-        if self.result_type != "void":
-            call = "cdef {result_type} result = {call}".format(
-                result_type=self.output_type_converter.cpp_type_decl(),
-                call=call)
+        cpp_type_decl = self.output_type_converter.cpp_type_decl()
+        if cpp_type_decl != "":
+            call = "{cpp_type_decl} result = {call}".format(
+                cpp_type_decl=cpp_type_decl, call=call)
         return call + os.linesep
 
     def _signature(self):
@@ -333,8 +333,8 @@ class GetterDefinition(MethodDefinition):
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 0
         call = "self.thisptr.%s" % self.field_name
-        if self.result_type != "void":
-            call = "cdef {result_type} result = {call}".format(
-                result_type=self.output_type_converter.cpp_type_decl(),
-                call=call)
+        cpp_type_decl = self.output_type_converter.cpp_type_decl()
+        if cpp_type_decl != "":
+            call = "{cpp_type_decl} result = {call}".format(
+                cpp_type_decl=cpp_type_decl, call=call)
         return call + os.linesep

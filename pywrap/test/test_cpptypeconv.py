@@ -35,5 +35,4 @@ def test_complex_hierarchy():
 
 def test_define_inputarg_basic():
     assert_equal_linewise(
-        cython_define_basic_inputarg("int", "cpp_a", "a"),
-        "cdef int cpp_a = a")
+        cython_define_basic_inputarg("int", "cpp_a", "a"), "int cpp_a = a")
