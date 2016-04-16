@@ -36,7 +36,7 @@ class CythonDeclarationExporter:
                             os.linesep.join(self.ctors),
                             os.linesep.join(self.methods)]
         class_decl_parts = [p for p in class_decl_parts if p != ""]
-        empty_body = len(self.methods) == 0 and len(self.ctors) == 0
+        empty_body = len(self.fields) + len(self.methods) + len(self.ctors) == 0
         if empty_body:
             class_decl_parts.append(" " * 8 + "pass")
         self.output += (os.linesep * 2 + os.linesep.join(class_decl_parts) +
