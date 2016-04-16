@@ -107,8 +107,14 @@ class CythonImplementationExporter:
         pass
 
     def visit_field(self, field):
-        field_def = config.py_field_def % field.__dict__ + os.linesep
-        self.fields.append(field_def)
+        setter_def = SetterDefinition(
+            field, self.includes, self.classes, self.typedefs).make()
+        getter_def = GetterDefinition(
+            field, self.includes, self.classes, self.typedefs).make()
+        field_def_parts = [config.py_field_def % field.__dict__,
+                           indent_block(getter_def, 1),
+                           indent_block(setter_def, 1)]
+        self.fields.append(os.linesep.join(field_def_parts))
 
     def visit_class(self, clazz):
         if len(self.ctors) > 1:
@@ -147,9 +153,9 @@ class CythonImplementationExporter:
     def visit_method(self, method):
         try:
             method_def = MethodDefinition(
-                method.name, method.arguments, self.includes,
-                [method.class_name + " self"], method.result_type,
-                classes=self.classes, typedefs=self.typedefs).make()
+                method.class_name, method.name, method.arguments, self.includes,
+                method.result_type, classes=self.classes,
+                typedefs=self.typedefs).make()
             self.methods.append(indent_block(method_def, 1))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % method.name)
@@ -185,13 +191,14 @@ class FunctionDefinition(object):
         self.result_type = result_type
         self.classes = classes
         self.typedefs = typedefs
+        self.output_is_copy = True
         self.type_converters = []
 
     def make(self):
         self._create_type_converters()
         body, call_args = self._input_type_conversions(self.includes)
         body += self._call_cpp_function(call_args)
-        body += self.output_type_converter.return_output()
+        body += self.output_type_converter.return_output(self.output_is_copy)
         return self._signature() + os.linesep + indent_block(body, 1)
 
     def _create_type_converters(self):
@@ -243,6 +250,7 @@ class FunctionDefinition(object):
 class ConstructorDefinition(FunctionDefinition):
     def __init__(self, class_name, name, arguments, includes, initial_args,
                  classes, typedefs):
+        initial_args = ["%s self" % class_name]
         super(ConstructorDefinition, self).__init__(
             name, arguments, includes, initial_args, result_type=None,
             classes=classes, typedefs=typedefs)
@@ -258,6 +266,13 @@ class ConstructorDefinition(FunctionDefinition):
 
 
 class MethodDefinition(FunctionDefinition):
+    def __init__(self, class_name, name, arguments, includes, result_type,
+                 classes, typedefs):
+        initial_args = ["%s self" % class_name]
+        super(MethodDefinition, self).__init__(
+            name, arguments, includes, initial_args, result_type, classes,
+            typedefs)
+
     def _call_cpp_function(self, call_args):
         call = "self.thisptr.{fname}({args})".format(
             fname=self._python_call_method(), args=", ".join(call_args))
@@ -292,3 +307,36 @@ class MethodDefinition(FunctionDefinition):
             return config.operators[self.name]
         else:
             return from_camel_case(self.name)
+
+
+class SetterDefinition(MethodDefinition):
+    def __init__(self, field, includes, classes, typedefs):
+        name = "set_%s" % field.name
+        super(SetterDefinition, self).__init__(
+            field.class_name, name, [field], includes, "void", classes,
+            typedefs)
+        self.field_name = field.name
+
+    def _call_cpp_function(self, call_args):
+        assert len(call_args) == 1
+        call = "self.thisptr.%s = %s" % (self.field_name, call_args[0])
+        return call
+
+
+class GetterDefinition(MethodDefinition):
+    def __init__(self, field, includes, classes, typedefs):
+        name = "get_%s" % field.name
+        super(GetterDefinition, self).__init__(
+            field.class_name, name, [], includes, field.tipe, classes,
+            typedefs)
+        self.field_name = field.name
+        self.output_is_copy = False
+
+    def _call_cpp_function(self, call_args):
+        assert len(call_args) == 0
+        call = "self.thisptr.%s" % self.field_name
+        if self.result_type != "void":
+            call = "cdef {result_type} result = {call}".format(
+                result_type=self.output_type_converter.cpp_type_decl(),
+                call=call)
+        return call + os.linesep

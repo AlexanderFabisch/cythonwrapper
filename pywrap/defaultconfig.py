@@ -33,12 +33,14 @@ field_def = "        %(tipe)s %(name)s"
 
 py_class_def = """cdef class %(name)s:
     cdef cpp.%(name)s * thisptr
+    cdef bool delete_thisptr
 
     def __cinit__(self):
         self.thisptr = NULL
+        self.delete_thisptr = True
 
     def __dealloc__(self):
-        if self.thisptr != NULL:
+        if self.delete_thisptr and self.thisptr != NULL:
             del self.thisptr
 """
 py_default_ctor = """    def __init__(cpp.%(name)s self):
@@ -46,12 +48,7 @@ py_default_ctor = """    def __init__(cpp.%(name)s self):
 """
 py_arg_def = "%(name)s"
 py_field_def = """    %(name)s = property(get_%(name)s, set_%(name)s)
-
-    cpdef get_%(name)s(self):
-        return self.thisptr.%(name)s
-
-    cpdef set_%(name)s(self, %(name)s):
-        self.thisptr.%(name)s = %(name)s"""
+"""
 setup_extension = """
     config.add_extension(
         '%(module)s',

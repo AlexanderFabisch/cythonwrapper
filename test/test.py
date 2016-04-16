@@ -222,3 +222,15 @@ def test_typedef():
     with cython_extension_from("typedef.hpp"):
         from typedef import fun
         assert_equal(fun(1.0), 2.0)
+
+
+def test_complex_field():
+    with cython_extension_from("complexfield.hpp"):
+        from complexfield import A, B
+        a = A()
+        a.a = 5
+        b = B()
+        b.a = a
+        b.b = a
+        assert_equal(b.a.a, 5)
+        assert_equal(b.b.a, 5)

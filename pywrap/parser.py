@@ -74,7 +74,7 @@ class AST:
                 self.last_function = method
         elif node.kind == ci.CursorKind.CONSTRUCTOR:
             if node.access_specifier == ci.AccessSpecifier.PUBLIC:
-                constructor = Constructor(node.spelling, self.classes[-1].name)
+                constructor = Constructor(node.spelling, self.last_type.name)
                 self.classes[-1].constructors.append(constructor)
                 self.last_function = constructor
         elif node.kind == ci.CursorKind.CLASS_DECL:
@@ -94,7 +94,7 @@ class AST:
             if node.access_specifier == ci.AccessSpecifier.PUBLIC:
                 tname = typename(node.type.spelling)
                 self.includes.add_include_for(tname)
-                field = Field(node.displayname, tname)
+                field = Field(node.displayname, tname, self.last_type.name)
                 self.last_type.fields.append(field)
         elif node.kind == ci.CursorKind.TYPEDEF_DECL:
             tname = node.displayname
@@ -140,7 +140,7 @@ class AST:
 class Includes:
     def __init__(self, module):
         self.numpy = False
-        self.boolean = False
+        self.boolean = True
         self.vector = False
         self.string = False
         self.map = False
@@ -294,9 +294,10 @@ class Param:
 
 
 class Field:
-    def __init__(self, name, tipe):
+    def __init__(self, name, tipe, class_name):
         self.name = name
         self.tipe = tipe
+        self.class_name = class_name
 
     def accept(self, exporter):
         exporter.visit_field(self)

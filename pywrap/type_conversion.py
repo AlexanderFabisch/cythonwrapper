@@ -128,7 +128,7 @@ class AbstractTypeConverter(object):
     def cpp_call_args(self):
         """Representation for C++ function call."""
 
-    def return_output(self):
+    def return_output(self, copy=True):
         """Return output of a C++ function in Cython."""
         return "return result" + os.linesep
 
@@ -155,7 +155,7 @@ class VoidTypeConverter(AbstractTypeConverter):
     def cpp_call_args(self):
         raise NotImplementedError()
 
-    def return_output(self):
+    def return_output(self, copy=True):
         return ""
 
     def cpp_type_decl(self):
@@ -211,7 +211,7 @@ class DoubleArrayTypeConverter(AbstractTypeConverter):
         return ["&%s[0]" % self.python_argname,
                 self.python_argname + ".shape[0]"]
 
-    def return_output(self):
+    def return_output(self, copy=True):
         raise NotImplementedError()
 
     def python_type_decl(self):
@@ -239,8 +239,11 @@ class CythonTypeConverter(AbstractTypeConverter):
     def cpp_call_args(self):
         return ["deref(cpp_%s)" % self.python_argname]
 
-    def return_output(self):
-        raise NotImplementedError()
+    def return_output(self, copy=True):
+        # TODO only works with copy constructor
+        return lines("ret = %s()" % self.tname,
+                     "ret.thisptr[0] = result",
+                     "return ret")
 
     def python_type_decl(self):
         return "%s %s" % (typedef_prefix(self.tname, self.typedefs),
@@ -276,11 +279,14 @@ class CppPointerTypeConverter(AbstractTypeConverter):
     def cpp_call_args(self):
         return ["cpp_%s" % self.python_argname]
 
-    def return_output(self):
+    def return_output(self, copy=True):
         # TODO only works with default constructor
-        return lines("ret = %s()" % self.tname_wo_ptr,
-                     "ret.thisptr = result",
-                     "return ret")
+        l = ["ret = %s()" % self.tname_wo_ptr,
+             "ret.thisptr = result"]
+        if not copy:
+            l.append("ret.delete_thisptr = False")
+        l.append("return ret")
+        return lines(*l)
 
     def python_type_decl(self):
         return "%s %s" % (typedef_prefix(self.tname_wo_ptr, self.typedefs),
