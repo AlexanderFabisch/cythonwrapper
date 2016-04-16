@@ -142,7 +142,6 @@ class CythonImplementationExporter:
         try:
             function_def = ConstructorDefinition(
                 ctor.class_name, ctor.name, ctor.arguments, self.includes,
-                initial_args=[ctor.class_name + " self"],
                 classes=self.classes, typedefs=self.typedefs).make()
             self.ctors.append(indent_block(function_def, 1))
         except NotImplementedError as e:
@@ -248,8 +247,8 @@ class FunctionDefinition(object):
 
 
 class ConstructorDefinition(FunctionDefinition):
-    def __init__(self, class_name, name, arguments, includes, initial_args,
-                 classes, typedefs):
+    def __init__(self, class_name, name, arguments, includes, classes,
+                 typedefs):
         initial_args = ["%s self" % class_name]
         super(ConstructorDefinition, self).__init__(
             name, arguments, includes, initial_args, result_type=None,
@@ -329,8 +328,8 @@ class GetterDefinition(MethodDefinition):
         super(GetterDefinition, self).__init__(
             field.class_name, name, [], includes, field.tipe, classes,
             typedefs)
-        self.field_name = field.name
         self.output_is_copy = False
+        self.field_name = field.name
 
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 0
