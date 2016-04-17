@@ -1,6 +1,6 @@
 # cythonwrapper
 
-Automatically generates a Cython wrapper for C++ code (prototype)
+Automatically generates a Cython wrapper for C++ code
 
 ## Example
 
@@ -70,6 +70,14 @@ from <name> import *
 
 If we must link against a library or we have to compile C++ source files, we
 will have to add that to the `setup.py` that has been generated.
+
+Note that you can use this as a Pyhon library that you can use in your
+`setup.py` as well. For now, take a look at the code to understand how
+you can do that. You can take a look at the
+[main function](https://github.com/AlexanderFabisch/cythonwrapper/blob/master/pywrap/cython.py#L11)
+or at the
+[test code](https://github.com/AlexanderFabisch/cythonwrapper/blob/master/test/test.py#L25)
+which should give you a good impression of how to use the library.
 
 ## Documentation
 
