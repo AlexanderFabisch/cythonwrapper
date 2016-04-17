@@ -340,9 +340,9 @@ class GetterDefinition(MethodDefinition):
         return catch_result(cpp_type_decl, call) + os.linesep
 
 
-def catch_result(cpp_type_decl, call):
-    if cpp_type_decl == "":
+def catch_result(result_type_decl, call):
+    if result_type_decl == "":
         return call
     else:
         return "%(cpp_type_decl)s result = %(call)s" % {
-            "cpp_type_decl": cpp_type_decl, "call": call}
+            "cpp_type_decl": result_type_decl, "call": call}
