@@ -221,13 +221,10 @@ class FunctionDefinition(object):
         self.output_type_converter.add_includes(self.includes)
 
     def _call_cpp_function(self, call_args):
+        cpp_type_decl = self.output_type_converter.cpp_type_decl()
         call = "cpp.{fname}({args})".format(
             fname=self.name, args=", ".join(call_args))
-        cpp_type_decl = self.output_type_converter.cpp_type_decl()
-        if cpp_type_decl != "":
-            call = "{cpp_type_decl} result = {call}".format(
-                cpp_type_decl=cpp_type_decl, call=call)
-        return call + os.linesep
+        return catch_result(cpp_type_decl, call) + os.linesep
 
     def _signature(self):
         args = self._cython_signature_args()
@@ -260,12 +257,12 @@ class ConstructorDefinition(FunctionDefinition):
         self.class_name = class_name
 
     def _call_cpp_function(self, call_args):
-        return "self.thisptr = new cpp.%s(%s)%s" % (
-            self.class_name, ", ".join(call_args), os.linesep)
+        return config.py_ctor_call % {"class_name": self.class_name,
+                                      "args": ", ".join(call_args)} + os.linesep
 
     def _signature(self):
         args = self._cython_signature_args()
-        return "def __init__(%s):" % ", ".join(args)
+        return config.py_ctor_signature_def % {"args": ", ".join(args)}
 
 
 class MethodDefinition(FunctionDefinition):
@@ -276,19 +273,19 @@ class MethodDefinition(FunctionDefinition):
         self.initial_args = ["%s self" % class_name]
 
     def _call_cpp_function(self, call_args):
+        cpp_type_decl = self.output_type_converter.cpp_type_decl()
         call = "self.thisptr.{fname}({args})".format(
             fname=self._python_call_method(), args=", ".join(call_args))
-        cpp_type_decl = self.output_type_converter.cpp_type_decl()
-        if cpp_type_decl != "":
-            call = "{cpp_type_decl} result = {call}".format(
-                cpp_type_decl=cpp_type_decl, call=call)
-        return call + os.linesep
+        return catch_result(cpp_type_decl, call) + os.linesep
 
     def _signature(self):
-        args = self._cython_signature_args()
         method_name = self._python_method_name()
-        def_prefix = self._def_prefix(method_name)
-        return "%s %s(%s):" % (def_prefix, method_name, ", ".join(args))
+        signature_config = {
+            "def": self._def_prefix(method_name),
+            "name": method_name,
+            "args": ", ".join(self._cython_signature_args())
+        }
+        return config.py_signature_def % signature_config
 
     def _def_prefix(self, method_name):
         special_method = (method_name.startswith("__") and
@@ -336,9 +333,14 @@ class GetterDefinition(MethodDefinition):
 
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 0
-        call = "self.thisptr.%s" % self.field_name
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
-        if cpp_type_decl != "":
-            call = "{cpp_type_decl} result = {call}".format(
-                cpp_type_decl=cpp_type_decl, call=call)
-        return call + os.linesep
+        call = "self.thisptr.%(call)s" % {"call": self.field_name}
+        return catch_result(cpp_type_decl, call) + os.linesep
+
+
+def catch_result(cpp_type_decl, call):
+    if cpp_type_decl == "":
+        return call
+    else:
+        return "%(cpp_type_decl)s result = %(call)s" % {
+            "cpp_type_decl": cpp_type_decl, "call": call}
