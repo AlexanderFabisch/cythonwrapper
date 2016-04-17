@@ -11,19 +11,16 @@ class CythonDeclarationExporter:
 
     This class implements the visitor pattern.
     """
-    def __init__(self):
+    def __init__(self, includes):
+        self.includes = includes
         self.output = ""
         self.ctors = []
         self.methods = []
         self.arguments = []
         self.fields = []
-        self.includes = None
 
     def visit_ast(self, ast):
         pass
-
-    def visit_includes(self, includes):
-        self.includes = includes
 
     def visit_typedef(self, typedef):
         self.output += config.typedef_decl % typedef.__dict__ + os.linesep
@@ -40,8 +37,7 @@ class CythonDeclarationExporter:
         empty_body = len(self.fields) + len(self.methods) + len(self.ctors) == 0
         if empty_body:
             class_decl_parts.append(" " * 8 + "pass")
-        self.output += (os.linesep * 2 + os.linesep.join(class_decl_parts) +
-                        os.linesep * 2)
+        self.output += os.linesep * 2 + os.linesep.join(class_decl_parts)
 
         self.fields = []
         self.ctors = []
@@ -73,7 +69,7 @@ class CythonDeclarationExporter:
         self.arguments.append(config.arg_decl % param.__dict__)
 
     def export(self):
-        return self.includes.declarations_import() + self.output
+        return self.output
 
 
 def replace_operator_decl(method_name):
@@ -88,20 +84,17 @@ class CythonImplementationExporter:
 
     This class implements the visitor pattern.
     """
-    def __init__(self, classes, typedefs):
+    def __init__(self, includes, classes, typedefs):
+        self.includes = includes
         self.classes = classes
         self.typedefs = typedefs
         self.output = ""
         self.ctors = []
         self.methods = []
         self.fields = []
-        self.includes = None
 
     def visit_ast(self, ast):
         pass
-
-    def visit_includes(self, includes):
-        self.includes = includes
 
     def visit_typedef(self, typedef):
         pass
@@ -135,8 +128,7 @@ class CythonImplementationExporter:
                            os.linesep.join(self.methods)]
 
         class_def_parts = [p for p in class_def_parts if p != ""]
-        self.output += (os.linesep * 2 + os.linesep.join(class_def_parts) +
-                        os.linesep * 2)
+        self.output += os.linesep * 2 + os.linesep.join(class_def_parts)
 
         self.fields = []
         self.ctors = []
@@ -175,7 +167,7 @@ class CythonImplementationExporter:
         pass
 
     def export(self):
-        return self.includes.implementations_import() + self.output
+        return self.output
 
 
 class FunctionDefinition(object):

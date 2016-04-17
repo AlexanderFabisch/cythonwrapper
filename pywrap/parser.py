@@ -10,19 +10,20 @@ import warnings
 from .type_conversion import typename
 
 
-def parse(include_file, parsable_file, verbose):
+def parse(include_file, parsable_file, includes, verbose):
     index = ci.Index.create()
     translation_unit = index.parse(parsable_file)
     cursor = translation_unit.cursor
 
-    ast = AST()
+    ast = AST(includes)
     ast.parse(cursor, parsable_file, include_file, verbose)
     return ast
 
 
 class AST:
     """Abstract Syntax Tree."""
-    def __init__(self):
+    def __init__(self, includes):
+        self.includes = includes
         self.namespace = ""
         self.last_function = None
         self.last_type = None
@@ -30,7 +31,6 @@ class AST:
         self.functions = []
         self.classes = []
         self.typedefs = []
-        self.includes = Includes()
 
     def parse(self, node, parsable_file, include_file, verbose=0):
         namespace = self.namespace
@@ -123,7 +123,6 @@ class AST:
         self.namespace = namespace
 
     def accept(self, exporter):
-        self.includes.accept(exporter)
         for typedef in self.typedefs:
             typedef.accept(exporter)
         for clazz in self.classes:
@@ -194,9 +193,6 @@ class Includes:
                          os.linesep)
         includes += "cimport _declarations as cpp" + os.linesep
         return includes
-
-    def accept(self, exporter):
-        exporter.visit_includes(self)
 
 
 class Typedef:

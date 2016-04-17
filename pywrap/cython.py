@@ -4,7 +4,7 @@ try:
 except:
     raise Exception("Install 'cython'.")
 from . import defaultconfig as config
-from .parser import parse
+from .parser import parse, Includes
 from .exporter import CythonDeclarationExporter, CythonImplementationExporter
 
 
@@ -64,18 +64,17 @@ def make_cython_wrapper(filenames, modulename=None, target=".", verbose=0):
         raise ValueError("Please give a module name when there are multiple "
                          "C++ files that you want to wrap.")
 
-    asts = _parse_files(filenames, verbose)
-    classes = _collect_classes(asts)
-    typedefs = _collect_typedefs(asts)
+    includes = Includes()
+    asts = _parse_files(filenames, includes, verbose)
+
+    ext_results, files_to_cythonize = _generate_extension(
+        modulename, asts, includes, _collect_classes(asts),
+        _collect_typedefs(asts), verbose)
+    decl_results = _generate_declarations(asts, includes, verbose)
 
     results = {}
-    ext_results, files_to_cythonize = _generate_extension(
-        modulename, asts, classes, typedefs, verbose)
     results.update(ext_results)
-
-    decl_results = _generate_declarations(asts, verbose)
     results.update(decl_results)
-
     results["setup.py"] = _make_setup(filenames, modulename, target)
 
     return results, files_to_cythonize
@@ -86,7 +85,7 @@ def _derive_module_name_from(filename):
     return filename.split(".")[0]
 
 
-def _parse_files(filenames, verbose):
+def _parse_files(filenames, includes, verbose):
     asts = []
     for filename in filenames:
         is_header = file_ending(filename) in config.cpp_header_endings
@@ -98,7 +97,7 @@ def _parse_files(filenames, verbose):
         else:
             parsable_file = filename
 
-        asts.append(parse(filename, parsable_file, verbose))
+        asts.append(parse(filename, parsable_file, includes, verbose))
 
         if is_header:
             os.remove(parsable_file)
@@ -119,16 +118,16 @@ def _collect_typedefs(asts):
             for typedef in ast.typedefs}
 
 
-def _generate_extension(modulename, asts, classes, typedefs, verbose):
+def _generate_extension(modulename, asts, includes, classes, typedefs, verbose):
     results = {}
     files_to_cythonize = []
     extension = ""
     for ast in asts:
-        cie = CythonImplementationExporter(classes, typedefs)
+        cie = CythonImplementationExporter(includes, classes, typedefs)
         ast.accept(cie)
         extension += cie.export()
     pyx_filename = modulename + "." + config.pyx_file_ending
-    results[pyx_filename] = extension
+    results[pyx_filename] = includes.implementations_import() + extension
     files_to_cythonize.append(pyx_filename)
     if verbose >= 2:
         print("= %s =" % pyx_filename)
@@ -136,15 +135,15 @@ def _generate_extension(modulename, asts, classes, typedefs, verbose):
     return results, files_to_cythonize
 
 
-def _generate_declarations(asts, verbose):
+def _generate_declarations(asts, includes, verbose):
     results = {}
     declarations = ""
     for ast in asts:
-        cde = CythonDeclarationExporter()
+        cde = CythonDeclarationExporter(includes)
         ast.accept(cde)
         declarations += cde.export()
     pxd_filename = "_declarations." + config.pxd_file_ending
-    results[pxd_filename] = declarations
+    results[pxd_filename] = includes.declarations_import() + declarations
     if verbose >= 2:
         print("= %s =" % pxd_filename)
         print(declarations)
