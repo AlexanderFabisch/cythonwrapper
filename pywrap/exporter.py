@@ -224,7 +224,8 @@ class FunctionDefinition(object):
 
     def _signature(self):
         args = self._cython_signature_args()
-        return "def %s(%s):" % (from_camel_case(self.name), ", ".join(args))
+        return config.py_fun_signature_def % {
+            "name": from_camel_case(self.name), "args": ", ".join(args)}
 
     def _cython_signature_args(self):
         cython_signature_args = []
@@ -244,7 +245,7 @@ class FunctionDefinition(object):
 
     def _call_cpp_function(self, call_args):
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
-        call = "cpp.%(name)s(%(args)s)" % {
+        call = config.py_fun_call % {
             "name": self.name, "args": ", ".join(call_args)}
         return catch_result(cpp_type_decl, call) + os.linesep
 
@@ -299,7 +300,7 @@ class MethodDefinition(FunctionDefinition):
 
     def _call_cpp_function(self, call_args):
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
-        call = "self.thisptr.{fname}({args})".format(
+        call = config.py_method_signature_def.format(
             fname=self._python_call_method(), args=", ".join(call_args))
         return catch_result(cpp_type_decl, call) + os.linesep
 
@@ -320,7 +321,8 @@ class SetterDefinition(MethodDefinition):
 
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 1
-        call = "self.thisptr.%s = %s" % (self.field_name, call_args[0])
+        call = config.py_setter_call % {"name": self.field_name,
+                                        "call_arg": call_args[0]}
         return call
 
 
@@ -336,7 +338,7 @@ class GetterDefinition(MethodDefinition):
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 0
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
-        call = "self.thisptr.%(call)s" % {"call": self.field_name}
+        call = config.py_getter_call % {"name": self.field_name}
         return catch_result(cpp_type_decl, call) + os.linesep
 
 
@@ -344,5 +346,5 @@ def catch_result(result_type_decl, call):
     if result_type_decl == "":
         return call
     else:
-        return "%(cpp_type_decl)s result = %(call)s" % {
-            "cpp_type_decl": result_type_decl, "call": call}
+        return config.py_collect_result % {"cpp_type_decl": result_type_decl,
+                                           "call": call}

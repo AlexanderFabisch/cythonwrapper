@@ -47,8 +47,14 @@ py_default_ctor = """    def __init__(cpp.%(name)s self):
         self.thisptr = new cpp.%(name)s()
 """
 py_signature_def = "%(def)s %(name)s(%(args)s):"
+py_fun_signature_def = "def %(name)s(%(args)s):"
+py_fun_call = "cpp.%(name)s(%(args)s)"
 py_ctor_signature_def = "def __init__(%(args)s):"
 py_ctor_call = "self.thisptr = new cpp.%(class_name)s(%(args)s)"
+py_method_signature_def = "self.thisptr.{fname}({args})"
+py_setter_call = "self.thisptr.%(name)s = %(call_arg)s"
+py_getter_call = "self.thisptr.%(name)s"
+py_collect_result = "%(cpp_type_decl)s result = %(call)s"
 py_arg_def = "%(name)s"
 py_field_def = """    %(name)s = property(get_%(name)s, set_%(name)s)
 """
