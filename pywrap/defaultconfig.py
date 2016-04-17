@@ -59,7 +59,7 @@ signature_def = "%(def)s %(name)s(%(args)s):"
 
 fun_call = "cpp.%(name)s(%(args)s)"
 ctor_call = "self.thisptr = new cpp.%(class_name)s(%(args)s)"
-method_call = "self.thisptr.{fname}({args})"
+method_call = "self.thisptr.%(name)s(%(args)s)"
 setter_call = "self.thisptr.%(name)s = %(call_arg)s"
 getter_call = "self.thisptr.%(name)s"
 

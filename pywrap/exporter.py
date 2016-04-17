@@ -217,10 +217,11 @@ class FunctionDefinition(object):
         return result
 
     def _signature(self):
-        function_name = self._python_method_name(self.name)
+        function_name = from_camel_case(config.operators.get(
+            self.name, self.name))
         signature_config = {
             "def": self._def_prefix(function_name),
-            "name": from_camel_case(function_name),
+            "name": function_name,
             "args": ", ".join(self._cython_signature_args())
         }
         return config.signature_def % signature_config
@@ -255,9 +256,6 @@ class FunctionDefinition(object):
             "name": self.name, "args": ", ".join(call_args)}
         return catch_result(cpp_type_decl, call) + os.linesep
 
-    def _python_method_name(self, name):
-        return config.operators.get(name, name)
-
 
 class ConstructorDefinition(FunctionDefinition):
     def __init__(self, class_name, arguments, includes, classes, typedefs):
@@ -269,7 +267,7 @@ class ConstructorDefinition(FunctionDefinition):
 
     def _call_cpp_function(self, call_args):
         return config.ctor_call % {"class_name": self.class_name,
-                                      "args": ", ".join(call_args)} + os.linesep
+                                   "args": ", ".join(call_args)} + os.linesep
 
 
 class MethodDefinition(FunctionDefinition):
@@ -281,15 +279,10 @@ class MethodDefinition(FunctionDefinition):
 
     def _call_cpp_function(self, call_args):
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
-        call = config.method_call.format(
-            fname=self._python_call_method(), args=", ".join(call_args))
+        call = config.method_call % {
+            "name": config.call_operators.get(self.name, self.name),
+            "args": ", ".join(call_args)}
         return catch_result(cpp_type_decl, call) + os.linesep
-
-    def _python_call_method(self):
-        if self.name in config.call_operators:
-            return config.call_operators[self.name]
-        else:
-            return self.name
 
 
 class SetterDefinition(MethodDefinition):
@@ -302,9 +295,8 @@ class SetterDefinition(MethodDefinition):
 
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 1
-        call = config.setter_call % {"name": self.field_name,
-                                        "call_arg": call_args[0]}
-        return call
+        return config.setter_call % {"name": self.field_name,
+                                     "call_arg": call_args[0]}
 
 
 class GetterDefinition(MethodDefinition):
@@ -328,4 +320,4 @@ def catch_result(result_type_decl, call):
         return call
     else:
         return config.catch_result % {"cpp_type_decl": result_type_decl,
-                                           "call": call}
+                                      "call": call}
