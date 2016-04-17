@@ -111,9 +111,7 @@ def file_ending(filename):
 
 
 def _collect_classes(asts):
-    types = [clazz.name for ast in asts for clazz in ast.classes]
-    types.extend([clazz.name for ast in asts for clazz in ast.structs])
-    return types
+    return [clazz.name for ast in asts for clazz in ast.classes]
 
 
 def _collect_typedefs(asts):

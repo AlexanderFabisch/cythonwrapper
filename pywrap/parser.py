@@ -29,7 +29,6 @@ class AST:
         self.unnamed_struct = None
         self.functions = []
         self.classes = []
-        self.structs = []
         self.typedefs = []
         self.includes = Includes()
 
@@ -127,8 +126,6 @@ class AST:
         self.includes.accept(exporter)
         for typedef in self.typedefs:
             typedef.accept(exporter)
-        for struct in self.structs:
-            struct.accept(exporter)
         for clazz in self.classes:
             clazz.accept(exporter)
         for fun in self.functions:
