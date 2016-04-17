@@ -57,7 +57,7 @@ class CythonDeclarationExporter:
     def visit_method(self, method):
         method_dict = {"args": ", ".join(self.arguments)}
         method_dict.update(method.__dict__)
-        method_dict["name"] = map_method_decl(method_dict["name"])
+        method_dict["name"] = replace_operator_decl(method_dict["name"])
         method_str = config.method_decl % method_dict
         self.methods.append(method_str)
         self.arguments = []
@@ -76,7 +76,7 @@ class CythonDeclarationExporter:
         return self.includes.declarations_import() + self.output
 
 
-def map_method_decl(method_name):
+def replace_operator_decl(method_name):
     if method_name in config.call_operators:
         return "%s \"%s\"" % (config.call_operators[method_name], method_name)
     else:
