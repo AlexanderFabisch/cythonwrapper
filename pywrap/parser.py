@@ -74,8 +74,8 @@ class AST:
                 self.last_function = method
         elif node.kind == ci.CursorKind.CONSTRUCTOR:
             if node.access_specifier == ci.AccessSpecifier.PUBLIC:
-                constructor = Constructor(node.spelling, self.last_type.name)
-                self.classes[-1].constructors.append(constructor)
+                constructor = Constructor(self.last_type.name)
+                self.last_type.constructors.append(constructor)
                 self.last_function = constructor
         elif node.kind == ci.CursorKind.CLASS_DECL:
             clazz = Clazz(include_file, self.namespace, node.displayname)
@@ -256,8 +256,8 @@ class Function(FunctionBase):
 
 
 class Constructor(FunctionBase):
-    def __init__(self, name, class_name):
-        super(self.__class__, self).__init__(name)
+    def __init__(self, class_name):
+        super(self.__class__, self).__init__(None)
         self.class_name = class_name
 
     def accept(self, exporter):

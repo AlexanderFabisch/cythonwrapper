@@ -1,5 +1,6 @@
 import os
 import warnings
+
 from . import defaultconfig as config
 from .type_conversion import create_type_converter
 from .utils import indent_block, from_camel_case
@@ -144,7 +145,7 @@ class CythonImplementationExporter:
     def visit_constructor(self, ctor):
         try:
             function_def = ConstructorDefinition(
-                ctor.class_name, ctor.name, ctor.arguments, self.includes,
+                ctor.class_name, ctor.arguments, self.includes,
                 classes=self.classes, typedefs=self.typedefs).make()
             self.ctors.append(indent_block(function_def, 1))
         except NotImplementedError as e:
@@ -216,9 +217,21 @@ class FunctionDefinition(object):
         return result
 
     def _signature(self):
-        args = self._cython_signature_args()
-        return config.fun_signature_def % {
-            "name": from_camel_case(self.name), "args": ", ".join(args)}
+        function_name = self._python_method_name(self.name)
+        signature_config = {
+            "def": self._def_prefix(function_name),
+            "name": from_camel_case(function_name),
+            "args": ", ".join(self._cython_signature_args())
+        }
+        return config.signature_def % signature_config
+
+    def _def_prefix(self, function_name):
+        special_method = (function_name.startswith("__") and
+                          function_name.endswith("__"))
+        if special_method:
+            return "def"
+        else:
+            return "cpdef"
 
     def _cython_signature_args(self):
         cython_signature_args = []
@@ -242,19 +255,17 @@ class FunctionDefinition(object):
             "name": self.name, "args": ", ".join(call_args)}
         return catch_result(cpp_type_decl, call) + os.linesep
 
+    def _python_method_name(self, name):
+        return config.operators.get(name, name)
+
 
 class ConstructorDefinition(FunctionDefinition):
-    def __init__(self, class_name, name, arguments, includes, classes,
-                 typedefs):
+    def __init__(self, class_name, arguments, includes, classes, typedefs):
         super(ConstructorDefinition, self).__init__(
-            name, arguments, includes, result_type=None,
+            "__init__", arguments, includes, result_type=None,
             classes=classes, typedefs=typedefs)
         self.initial_args = ["%s self" % class_name]
         self.class_name = class_name
-
-    def _signature(self):
-        args = self._cython_signature_args()
-        return config.ctor_signature_def % {"args": ", ".join(args)}
 
     def _call_cpp_function(self, call_args):
         return config.ctor_call % {"class_name": self.class_name,
@@ -267,29 +278,6 @@ class MethodDefinition(FunctionDefinition):
         super(MethodDefinition, self).__init__(
             name, arguments, includes, result_type, classes, typedefs)
         self.initial_args = ["%s self" % class_name]
-
-    def _signature(self):
-        method_name = self._python_method_name()
-        signature_config = {
-            "def": self._def_prefix(method_name),
-            "name": method_name,
-            "args": ", ".join(self._cython_signature_args())
-        }
-        return config.method_signature_def % signature_config
-
-    def _python_method_name(self):
-        if self.name in config.operators:
-            return config.operators[self.name]
-        else:
-            return from_camel_case(self.name)
-
-    def _def_prefix(self, method_name):
-        special_method = (method_name.startswith("__") and
-                          method_name.endswith("__"))
-        if special_method:
-            return "def"
-        else:
-            return "cpdef"
 
     def _call_cpp_function(self, call_args):
         cpp_type_decl = self.output_type_converter.cpp_type_decl()

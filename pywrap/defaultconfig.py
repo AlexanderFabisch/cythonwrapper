@@ -30,7 +30,7 @@ class_decl = """cdef extern from "%(filename)s" namespace "%(namespace)s":
 function_decl = """cdef extern from "%(filename)s" namespace "%(namespace)s":
     %(result_type)s %(name)s(%(args)s)"""
 method_decl = "        %(result_type)s %(name)s(%(args)s)"
-constructor_decl = "        %(name)s(%(args)s)"
+constructor_decl = "        %(class_name)s(%(args)s)"
 arg_decl = "%(tipe)s %(name)s"
 field_decl = "        %(tipe)s %(name)s"
 
@@ -55,9 +55,7 @@ ctor_default_def = """    def __init__(cpp.%(name)s self):
         self.thisptr = new cpp.%(name)s()
 """
 
-fun_signature_def = "def %(name)s(%(args)s):"
-method_signature_def = "%(def)s %(name)s(%(args)s):"
-ctor_signature_def = "def __init__(%(args)s):"
+signature_def = "%(def)s %(name)s(%(args)s):"
 
 fun_call = "cpp.%(name)s(%(args)s)"
 ctor_call = "self.thisptr = new cpp.%(class_name)s(%(args)s)"
