@@ -30,7 +30,19 @@ This is a tool that can do this for you! It will automatically parse the
 C++ header and generate a wrapper based on Cython for the C++ header. It
 will even manage all the type conversions between C++ and Python for you.
 
-( At least that is the goal. ;) )
+At least that is the goal. ;)
+
+## Unsupported Features of C++
+
+Many things are not implemented yet, e.g.
+
+* templates
+* pointer argument or return value of primitive type (e.g. `int*`)
+* collections of custom types (e.g. a vector of your struct)
+* linking to other libraries (you can modify the `setup.py` though)
+* integrating other Cython extensions (you can modify the `setup.py` though)
+
+Feel free to work on any of these features. :)
 
 ## Install
 
