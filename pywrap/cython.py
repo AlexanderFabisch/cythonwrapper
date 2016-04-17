@@ -81,10 +81,14 @@ def make_cython_wrapper(filenames, modulename=None, target=".", verbose=0):
     return results, files_to_cythonize
 
 
+def _derive_module_name_from(filename):
+    filename = filename.split(os.sep)[-1]
+    return filename.split(".")[0]
+
+
 def _parse_files(filenames, verbose):
-    asts = {}
+    asts = []
     for filename in filenames:
-        module = _derive_module_name_from(filename)
         is_header = file_ending(filename) in config.cpp_header_endings
 
         if is_header:  # Clang does not really parse headers
@@ -94,7 +98,7 @@ def _parse_files(filenames, verbose):
         else:
             parsable_file = filename
 
-        asts[module] = parse(filename, parsable_file, module, verbose)
+        asts.append(parse(filename, parsable_file, verbose))
 
         if is_header:
             os.remove(parsable_file)
@@ -102,14 +106,18 @@ def _parse_files(filenames, verbose):
     return asts
 
 
+def file_ending(filename):
+    return filename.split(".")[-1]
+
+
 def _collect_classes(asts):
-    types = [clazz.name for ast in asts.values() for clazz in ast.classes]
-    types.extend([clazz.name for ast in asts.values() for clazz in ast.structs])
+    types = [clazz.name for ast in asts for clazz in ast.classes]
+    types.extend([clazz.name for ast in asts for clazz in ast.structs])
     return types
 
 
 def _collect_typedefs(asts):
-    return {typedef.tipe: typedef.underlying_type for ast in asts.values()
+    return {typedef.tipe: typedef.underlying_type for ast in asts
             for typedef in ast.typedefs}
 
 
@@ -117,7 +125,7 @@ def _generate_extension(modulename, asts, classes, typedefs, verbose):
     results = {}
     files_to_cythonize = []
     extension = ""
-    for module, ast in asts.items():
+    for ast in asts:
         cie = CythonImplementationExporter(classes, typedefs)
         ast.accept(cie)
         extension += cie.export()
@@ -133,7 +141,7 @@ def _generate_extension(modulename, asts, classes, typedefs, verbose):
 def _generate_declarations(asts, verbose):
     results = {}
     declarations = ""
-    for module, ast in asts.items():
+    for ast in asts:
         cde = CythonDeclarationExporter()
         ast.accept(cde)
         declarations += cde.export()
@@ -149,20 +157,9 @@ def _make_setup(filenames, modulename, target):
     sourcedir = os.path.relpath(".", start=target)
     header_relpaths = [os.path.relpath(filename, start=target)
                        for filename in filenames]
-    extension_setup = make_extension(
-        filename=", ".join(header_relpaths), module=modulename,
-        sourcedir=sourcedir)
-    return config.setup_py % {"extensions": extension_setup}
-
-
-def _derive_module_name_from(filename):
-    filename = filename.split(os.sep)[-1]
-    return filename.split(".")[0]
-
-
-def file_ending(filename):
-    return filename.split(".")[-1]
-
-
-def make_extension(**kwargs):
-    return config.setup_extension % kwargs
+    extension = {
+        "filename": ", ".join(header_relpaths),
+        "module": modulename,
+        "sourcedir": sourcedir
+    }
+    return config.setup_py % extension

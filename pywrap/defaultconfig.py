@@ -83,7 +83,13 @@ setup_py = """def configuration(parent_package='', top_path=None):
     import numpy
 
     config = Configuration('.', parent_package, top_path)
-%(extensions)s
+    config.add_extension(
+        '%(module)s',
+        sources=["%(module)s.cpp", "%(filename)s"],
+        include_dirs=["%(sourcedir)s", numpy.get_include()],
+        define_macros=[("NDEBUG",)],
+        extra_compile_args=["-O3"],
+        language="c++")
     return config
 
 if __name__ == '__main__':

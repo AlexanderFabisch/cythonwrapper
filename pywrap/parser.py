@@ -10,20 +10,19 @@ import warnings
 from .type_conversion import typename
 
 
-def parse(include_file, parsable_file, module, verbose):
+def parse(include_file, parsable_file, verbose):
     index = ci.Index.create()
     translation_unit = index.parse(parsable_file)
     cursor = translation_unit.cursor
 
-    ast = AST(module)
+    ast = AST()
     ast.parse(cursor, parsable_file, include_file, verbose)
     return ast
 
 
 class AST:
     """Abstract Syntax Tree."""
-    def __init__(self, module):
-        self.module = module
+    def __init__(self):
         self.namespace = ""
         self.last_function = None
         self.last_type = None
@@ -32,7 +31,7 @@ class AST:
         self.classes = []
         self.structs = []
         self.typedefs = []
-        self.includes = Includes(module)
+        self.includes = Includes()
 
     def parse(self, node, parsable_file, include_file, verbose=0):
         namespace = self.namespace
@@ -138,7 +137,7 @@ class AST:
 
 
 class Includes:
-    def __init__(self, module):
+    def __init__(self):
         self.numpy = False
         self.boolean = True
         self.vector = False
