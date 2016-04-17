@@ -1,7 +1,9 @@
+# file endings
 cpp_header_endings = ["h", "hh", "hpp"]
 pyx_file_ending = "pyx"
 pxd_file_ending = "pxd"
-# TODO extend operator mapping:
+
+# operator mapping TODO extend
 # http://docs.cython.org/src/reference/special_methods_table.html
 operators = {
     "operator()": "__call__",
@@ -20,18 +22,20 @@ call_operators = {
     "operator/": "div"
 }
 
-typedef_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
+# declaration templates
+typedef_decl = """cdef extern from "%(filename)s" namespace "%(namespace)s":
     ctypedef %(underlying_type)s %(tipe)s"""
-class_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
+class_decl = """cdef extern from "%(filename)s" namespace "%(namespace)s":
     cdef cppclass %(name)s:"""
-method_def = "        %(result_type)s %(name)s(%(args)s)"
-constructor_def = "        %(name)s(%(args)s)"
-function_def = """cdef extern from "%(filename)s" namespace "%(namespace)s":
+function_decl = """cdef extern from "%(filename)s" namespace "%(namespace)s":
     %(result_type)s %(name)s(%(args)s)"""
-arg_def = "%(tipe)s %(name)s"
-field_def = "        %(tipe)s %(name)s"
+method_decl = "        %(result_type)s %(name)s(%(args)s)"
+constructor_decl = "        %(name)s(%(args)s)"
+arg_decl = "%(tipe)s %(name)s"
+field_decl = "        %(tipe)s %(name)s"
 
-py_class_def = """cdef class %(name)s:
+# type definitions
+class_def = """cdef class %(name)s:
     cdef cpp.%(name)s * thisptr
     cdef bool delete_thisptr
 
@@ -43,21 +47,28 @@ py_class_def = """cdef class %(name)s:
         if self.delete_thisptr and self.thisptr != NULL:
             del self.thisptr
 """
-py_default_ctor = """    def __init__(cpp.%(name)s self):
+
+# member definitions
+field_def = """    %(name)s = property(get_%(name)s, set_%(name)s)
+"""
+ctor_default_def = """    def __init__(cpp.%(name)s self):
         self.thisptr = new cpp.%(name)s()
 """
-py_signature_def = "%(def)s %(name)s(%(args)s):"
-py_fun_signature_def = "def %(name)s(%(args)s):"
-py_fun_call = "cpp.%(name)s(%(args)s)"
-py_ctor_signature_def = "def __init__(%(args)s):"
-py_ctor_call = "self.thisptr = new cpp.%(class_name)s(%(args)s)"
-py_method_signature_def = "self.thisptr.{fname}({args})"
-py_setter_call = "self.thisptr.%(name)s = %(call_arg)s"
-py_getter_call = "self.thisptr.%(name)s"
-py_collect_result = "%(cpp_type_decl)s result = %(call)s"
-py_arg_def = "%(name)s"
-py_field_def = """    %(name)s = property(get_%(name)s, set_%(name)s)
-"""
+
+fun_signature_def = "def %(name)s(%(args)s):"
+method_signature_def = "%(def)s %(name)s(%(args)s):"
+ctor_signature_def = "def __init__(%(args)s):"
+
+fun_call = "cpp.%(name)s(%(args)s)"
+ctor_call = "self.thisptr = new cpp.%(class_name)s(%(args)s)"
+method_call = "self.thisptr.{fname}({args})"
+setter_call = "self.thisptr.%(name)s = %(call_arg)s"
+getter_call = "self.thisptr.%(name)s"
+
+catch_result = "%(cpp_type_decl)s result = %(call)s"
+
+# setup.py
+
 setup_extension = """
     config.add_extension(
         '%(module)s',
@@ -68,6 +79,7 @@ setup_extension = """
         language="c++",
     )
 """
+
 setup_py = """def configuration(parent_package='', top_path=None):
     from numpy.distutils.misc_util import Configuration
     import numpy

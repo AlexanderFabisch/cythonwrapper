@@ -25,13 +25,13 @@ class CythonDeclarationExporter:
         self.includes = includes
 
     def visit_typedef(self, typedef):
-        self.output += config.typedef_def % typedef.__dict__ + os.linesep
+        self.output += config.typedef_decl % typedef.__dict__ + os.linesep
 
     def visit_field(self, field):
-        self.fields.append(config.field_def % field.__dict__)
+        self.fields.append(config.field_decl % field.__dict__)
 
     def visit_class(self, clazz):
-        class_decl_parts = [config.class_def % clazz.__dict__,
+        class_decl_parts = [config.class_decl % clazz.__dict__,
                             os.linesep.join(self.fields),
                             os.linesep.join(self.ctors),
                             os.linesep.join(self.methods)]
@@ -49,7 +49,7 @@ class CythonDeclarationExporter:
     def visit_constructor(self, ctor):
         const_dict = {"args": ", ".join(self.arguments)}
         const_dict.update(ctor.__dict__)
-        const_str = config.constructor_def % const_dict
+        const_str = config.constructor_decl % const_dict
         self.ctors.append(const_str)
         self.arguments = []
 
@@ -57,19 +57,19 @@ class CythonDeclarationExporter:
         method_dict = {"args": ", ".join(self.arguments)}
         method_dict.update(method.__dict__)
         method_dict["name"] = map_method_decl(method_dict["name"])
-        method_str = config.method_def % method_dict
+        method_str = config.method_decl % method_dict
         self.methods.append(method_str)
         self.arguments = []
 
     def visit_function(self, function):
         function_dict = {"args": ", ".join(self.arguments)}
         function_dict.update(function.__dict__)
-        function_str = config.function_def % function_dict
+        function_str = config.function_decl % function_dict
         self.output += (os.linesep * 2 + function_str + os.linesep)
         self.arguments = []
 
     def visit_param(self, param):
-        self.arguments.append(config.arg_def % param.__dict__)
+        self.arguments.append(config.arg_decl % param.__dict__)
 
     def export(self):
         return self.includes.declarations_import() + self.output
@@ -93,7 +93,6 @@ class CythonImplementationExporter:
         self.output = ""
         self.ctors = []
         self.methods = []
-        self.arguments = []
         self.fields = []
         self.includes = None
 
@@ -112,7 +111,7 @@ class CythonImplementationExporter:
                 field, self.includes, self.classes, self.typedefs).make()
             getter_def = GetterDefinition(
                 field, self.includes, self.classes, self.typedefs).make()
-            field_def_parts = [config.py_field_def
+            field_def_parts = [config.field_def
                                % {"name": from_camel_case(field.name)},
                                indent_block(getter_def, 1),
                                indent_block(setter_def, 1)]
@@ -127,9 +126,9 @@ class CythonImplementationExporter:
                    "all others." % clazz.name)
             warnings.warn(msg)
         elif len(self.ctors) == 0:
-            self.ctors.append(config.py_default_ctor % clazz.__dict__)
+            self.ctors.append(config.ctor_default_def % clazz.__dict__)
 
-        class_def_parts = [config.py_class_def % clazz.__dict__,
+        class_def_parts = [config.class_def % clazz.__dict__,
                            os.linesep.join(self.fields),
                            os.linesep.join(self.ctors),
                            os.linesep.join(self.methods)]
@@ -150,8 +149,6 @@ class CythonImplementationExporter:
             self.ctors.append(indent_block(function_def, 1))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % ctor.name)
-        finally:
-            self.arguments = []
 
     def visit_method(self, method):
         try:
@@ -162,8 +159,6 @@ class CythonImplementationExporter:
             self.methods.append(indent_block(method_def, 1))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % method.name)
-        finally:
-            self.arguments = []
 
     def visit_function(self, function):
         try:
@@ -174,11 +169,9 @@ class CythonImplementationExporter:
             self.output += (os.linesep * 2 + function_def + os.linesep)
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring function '%s'" % function.name)
-        finally:
-            self.arguments = []
 
     def visit_param(self, param):
-        self.arguments.append(config.py_arg_def % param.__dict__)
+        pass
 
     def export(self):
         return self.includes.implementations_import() + self.output
@@ -224,7 +217,7 @@ class FunctionDefinition(object):
 
     def _signature(self):
         args = self._cython_signature_args()
-        return config.py_fun_signature_def % {
+        return config.fun_signature_def % {
             "name": from_camel_case(self.name), "args": ", ".join(args)}
 
     def _cython_signature_args(self):
@@ -245,7 +238,7 @@ class FunctionDefinition(object):
 
     def _call_cpp_function(self, call_args):
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
-        call = config.py_fun_call % {
+        call = config.fun_call % {
             "name": self.name, "args": ", ".join(call_args)}
         return catch_result(cpp_type_decl, call) + os.linesep
 
@@ -261,10 +254,10 @@ class ConstructorDefinition(FunctionDefinition):
 
     def _signature(self):
         args = self._cython_signature_args()
-        return config.py_ctor_signature_def % {"args": ", ".join(args)}
+        return config.ctor_signature_def % {"args": ", ".join(args)}
 
     def _call_cpp_function(self, call_args):
-        return config.py_ctor_call % {"class_name": self.class_name,
+        return config.ctor_call % {"class_name": self.class_name,
                                       "args": ", ".join(call_args)} + os.linesep
 
 
@@ -282,7 +275,7 @@ class MethodDefinition(FunctionDefinition):
             "name": method_name,
             "args": ", ".join(self._cython_signature_args())
         }
-        return config.py_signature_def % signature_config
+        return config.method_signature_def % signature_config
 
     def _python_method_name(self):
         if self.name in config.operators:
@@ -300,7 +293,7 @@ class MethodDefinition(FunctionDefinition):
 
     def _call_cpp_function(self, call_args):
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
-        call = config.py_method_signature_def.format(
+        call = config.method_call.format(
             fname=self._python_call_method(), args=", ".join(call_args))
         return catch_result(cpp_type_decl, call) + os.linesep
 
@@ -321,7 +314,7 @@ class SetterDefinition(MethodDefinition):
 
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 1
-        call = config.py_setter_call % {"name": self.field_name,
+        call = config.setter_call % {"name": self.field_name,
                                         "call_arg": call_args[0]}
         return call
 
@@ -338,7 +331,7 @@ class GetterDefinition(MethodDefinition):
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 0
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
-        call = config.py_getter_call % {"name": self.field_name}
+        call = config.getter_call % {"name": self.field_name}
         return catch_result(cpp_type_decl, call) + os.linesep
 
 
@@ -346,5 +339,5 @@ def catch_result(result_type_decl, call):
     if result_type_decl == "":
         return call
     else:
-        return config.py_collect_result % {"cpp_type_decl": result_type_decl,
+        return config.catch_result % {"cpp_type_decl": result_type_decl,
                                            "call": call}
