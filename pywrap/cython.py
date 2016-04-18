@@ -66,10 +66,10 @@ def make_cython_wrapper(filenames, modulename=None, target=".", verbose=0):
 
     includes = Includes()
     asts = _parse_files(filenames, includes, verbose)
+    type_info = TypeInfo(asts)
 
     ext_results, files_to_cythonize = _generate_extension(
-        modulename, asts, includes, _collect_classes(asts),
-        _collect_typedefs(asts), verbose)
+        modulename, asts, includes, type_info, verbose)
     decl_results = _generate_declarations(asts, includes, verbose)
 
     results = {}
@@ -83,6 +83,14 @@ def make_cython_wrapper(filenames, modulename=None, target=".", verbose=0):
 def _derive_module_name_from(filename):
     filename = filename.split(os.sep)[-1]
     return filename.split(".")[0]
+
+
+class TypeInfo:
+    def __init__(self, asts):
+        self.classes = [clazz.name for ast in asts for clazz in ast.classes]
+        self.typedefs = {typedef.tipe: typedef.underlying_type for ast in asts
+                         for typedef in ast.typedefs}
+        self.enums = [enum.tipe for ast in asts for enum in ast.enums]
 
 
 def _parse_files(filenames, includes, verbose):
@@ -109,21 +117,12 @@ def file_ending(filename):
     return filename.split(".")[-1]
 
 
-def _collect_classes(asts):
-    return [clazz.name for ast in asts for clazz in ast.classes]
-
-
-def _collect_typedefs(asts):
-    return {typedef.tipe: typedef.underlying_type for ast in asts
-            for typedef in ast.typedefs}
-
-
-def _generate_extension(modulename, asts, includes, classes, typedefs, verbose):
+def _generate_extension(modulename, asts, includes, type_info, verbose):
     results = {}
     files_to_cythonize = []
     extension = ""
     for ast in asts:
-        cie = CythonImplementationExporter(includes, classes, typedefs)
+        cie = CythonImplementationExporter(includes, type_info)
         ast.accept(cie)
         extension += cie.export()
     pyx_filename = modulename + "." + config.pyx_file_ending

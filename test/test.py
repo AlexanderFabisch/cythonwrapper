@@ -2,7 +2,7 @@ import os
 import sys
 import numpy as np
 from contextlib import contextmanager
-from nose.tools import assert_equal, assert_true, assert_false
+from nose.tools import assert_equal, assert_not_equal, assert_true, assert_false
 import pywrap.cython as pycy
 from pywrap.utils import assert_warns_message
 
@@ -234,3 +234,13 @@ def test_complex_field():
         b.b = a
         assert_equal(b.a.a, 5)
         assert_equal(b.b.a, 5)
+
+
+def test_enum():
+    with cython_extension_from("enum.hpp"):
+        from enum import MyEnum, enum_to_string
+        assert_not_equal(MyEnum.FIRSTOPTION, MyEnum.SECONDOPTION)
+        assert_not_equal(MyEnum.SECONDOPTION, MyEnum.THIRDOPTION)
+        assert_equal(enum_to_string(MyEnum.FIRSTOPTION), "first")
+        assert_equal(enum_to_string(MyEnum.SECONDOPTION), "second")
+        assert_equal(enum_to_string(MyEnum.THIRDOPTION), "third")

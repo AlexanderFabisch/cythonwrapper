@@ -85,13 +85,12 @@ def typedef_prefix(tname, typedefs):
         return tname
 
 
-def create_type_converter(tname, python_argname, classes, typedefs,
-                          context=None):
+def create_type_converter(tname, python_argname, type_info, context=None):
     converters = []
     converters.extend(registered_converters)
     converters.extend(default_converters)
     for Converter in converters:
-        converter = Converter(tname, python_argname, classes, typedefs, context)
+        converter = Converter(tname, python_argname, type_info, context)
         if converter.matches():
             return converter
     raise NotImplementedError(
@@ -144,11 +143,10 @@ class AbstractTypeConverter(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, tname, python_argname, classes, typedefs, context=None):
+    def __init__(self, tname, python_argname, type_info, context=None):
         self.tname = tname
         self.python_argname = python_argname
-        self.classes = classes
-        self.typedefs = typedefs
+        self.type_info = type_info
         self.context = context
 
     @abstractmethod
@@ -186,7 +184,7 @@ class AbstractTypeConverter(object):
 class VoidTypeConverter(AbstractTypeConverter):
     def matches(self):
         return (self.tname is None or
-                underlying_type(self.tname, self.typedefs) == "void")
+                underlying_type(self.tname, self.type_info.typedefs) == "void")
 
     def n_cpp_args(self):
         raise NotImplementedError()
@@ -210,7 +208,7 @@ class VoidTypeConverter(AbstractTypeConverter):
 class AutomaticTypeConverter(AbstractTypeConverter):
     def matches(self):
         return is_type_with_automatic_conversion(
-            underlying_type(self.tname, self.typedefs))
+            underlying_type(self.tname, self.type_info.typedefs))
 
     def n_cpp_args(self):
         return 1
@@ -224,11 +222,11 @@ class AutomaticTypeConverter(AbstractTypeConverter):
             self.cpp_type_decl(), cython_argname, self.python_argname)
 
     def python_type_decl(self):
-        return "%s %s" % (typedef_prefix(self.tname, self.typedefs),
+        return "%s %s" % (typedef_prefix(self.tname, self.type_info.typedefs),
                           self.python_argname)
 
     def cpp_type_decl(self):
-        return "cdef " + typedef_prefix(self.tname, self.typedefs)
+        return "cdef " + typedef_prefix(self.tname, self.type_info.typedefs)
 
 
 class DoubleArrayTypeConverter(AbstractTypeConverter):
@@ -262,9 +260,37 @@ class DoubleArrayTypeConverter(AbstractTypeConverter):
         return "cdef double *"
 
 
+class EnumConverter(AbstractTypeConverter):
+    def matches(self):
+        return (underlying_type(self.tname, self.type_info.typedefs) in
+                self.type_info.enums)
+
+    def n_cpp_args(self):
+        return 1
+
+    def add_includes(self, includes):
+        pass
+
+    def python_to_cpp(self):
+        return ""
+
+    def cpp_call_args(self):
+        return [self.python_argname]
+
+    def return_output(self, copy=True):
+        raise NotImplementedError("Cannot return enum")
+
+    def python_type_decl(self):
+        return "cpp.%s %s" % (self.tname, self.python_argname)
+
+    def cpp_type_decl(self):
+        return "cdef " + self.tname
+
+
 class CythonTypeConverter(AbstractTypeConverter):
     def matches(self):
-        return underlying_type(self.tname, self.typedefs) in self.classes
+        return (underlying_type(self.tname, self.type_info.typedefs) in
+                self.type_info.classes)
 
     def n_cpp_args(self):
         return 1
@@ -287,7 +313,7 @@ class CythonTypeConverter(AbstractTypeConverter):
                      "return ret")
 
     def python_type_decl(self):
-        return "%s %s" % (typedef_prefix(self.tname, self.typedefs),
+        return "%s %s" % (typedef_prefix(self.tname, self.type_info.typedefs),
                           self.python_argname)
 
     def cpp_type_decl(self):
@@ -295,19 +321,20 @@ class CythonTypeConverter(AbstractTypeConverter):
 
 
 class CppPointerTypeConverter(AbstractTypeConverter):
-    def __init__(self, tname, python_argname, classes, typedefs, context=None):
+    def __init__(self, tname, python_argname, type_info, context=None):
         super(CppPointerTypeConverter, self).__init__(
-            tname, python_argname, classes, typedefs, context)
+            tname, python_argname, type_info, context)
         self.tname_wo_ptr = _type_without_pointer(tname)
 
     def matches(self):
         if _is_pointer(self.tname):
-            return underlying_type(_type_without_pointer(self.tname),
-                                   self.typedefs) in self.classes
+            return (underlying_type(_type_without_pointer(self.tname),
+                                    self.type_info.typedefs) in
+                    self.type_info.classes)
         else:
-            tname = underlying_type(self.tname, self.typedefs)
+            tname = underlying_type(self.tname, self.type_info.typedefs)
             return (_is_pointer(tname) and
-                    _type_without_pointer(self.tname) in self.classes)
+                    _type_without_pointer(self.tname) in self.type_info.classes)
 
     def n_cpp_args(self):
         return 1
@@ -330,7 +357,8 @@ class CppPointerTypeConverter(AbstractTypeConverter):
         return lines(*l)
 
     def python_type_decl(self):
-        return "%s %s" % (typedef_prefix(self.tname_wo_ptr, self.typedefs),
+        return "%s %s" % (typedef_prefix(self.tname_wo_ptr,
+                                         self.type_info.typedefs),
                           self.python_argname)
 
     def cpp_type_decl(self):
@@ -356,12 +384,12 @@ class PythonObjectConverter(AbstractTypeConverter):
         return "object %s" % self.python_argname
 
     def cpp_type_decl(self):
-        return "cdef " + typedef_prefix(self.tname, self.typedefs)
+        return "cdef " + typedef_prefix(self.tname, self.type_info.typedefs)
 
 
 class StlTypeConverter(PythonObjectConverter):
     def matches(self):
-        tname = underlying_type(self.tname, self.typedefs)
+        tname = underlying_type(self.tname, self.type_info.typedefs)
         return tname.startswith("vector") or tname.startswith("map")
 
     def cpp_call_args(self):
@@ -375,7 +403,7 @@ class StlTypeConverter(PythonObjectConverter):
 
 default_converters = [
     AutomaticTypeConverter, VoidTypeConverter, DoubleArrayTypeConverter,
-    CythonTypeConverter, CppPointerTypeConverter, StlTypeConverter,
-    PythonObjectConverter]
+    EnumConverter, CythonTypeConverter, CppPointerTypeConverter,
+    StlTypeConverter, PythonObjectConverter]
 
 registered_converters = []

@@ -25,6 +25,9 @@ call_operators = {
 # declaration templates
 typedef_decl = """cdef extern from "%(filename)s" namespace "%(namespace)s":
     ctypedef %(underlying_type)s %(tipe)s"""
+enum_decl = """cdef extern from "%(filename)s" namespace "%(namespace)s":
+    cdef enum %(tipe)s:
+%(constants)s"""
 class_decl = """cdef extern from "%(filename)s" namespace "%(namespace)s":
     cdef cppclass %(name)s:"""
 function_decl = """cdef extern from "%(filename)s" namespace "%(namespace)s":
@@ -46,6 +49,9 @@ class_def = """cdef class %(name)s:
     def __dealloc__(self):
         if self.delete_thisptr and self.thisptr != NULL:
             del self.thisptr
+"""
+enum_def = """cdef class %(tipe)s:
+%(constants)s
 """
 
 # member definitions

@@ -27,10 +27,12 @@ class AST:
         self.namespace = ""
         self.last_function = None
         self.last_type = None
+        self.last_enum = None
         self.unnamed_struct = None
         self.functions = []
         self.classes = []
         self.typedefs = []
+        self.enums = []
 
     def parse(self, node, parsable_file, include_file, verbose=0):
         namespace = self.namespace
@@ -110,6 +112,12 @@ class AST:
                 self.includes.add_include_for(underlying_tname)
                 self.typedefs.append(Typedef(include_file, self.namespace,
                                              tname, typename(underlying_tname)))
+        elif node.kind == ci.CursorKind.ENUM_DECL:
+            enum = Enum(include_file, self.namespace, node.displayname)
+            self.last_enum = enum
+            self.enums.append(enum)
+        elif node.kind == ci.CursorKind.ENUM_CONSTANT_DECL:
+            self.last_enum.constants.append(node.displayname)
         elif node.kind == ci.CursorKind.COMPOUND_STMT:
             parse_children = False
         else:
@@ -123,6 +131,8 @@ class AST:
         self.namespace = namespace
 
     def accept(self, exporter):
+        for enum in self.enums:
+            enum.accept(exporter)
         for typedef in self.typedefs:
             typedef.accept(exporter)
         for clazz in self.classes:
@@ -193,6 +203,17 @@ class Includes:
                          os.linesep)
         includes += "cimport _declarations as cpp" + os.linesep
         return includes
+
+
+class Enum:
+    def __init__(self, filename, namespace, tipe):
+        self.filename = filename
+        self.namespace = namespace
+        self.tipe = tipe
+        self.constants = []
+
+    def accept(self, exporter):
+        exporter.visit_enum(self)
 
 
 class Typedef:

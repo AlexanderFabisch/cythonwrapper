@@ -22,6 +22,13 @@ class CythonDeclarationExporter:
     def visit_ast(self, ast):
         pass
 
+    def visit_enum(self, enum):
+        enum_decl_dict = {}
+        enum_decl_dict.update(enum.__dict__)
+        enum_decl_dict["constants"] = indent_block(
+            os.linesep.join(enum.constants), 2)
+        self.output += config.enum_decl % enum_decl_dict + os.linesep
+
     def visit_typedef(self, typedef):
         self.output += config.typedef_decl % typedef.__dict__ + os.linesep
 
@@ -84,10 +91,9 @@ class CythonImplementationExporter:
 
     This class implements the visitor pattern.
     """
-    def __init__(self, includes, classes, typedefs):
+    def __init__(self, includes, type_info):
         self.includes = includes
-        self.classes = classes
-        self.typedefs = typedefs
+        self.type_info = type_info
         self.output = ""
         self.ctors = []
         self.methods = []
@@ -96,15 +102,22 @@ class CythonImplementationExporter:
     def visit_ast(self, ast):
         pass
 
+    def visit_enum(self, enum):
+        enum_def_dict = {}
+        enum_def_dict.update(enum.__dict__)
+        enum_def_dict["constants"] = indent_block(os.linesep.join(
+            ["%s = cpp.%s" % (c, c) for c in enum.constants]), 1)
+        self.output += config.enum_def % enum_def_dict + os.linesep
+
     def visit_typedef(self, typedef):
         pass
 
     def visit_field(self, field):
         try:
             setter_def = SetterDefinition(
-                field, self.includes, self.classes, self.typedefs).make()
+                field, self.includes, self.type_info).make()
             getter_def = GetterDefinition(
-                field, self.includes, self.classes, self.typedefs).make()
+                field, self.includes, self.type_info).make()
             field_def_parts = [config.field_def
                                % {"name": from_camel_case(field.name)},
                                indent_block(getter_def, 1),
@@ -138,7 +151,7 @@ class CythonImplementationExporter:
         try:
             function_def = ConstructorDefinition(
                 ctor.class_name, ctor.arguments, self.includes,
-                classes=self.classes, typedefs=self.typedefs).make()
+                self.type_info).make()
             self.ctors.append(indent_block(function_def, 1))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % ctor.name)
@@ -147,8 +160,7 @@ class CythonImplementationExporter:
         try:
             method_def = MethodDefinition(
                 method.class_name, method.name, method.arguments, self.includes,
-                method.result_type, classes=self.classes,
-                typedefs=self.typedefs).make()
+                method.result_type, self.type_info).make()
             self.methods.append(indent_block(method_def, 1))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % method.name)
@@ -157,8 +169,7 @@ class CythonImplementationExporter:
         try:
             function_def = FunctionDefinition(
                 function.name, function.arguments, self.includes,
-                function.result_type, classes=self.classes,
-                typedefs=self.typedefs).make()
+                function.result_type, self.type_info).make()
             self.output += (os.linesep * 2 + function_def + os.linesep)
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring function '%s'" % function.name)
@@ -171,15 +182,13 @@ class CythonImplementationExporter:
 
 
 class FunctionDefinition(object):
-    def __init__(self, name, arguments, includes, result_type, classes,
-                 typedefs):
+    def __init__(self, name, arguments, includes, result_type, type_info):
         self.name = name
         self.arguments = arguments
         self.includes = includes
         self.initial_args = []
         self.result_type = result_type
-        self.classes = classes
-        self.typedefs = typedefs
+        self.type_info = type_info
         self.output_is_copy = True
         self._create_type_converters()
 
@@ -191,13 +200,12 @@ class FunctionDefinition(object):
                 skip -= 1
                 continue
             type_converter = create_type_converter(
-                arg.tipe, arg.name, self.classes, self.typedefs,
-                (self.arguments, i))
+                arg.tipe, arg.name, self.type_info, (self.arguments, i))
             type_converter.add_includes(self.includes)
             self.type_converters.append(type_converter)
             skip = type_converter.n_cpp_args() - 1
         self.output_type_converter = create_type_converter(
-            self.result_type, None, self.classes, self.typedefs)
+            self.result_type, None, self.type_info)
         self.output_type_converter.add_includes(self.includes)
 
     def make(self):
@@ -250,10 +258,10 @@ class FunctionDefinition(object):
 
 
 class ConstructorDefinition(FunctionDefinition):
-    def __init__(self, class_name, arguments, includes, classes, typedefs):
+    def __init__(self, class_name, arguments, includes, type_info):
         super(ConstructorDefinition, self).__init__(
             "__init__", arguments, includes, result_type=None,
-            classes=classes, typedefs=typedefs)
+            type_info=type_info)
         self.initial_args = ["%s self" % class_name]
         self.class_name = class_name
 
@@ -264,9 +272,9 @@ class ConstructorDefinition(FunctionDefinition):
 
 class MethodDefinition(FunctionDefinition):
     def __init__(self, class_name, name, arguments, includes, result_type,
-                 classes, typedefs):
+                 type_info):
         super(MethodDefinition, self).__init__(
-            name, arguments, includes, result_type, classes, typedefs)
+            name, arguments, includes, result_type, type_info)
         self.initial_args = ["%s self" % class_name]
 
     def _call_cpp_function(self, call_args):
@@ -278,11 +286,10 @@ class MethodDefinition(FunctionDefinition):
 
 
 class SetterDefinition(MethodDefinition):
-    def __init__(self, field, includes, classes, typedefs):
+    def __init__(self, field, includes, type_info):
         name = "set_%s" % field.name
         super(SetterDefinition, self).__init__(
-            field.class_name, name, [field], includes, "void", classes,
-            typedefs)
+            field.class_name, name, [field], includes, "void", type_info)
         self.field_name = field.name
 
     def _call_cpp_function(self, call_args):
@@ -292,11 +299,10 @@ class SetterDefinition(MethodDefinition):
 
 
 class GetterDefinition(MethodDefinition):
-    def __init__(self, field, includes, classes, typedefs):
+    def __init__(self, field, includes, type_info):
         name = "get_%s" % field.name
         super(GetterDefinition, self).__init__(
-            field.class_name, name, [], includes, field.tipe, classes,
-            typedefs)
+            field.class_name, name, [], includes, field.tipe, type_info)
         self.output_is_copy = False
         self.field_name = field.name
 
