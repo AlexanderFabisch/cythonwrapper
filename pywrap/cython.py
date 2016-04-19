@@ -1,4 +1,5 @@
 import os
+import sys
 try:
     from Cython.Build import cythonize
 except:
@@ -8,12 +9,13 @@ from .parser import parse, Includes
 from .exporter import CythonDeclarationExporter, CythonImplementationExporter
 
 
-def write_cython_wrapper(filenames, modulename=None, target=".", verbose=0):
+def write_cython_wrapper(filenames, modulename=None, target=".",
+                         custom_config=None, verbose=0):
     if not os.path.exists(target):
         os.makedirs(target)
 
     results, cython_files = make_cython_wrapper(
-        filenames, modulename, target, verbose)
+        filenames, modulename, target, custom_config, verbose)
     write_files(results, target)
     cython(cython_files, target)
 
@@ -31,7 +33,8 @@ def cython(cython_files, target="."):
         os.system("cython --cplus %s" % inputfile)
 
 
-def make_cython_wrapper(filenames, modulename=None, target=".", verbose=0):
+def make_cython_wrapper(filenames, modulename=None, target=".",
+                        custom_config=None, verbose=0):
     """Make Cython wrapper for C++ files.
 
     Parameters
@@ -64,6 +67,8 @@ def make_cython_wrapper(filenames, modulename=None, target=".", verbose=0):
         raise ValueError("Please give a module name when there are multiple "
                          "C++ files that you want to wrap.")
 
+    _load_custom_config(custom_config)
+
     includes = Includes()
     asts = _parse_files(filenames, includes, verbose)
     type_info = TypeInfo(asts)
@@ -83,6 +88,26 @@ def make_cython_wrapper(filenames, modulename=None, target=".", verbose=0):
 def _derive_module_name_from(filename):
     filename = filename.split(os.sep)[-1]
     return filename.split(".")[0]
+
+
+def _load_custom_config(custom_config):
+    if custom_config is None:
+        return
+
+    if not os.path.exists(custom_config):
+        raise ValueError("Configuration file '%s' does not exist."
+                         % custom_config)
+    if file_ending(custom_config) != config.python_file_ending:
+        raise ValueError("Configuration file must be a Python file.")
+
+    parts = custom_config.split(os.pathsep)
+    path = os.pathsep.join(parts[:-1])
+    filename = parts[-1]
+    module = _derive_module_name_from(filename)
+
+    sys.path.insert(0, path)
+    __import__(module)
+    sys.path.pop(0)
 
 
 class TypeInfo:

@@ -1,5 +1,6 @@
 # file endings
 cpp_header_endings = ["h", "hh", "hpp"]
+python_file_ending = "py"
 pyx_file_ending = "pyx"
 pxd_file_ending = "pxd"
 
@@ -102,3 +103,5 @@ if __name__ == '__main__':
     from numpy.distutils.core import setup
     setup(**configuration(top_path='').todict())
 """
+
+registered_converters = []

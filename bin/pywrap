@@ -13,9 +13,11 @@ if __name__ == "__main__":
         help="Name of the extension module that will be generated")
     argparser.add_argument("--outdir", type=str, nargs="?", default=".",
                            help="output directory")
+    argparser.add_argument("--config", type=str, nargs="?", default=None,
+                           help="Configuration (Python file)")
     argparser.add_argument("--verbose", "-v", action="count",
                            help="verbosity level")
     args = argparser.parse_args()
 
     pycy.write_cython_wrapper(
-        args.header, args.modulename, args.outdir, args.verbose)
+        args.header, args.modulename, args.outdir, args.config, args.verbose)

@@ -1,6 +1,7 @@
 import os
-import re
 from abc import ABCMeta, abstractmethod
+
+from . import defaultconfig as config
 from .utils import lines
 
 
@@ -87,7 +88,7 @@ def typedef_prefix(tname, typedefs):
 
 def create_type_converter(tname, python_argname, type_info, context=None):
     converters = []
-    converters.extend(registered_converters)
+    converters.extend(config.registered_converters)
     converters.extend(default_converters)
     for Converter in converters:
         converter = Converter(tname, python_argname, type_info, context)
@@ -405,5 +406,3 @@ default_converters = [
     AutomaticTypeConverter, VoidTypeConverter, DoubleArrayTypeConverter,
     EnumConverter, CythonTypeConverter, CppPointerTypeConverter,
     StlTypeConverter, PythonObjectConverter]
-
-registered_converters = []

@@ -2,8 +2,10 @@ import os
 import sys
 import numpy as np
 from contextlib import contextmanager
-from nose.tools import assert_equal, assert_not_equal, assert_true, assert_false
+from nose.tools import (assert_equal, assert_not_equal, assert_true,
+                        assert_false)
 import pywrap.cython as pycy
+from pywrap.defaultconfig import registered_converters
 from pywrap.utils import assert_warns_message
 
 PREFIX = os.sep.join(__file__.split(os.sep)[:-1])
@@ -22,8 +24,12 @@ def full_paths(filenames):
 
 
 @contextmanager
-def cython_extension_from(headers, modulename=None, cleanup=True):
-    filenames = _write_cython_wrapper(full_paths(headers), modulename)
+def cython_extension_from(headers, modulename=None, custom_config=None,
+                          cleanup=True):
+    if custom_config is not None:
+        custom_config = full_paths(custom_config)[0]
+    filenames = _write_cython_wrapper(full_paths(headers), modulename,
+                                      custom_config)
     _run_setup()
     try:
         yield
@@ -47,9 +53,10 @@ def hidden_stdout():
         os.dup2(oldstdout_fno, 1)
 
 
-def _write_cython_wrapper(filenames, modulename, verbose=0):
+def _write_cython_wrapper(filenames, modulename, custom_config, verbose=0):
     results, cython_files = pycy.make_cython_wrapper(
-        filenames, modulename=modulename, target=".", verbose=verbose)
+        filenames, modulename=modulename, custom_config=custom_config,
+        target=".", verbose=verbose)
     results[SETUPPY_NAME] = results["setup.py"]
     del results["setup.py"]
     pycy.write_files(results)
@@ -244,3 +251,10 @@ def test_enum():
         assert_equal(enum_to_string(MyEnum.FIRSTOPTION), "first")
         assert_equal(enum_to_string(MyEnum.SECONDOPTION), "second")
         assert_equal(enum_to_string(MyEnum.THIRDOPTION), "third")
+
+
+def test_register_custom_type_converter():
+    assert_warns_message(UserWarning, "Ignoring method",_write_cython_wrapper,
+                         full_paths("boolinboolout.hpp"), None,
+                         full_paths("config_register_converter.py")[0])
+    registered_converters.pop(0)
