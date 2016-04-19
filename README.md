@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/AlexanderFabisch/cythonwrapper.png?branch=master)](https://travis-ci.org/AlexanderFabisch/cythonwrapper)
+
 # cythonwrapper
 
 Automatically generates a Cython wrapper for C++ code
