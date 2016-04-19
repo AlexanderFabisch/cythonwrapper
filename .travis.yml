@@ -1,0 +1,8 @@
+language: python
+branches:
+  only:
+    - master
+install:
+  - sudo apt-get update -qq
+  - sudo apt-get install python-dev cython python-numpy python-nose python-coverage -qq
+script: nosetests
