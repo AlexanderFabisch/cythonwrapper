@@ -4,5 +4,5 @@ branches:
     - master
 install:
   - sudo apt-get update -qq
-  - sudo apt-get install python-dev cython python-numpy python-nose python-coverage -qq
+  - sudo apt-get install python-clang-3.5 libclang-3.5-dev python-dev cython python-numpy python-nose python-coverage -qq
 script: nosetests
