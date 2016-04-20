@@ -99,8 +99,8 @@ def _load_config(custom_config):
         raise ValueError("Configuration file '%s' does not exist."
                          % custom_config)
 
-    parts = custom_config.split(os.pathsep)
-    path = os.pathsep.join(parts[:-1])
+    parts = custom_config.split(os.sep)
+    path = os.sep.join(parts[:-1])
     filename = parts[-1]
     module = _derive_module_name_from(filename)
 
