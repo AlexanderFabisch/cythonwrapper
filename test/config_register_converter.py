@@ -1,5 +1,5 @@
 from pywrap.type_conversion import AbstractTypeConverter
-from pywrap import defaultconfig as config
+from pywrap.defaultconfig import Config
 
 
 class CustomTypeConverter(AbstractTypeConverter):
@@ -28,4 +28,5 @@ class CustomTypeConverter(AbstractTypeConverter):
         raise NotImplementedError()
 
 
+config = Config()
 config.registered_converters.append(CustomTypeConverter)

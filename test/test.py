@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from nose.tools import (assert_equal, assert_not_equal, assert_true,
                         assert_false)
 import pywrap.cython as pycy
-from pywrap.defaultconfig import registered_converters
+from pywrap.defaultconfig import Config
 from pywrap.utils import assert_warns_message
 
 PREFIX = os.sep.join(__file__.split(os.sep)[:-1])
@@ -257,4 +257,3 @@ def test_register_custom_type_converter():
     assert_warns_message(UserWarning, "Ignoring method",_write_cython_wrapper,
                          full_paths("boolinboolout.hpp"), None,
                          full_paths("config_register_converter.py")[0])
-    registered_converters.pop(0)

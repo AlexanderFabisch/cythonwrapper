@@ -1,7 +1,6 @@
 import os
 import warnings
-
-from . import defaultconfig as config
+from . import templates
 from .type_conversion import create_type_converter
 from .utils import indent_block, from_camel_case
 
@@ -11,8 +10,9 @@ class CythonDeclarationExporter:
 
     This class implements the visitor pattern.
     """
-    def __init__(self, includes):
+    def __init__(self, includes, config):
         self.includes = includes
+        self.config = config
         self.output = ""
         self.ctors = []
         self.methods = []
@@ -27,16 +27,16 @@ class CythonDeclarationExporter:
         enum_decl_dict.update(enum.__dict__)
         enum_decl_dict["constants"] = indent_block(
             os.linesep.join(enum.constants), 2)
-        self.output += config.enum_decl % enum_decl_dict + os.linesep
+        self.output += templates.enum_decl % enum_decl_dict + os.linesep
 
     def visit_typedef(self, typedef):
-        self.output += config.typedef_decl % typedef.__dict__ + os.linesep
+        self.output += templates.typedef_decl % typedef.__dict__ + os.linesep
 
     def visit_field(self, field):
-        self.fields.append(config.field_decl % field.__dict__)
+        self.fields.append(templates.field_decl % field.__dict__)
 
     def visit_class(self, clazz):
-        class_decl_parts = [config.class_decl % clazz.__dict__,
+        class_decl_parts = [templates.class_decl % clazz.__dict__,
                             os.linesep.join(self.fields),
                             os.linesep.join(self.ctors),
                             os.linesep.join(self.methods)]
@@ -53,33 +53,34 @@ class CythonDeclarationExporter:
     def visit_constructor(self, ctor):
         const_dict = {"args": ", ".join(self.arguments)}
         const_dict.update(ctor.__dict__)
-        const_str = config.constructor_decl % const_dict
+        const_str = templates.constructor_decl % const_dict
         self.ctors.append(const_str)
         self.arguments = []
 
     def visit_method(self, method):
         method_dict = {"args": ", ".join(self.arguments)}
         method_dict.update(method.__dict__)
-        method_dict["name"] = replace_operator_decl(method_dict["name"])
-        method_str = config.method_decl % method_dict
+        method_dict["name"] = replace_operator_decl(method_dict["name"],
+                                                    self.config)
+        method_str = templates.method_decl % method_dict
         self.methods.append(method_str)
         self.arguments = []
 
     def visit_function(self, function):
         function_dict = {"args": ", ".join(self.arguments)}
         function_dict.update(function.__dict__)
-        function_str = config.function_decl % function_dict
+        function_str = templates.function_decl % function_dict
         self.output += (os.linesep * 2 + function_str + os.linesep)
         self.arguments = []
 
     def visit_param(self, param):
-        self.arguments.append(config.arg_decl % param.__dict__)
+        self.arguments.append(templates.arg_decl % param.__dict__)
 
     def export(self):
         return self.output
 
 
-def replace_operator_decl(method_name):
+def replace_operator_decl(method_name, config):
     if method_name in config.call_operators:
         return "%s \"%s\"" % (config.call_operators[method_name], method_name)
     else:
@@ -91,9 +92,10 @@ class CythonImplementationExporter:
 
     This class implements the visitor pattern.
     """
-    def __init__(self, includes, type_info):
+    def __init__(self, includes, type_info, config):
         self.includes = includes
         self.type_info = type_info
+        self.config = config
         self.output = ""
         self.ctors = []
         self.methods = []
@@ -107,7 +109,7 @@ class CythonImplementationExporter:
         enum_def_dict.update(enum.__dict__)
         enum_def_dict["constants"] = indent_block(os.linesep.join(
             ["%s = cpp.%s" % (c, c) for c in enum.constants]), 1)
-        self.output += config.enum_def % enum_def_dict + os.linesep
+        self.output += templates.enum_def % enum_def_dict + os.linesep
 
     def visit_typedef(self, typedef):
         pass
@@ -115,10 +117,10 @@ class CythonImplementationExporter:
     def visit_field(self, field):
         try:
             setter_def = SetterDefinition(
-                field, self.includes, self.type_info).make()
+                field, self.includes, self.type_info, self.config).make()
             getter_def = GetterDefinition(
-                field, self.includes, self.type_info).make()
-            field_def_parts = [config.field_def
+                field, self.includes, self.type_info, self.config).make()
+            field_def_parts = [templates.field_def
                                % {"name": from_camel_case(field.name)},
                                indent_block(getter_def, 1),
                                indent_block(setter_def, 1)]
@@ -133,9 +135,9 @@ class CythonImplementationExporter:
                    "all others." % clazz.name)
             warnings.warn(msg)
         elif len(self.ctors) == 0:
-            self.ctors.append(config.ctor_default_def % clazz.__dict__)
+            self.ctors.append(templates.ctor_default_def % clazz.__dict__)
 
-        class_def_parts = [config.class_def % clazz.__dict__,
+        class_def_parts = [templates.class_def % clazz.__dict__,
                            os.linesep.join(self.fields),
                            os.linesep.join(self.ctors),
                            os.linesep.join(self.methods)]
@@ -151,7 +153,7 @@ class CythonImplementationExporter:
         try:
             function_def = ConstructorDefinition(
                 ctor.class_name, ctor.arguments, self.includes,
-                self.type_info).make()
+                self.type_info, self.config).make()
             self.ctors.append(indent_block(function_def, 1))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % ctor.name)
@@ -160,7 +162,7 @@ class CythonImplementationExporter:
         try:
             method_def = MethodDefinition(
                 method.class_name, method.name, method.arguments, self.includes,
-                method.result_type, self.type_info).make()
+                method.result_type, self.type_info, self.config).make()
             self.methods.append(indent_block(method_def, 1))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % method.name)
@@ -169,7 +171,7 @@ class CythonImplementationExporter:
         try:
             function_def = FunctionDefinition(
                 function.name, function.arguments, self.includes,
-                function.result_type, self.type_info).make()
+                function.result_type, self.type_info, self.config).make()
             self.output += (os.linesep * 2 + function_def + os.linesep)
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring function '%s'" % function.name)
@@ -182,13 +184,15 @@ class CythonImplementationExporter:
 
 
 class FunctionDefinition(object):
-    def __init__(self, name, arguments, includes, result_type, type_info):
+    def __init__(self, name, arguments, includes, result_type, type_info,
+                 config):
         self.name = name
         self.arguments = arguments
         self.includes = includes
         self.initial_args = []
         self.result_type = result_type
         self.type_info = type_info
+        self.config = config
         self.output_is_copy = True
         self._create_type_converters()
 
@@ -200,12 +204,13 @@ class FunctionDefinition(object):
                 skip -= 1
                 continue
             type_converter = create_type_converter(
-                arg.tipe, arg.name, self.type_info, (self.arguments, i))
+                arg.tipe, arg.name, self.type_info, self.config,
+                (self.arguments, i))
             type_converter.add_includes(self.includes)
             self.type_converters.append(type_converter)
             skip = type_converter.n_cpp_args() - 1
         self.output_type_converter = create_type_converter(
-            self.result_type, None, self.type_info)
+            self.result_type, None, self.type_info, self.config)
         self.output_type_converter.add_includes(self.includes)
 
     def make(self):
@@ -217,14 +222,14 @@ class FunctionDefinition(object):
         return result
 
     def _signature(self):
-        function_name = from_camel_case(config.operators.get(
+        function_name = from_camel_case(self.config.operators.get(
             self.name, self.name))
         signature_config = {
             "def": self._def_prefix(function_name),
             "name": function_name,
             "args": ", ".join(self._cython_signature_args())
         }
-        return config.signature_def % signature_config
+        return templates.signature_def % signature_config
 
     def _def_prefix(self, function_name):
         special_method = (function_name.startswith("__") and
@@ -252,64 +257,65 @@ class FunctionDefinition(object):
 
     def _call_cpp_function(self, call_args):
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
-        call = config.fun_call % {
-            "name": self.name, "args": ", ".join(call_args)}
+        call = templates.fun_call % {"name": self.name,
+                                     "args": ", ".join(call_args)}
         return catch_result(cpp_type_decl, call) + os.linesep
 
 
 class ConstructorDefinition(FunctionDefinition):
-    def __init__(self, class_name, arguments, includes, type_info):
+    def __init__(self, class_name, arguments, includes, type_info, config):
         super(ConstructorDefinition, self).__init__(
             "__init__", arguments, includes, result_type=None,
-            type_info=type_info)
+            type_info=type_info, config=config)
         self.initial_args = ["%s self" % class_name]
         self.class_name = class_name
 
     def _call_cpp_function(self, call_args):
-        return config.ctor_call % {"class_name": self.class_name,
-                                   "args": ", ".join(call_args)} + os.linesep
+        return templates.ctor_call % {"class_name": self.class_name,
+                                      "args": ", ".join(call_args)} + os.linesep
 
 
 class MethodDefinition(FunctionDefinition):
     def __init__(self, class_name, name, arguments, includes, result_type,
-                 type_info):
+                 type_info, config):
         super(MethodDefinition, self).__init__(
-            name, arguments, includes, result_type, type_info)
+            name, arguments, includes, result_type, type_info, config)
         self.initial_args = ["%s self" % class_name]
 
     def _call_cpp_function(self, call_args):
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
-        call = config.method_call % {
-            "name": config.call_operators.get(self.name, self.name),
+        call = templates.method_call % {
+            "name": self.config.call_operators.get(self.name, self.name),
             "args": ", ".join(call_args)}
         return catch_result(cpp_type_decl, call) + os.linesep
 
 
 class SetterDefinition(MethodDefinition):
-    def __init__(self, field, includes, type_info):
+    def __init__(self, field, includes, type_info, config):
         name = "set_%s" % field.name
         super(SetterDefinition, self).__init__(
-            field.class_name, name, [field], includes, "void", type_info)
+            field.class_name, name, [field], includes, "void", type_info,
+            config)
         self.field_name = field.name
 
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 1
-        return config.setter_call % {"name": self.field_name,
-                                     "call_arg": call_args[0]}
+        return templates.setter_call % {"name": self.field_name,
+                                        "call_arg": call_args[0]}
 
 
 class GetterDefinition(MethodDefinition):
-    def __init__(self, field, includes, type_info):
+    def __init__(self, field, includes, type_info, config):
         name = "get_%s" % field.name
         super(GetterDefinition, self).__init__(
-            field.class_name, name, [], includes, field.tipe, type_info)
+            field.class_name, name, [], includes, field.tipe, type_info, config)
         self.output_is_copy = False
         self.field_name = field.name
 
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 0
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
-        call = config.getter_call % {"name": self.field_name}
+        call = templates.getter_call % {"name": self.field_name}
         return catch_result(cpp_type_decl, call) + os.linesep
 
 
@@ -317,5 +323,5 @@ def catch_result(result_type_decl, call):
     if result_type_decl == "":
         return call
     else:
-        return config.catch_result % {"cpp_type_decl": result_type_decl,
-                                      "call": call}
+        return templates.catch_result % {"cpp_type_decl": result_type_decl,
+                                         "call": call}

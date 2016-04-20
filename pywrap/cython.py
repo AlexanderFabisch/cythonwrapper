@@ -4,7 +4,8 @@ try:
     from Cython.Build import cythonize
 except:
     raise Exception("Install 'cython'.")
-from . import defaultconfig as config
+from . import templates
+from .defaultconfig import Config
 from .parser import parse, Includes
 from .exporter import CythonDeclarationExporter, CythonImplementationExporter
 
@@ -67,15 +68,15 @@ def make_cython_wrapper(filenames, modulename=None, target=".",
         raise ValueError("Please give a module name when there are multiple "
                          "C++ files that you want to wrap.")
 
-    _load_custom_config(custom_config)
+    config = _load_config(custom_config)
 
     includes = Includes()
-    asts = _parse_files(filenames, includes, verbose)
+    asts = _parse_files(filenames, includes, config, verbose)
     type_info = TypeInfo(asts)
 
     ext_results, files_to_cythonize = _generate_extension(
-        modulename, asts, includes, type_info, verbose)
-    decl_results = _generate_declarations(asts, includes, verbose)
+        modulename, asts, includes, type_info, config, verbose)
+    decl_results = _generate_declarations(asts, includes, config, verbose)
 
     results = {}
     results.update(ext_results)
@@ -90,15 +91,13 @@ def _derive_module_name_from(filename):
     return filename.split(".")[0]
 
 
-def _load_custom_config(custom_config):
+def _load_config(custom_config):
     if custom_config is None:
-        return
+        return Config()
 
     if not os.path.exists(custom_config):
         raise ValueError("Configuration file '%s' does not exist."
                          % custom_config)
-    if file_ending(custom_config) != config.python_file_ending:
-        raise ValueError("Configuration file must be a Python file.")
 
     parts = custom_config.split(os.pathsep)
     path = os.pathsep.join(parts[:-1])
@@ -106,8 +105,9 @@ def _load_custom_config(custom_config):
     module = _derive_module_name_from(filename)
 
     sys.path.insert(0, path)
-    __import__(module)
+    m = __import__(module)
     sys.path.pop(0)
+    return m.config
 
 
 class TypeInfo:
@@ -118,7 +118,7 @@ class TypeInfo:
         self.enums = [enum.tipe for ast in asts for enum in ast.enums]
 
 
-def _parse_files(filenames, includes, verbose):
+def _parse_files(filenames, includes, config, verbose):
     asts = []
     for filename in filenames:
         is_header = file_ending(filename) in config.cpp_header_endings
@@ -142,12 +142,12 @@ def file_ending(filename):
     return filename.split(".")[-1]
 
 
-def _generate_extension(modulename, asts, includes, type_info, verbose):
+def _generate_extension(modulename, asts, includes, type_info, config, verbose):
     results = {}
     files_to_cythonize = []
     extension = ""
     for ast in asts:
-        cie = CythonImplementationExporter(includes, type_info)
+        cie = CythonImplementationExporter(includes, type_info, config)
         ast.accept(cie)
         extension += cie.export()
     pyx_filename = modulename + "." + config.pyx_file_ending
@@ -159,11 +159,11 @@ def _generate_extension(modulename, asts, includes, type_info, verbose):
     return results, files_to_cythonize
 
 
-def _generate_declarations(asts, includes, verbose):
+def _generate_declarations(asts, includes, config, verbose):
     results = {}
     declarations = ""
     for ast in asts:
-        cde = CythonDeclarationExporter(includes)
+        cde = CythonDeclarationExporter(includes, config)
         ast.accept(cde)
         declarations += cde.export()
     pxd_filename = "_declarations." + config.pxd_file_ending
@@ -183,4 +183,4 @@ def _make_setup(filenames, modulename, target):
         "module": modulename,
         "sourcedir": sourcedir
     }
-    return config.setup_py % extension
+    return templates.setup_py % extension

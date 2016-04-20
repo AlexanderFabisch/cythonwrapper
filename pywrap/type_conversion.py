@@ -86,7 +86,8 @@ def typedef_prefix(tname, typedefs):
         return tname
 
 
-def create_type_converter(tname, python_argname, type_info, context=None):
+def create_type_converter(tname, python_argname, type_info, config,
+                          context=None):
     converters = []
     converters.extend(config.registered_converters)
     converters.extend(default_converters)
