@@ -1,4 +1,4 @@
-from pywrap.type_conversion import typename, cython_define_basic_inputarg
+from pywrap.type_conversion import typename
 from pywrap.utils import assert_equal_linewise
 from nose.tools import assert_equal
 
@@ -31,8 +31,3 @@ def test_complex_hierarchy():
     tname = ("std::map<std::string, "
              "std::vector<std::map<double, std::string> > >")
     assert_equal(typename(tname), "map[string, vector[map[double, string] ] ]")
-
-
-def test_define_inputarg_basic():
-    assert_equal_linewise(
-        cython_define_basic_inputarg("int", "cpp_a", "a"), "int cpp_a = a")

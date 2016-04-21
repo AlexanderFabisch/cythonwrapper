@@ -60,10 +60,6 @@ def _replace_angle_brackets(tname):
     return tname.replace("<", "[").replace(">", "]")
 
 
-def cython_define_basic_inputarg(cython_tname, cython_argname, python_argname):
-    return "%s %s = %s" % (cython_tname, cython_argname, python_argname)
-
-
 def _is_pointer(tname):
     parts = tname.split()
     return len(parts) == 2 and parts[1] == "*"
@@ -220,8 +216,8 @@ class AutomaticTypeConverter(AbstractTypeConverter):
 
     def python_to_cpp(self):
         cython_argname = "cpp_" + self.python_argname
-        return cython_define_basic_inputarg(
-            self.cpp_type_decl(), cython_argname, self.python_argname)
+        return "%s %s = %s" % (self.cpp_type_decl(), cython_argname,
+                               self.python_argname)
 
     def python_type_decl(self):
         return "%s %s" % (typedef_prefix(self.tname, self.type_info.typedefs),
@@ -229,6 +225,36 @@ class AutomaticTypeConverter(AbstractTypeConverter):
 
     def cpp_type_decl(self):
         return "cdef " + typedef_prefix(self.tname, self.type_info.typedefs)
+
+
+class AutomaticPointerTypeConverter(AbstractTypeConverter):
+    def matches(self):
+        return (_is_pointer(self.tname) and
+                is_type_with_automatic_conversion(underlying_type(
+                    _type_without_pointer(self.tname),
+                    self.type_info.typedefs)))
+
+    def n_cpp_args(self):
+        return 1
+
+    def cpp_call_args(self):
+        return ["cpp_" + self.python_argname]
+
+    def python_to_cpp(self):
+        cython_argname = "cpp_" + self.python_argname
+        return "%s %s = &%s" % (self.cpp_type_decl(), cython_argname,
+                                self.python_argname)
+
+    def python_type_decl(self):
+        python_tname = _type_without_pointer(typedef_prefix(
+            _type_without_pointer(self.tname), self.type_info.typedefs))
+        return "%s %s" % (python_tname, self.python_argname)
+
+    def cpp_type_decl(self):
+        return "cdef " + self.tname
+
+    def return_output(self, copy=True):
+        raise NotImplementedError()
 
 
 class DoubleArrayTypeConverter(AbstractTypeConverter):
@@ -399,11 +425,11 @@ class StlTypeConverter(PythonObjectConverter):
 
     def python_to_cpp(self):
         cython_argname = "cpp_" + self.python_argname
-        return cython_define_basic_inputarg(
-            self.cpp_type_decl(), cython_argname, self.python_argname)
+        return "%s %s = %s" % (self.cpp_type_decl(), cython_argname,
+                               self.python_argname)
 
 
 default_converters = [
-    AutomaticTypeConverter, VoidTypeConverter, DoubleArrayTypeConverter,
-    EnumConverter, CythonTypeConverter, CppPointerTypeConverter,
-    StlTypeConverter, PythonObjectConverter]
+    DoubleArrayTypeConverter, VoidTypeConverter, AutomaticTypeConverter,
+    AutomaticPointerTypeConverter, EnumConverter, CythonTypeConverter,
+    CppPointerTypeConverter, StlTypeConverter, PythonObjectConverter]

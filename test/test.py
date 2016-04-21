@@ -257,3 +257,9 @@ def test_register_custom_type_converter():
     assert_warns_message(UserWarning, "Ignoring method",_write_cython_wrapper,
                          full_paths("boolinboolout.hpp"), None,
                          full_paths("config_register_converter.py")[0])
+
+
+def test_primitive_pointers():
+    with cython_extension_from("primitivepointers.hpp"):
+        from primitivepointers import fun1
+        assert_equal(fun1(5), 6)
