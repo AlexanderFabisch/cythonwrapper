@@ -1,23 +1,21 @@
 import os
 from abc import ABCMeta, abstractmethod
-
-from . import defaultconfig as config
 from .utils import lines
 
 
-def is_basic_type(typename):
-    # TODO This is not a complete list of the fundamental types. The reason is
-    # that I don't know if they all will be converted correctly between Python
-    # and C++ by Cython. See http://en.cppreference.com/w/cpp/language/types
-    # for a complete list.
-    return typename in ["int", "unsigned int", "long", "unsigned long",
+def is_basic_type_with_automatic_conversion(typename):
+    # source: http://docs.cython.org/src/userguide/wrapping_CPlusPlus.html#standard-library
+    return typename in ["bool", "string", "char *",
+                        "int", "unsigned int", "long", "unsigned long",
                         "float", "double"]
 
 
-def is_type_with_automatic_conversion(typename):
-    # TODO add more types from this list:
-    # http://docs.cython.org/src/userguide/wrapping_CPlusPlus.html#standard-library
-    return is_basic_type(typename) or typename in ["bool", "string", "char *"]
+def is_stl_type_with_automatic_conversion(typename):
+    # source: http://docs.cython.org/src/userguide/wrapping_CPlusPlus.html#standard-library
+    for container in ["string", "map", "vector", "list", "set", "pair"]:
+        if typename.startswith(container):
+            return True
+    return False
 
 
 def typename(tname):
@@ -205,7 +203,7 @@ class VoidTypeConverter(AbstractTypeConverter):
 
 class AutomaticTypeConverter(AbstractTypeConverter):
     def matches(self):
-        return is_type_with_automatic_conversion(
+        return is_basic_type_with_automatic_conversion(
             underlying_type(self.tname, self.type_info.typedefs))
 
     def n_cpp_args(self):
@@ -230,7 +228,7 @@ class AutomaticTypeConverter(AbstractTypeConverter):
 class AutomaticPointerTypeConverter(AbstractTypeConverter):
     def matches(self):
         return (_is_pointer(self.tname) and
-                is_type_with_automatic_conversion(underlying_type(
+                is_basic_type_with_automatic_conversion(underlying_type(
                     _type_without_pointer(self.tname),
                     self.type_info.typedefs)))
 
@@ -418,7 +416,7 @@ class PythonObjectConverter(AbstractTypeConverter):
 class StlTypeConverter(PythonObjectConverter):
     def matches(self):
         tname = underlying_type(self.tname, self.type_info.typedefs)
-        return tname.startswith("vector") or tname.startswith("map")
+        return is_stl_type_with_automatic_conversion(tname)
 
     def cpp_call_args(self):
         return ["cpp_" + self.python_argname]

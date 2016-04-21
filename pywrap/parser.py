@@ -146,20 +146,23 @@ class Includes:
     def __init__(self):
         self.numpy = False
         self.boolean = True
-        self.vector = False
-        self.string = False
-        self.map = False
+        self.stl = {"vector": False,
+                    "string": False,
+                    "deque": False,
+                    "list": False,
+                    "map": False,
+                    "pair": False,
+                    "queue": False,
+                    "set": False,
+                    "stack": False}
         self.deref = False
 
     def add_include_for(self, tname):
         if self._part_of_tname(tname, "bool"):
             self.boolean = True
-        if self._part_of_tname(tname, "string"):
-            self.string = True
-        if self._part_of_tname(tname, "vector"):
-            self.vector = True
-        if self._part_of_tname(tname, "map"):
-            self.map = True
+        for t in self.stl.keys():
+            if self._part_of_tname(tname, t):
+                self.stl[t] = True
 
     def add_include_for_deref(self):
         self.deref = True
@@ -177,12 +180,12 @@ class Includes:
         includes = ""
         if self.boolean:
             includes += "from libcpp cimport bool" + os.linesep
-        if self.vector:
-            includes += "from libcpp.vector cimport vector" + os.linesep
-        if self.string:
-            includes += "from libcpp.string cimport string" + os.linesep
-        if self.map:
-            includes += "from libcpp.map cimport map" + os.linesep
+
+        for t in self.stl.keys():
+            if self.stl[t]:
+                includes += ("from libcpp.%(type)s cimport %(type)s"
+                             % {"type": t}) + os.linesep
+
         return includes
 
     def implementations_import(self):
@@ -192,12 +195,12 @@ class Includes:
             includes += "import numpy as np" + os.linesep
         if self.boolean:
             includes += "from libcpp cimport bool" + os.linesep
-        if self.vector:
-            includes += "from libcpp.vector cimport vector" + os.linesep
-        if self.string:
-            includes += "from libcpp.string cimport string" + os.linesep
-        if self.map:
-            includes += "from libcpp.map cimport map" + os.linesep
+
+        for t in self.stl.keys():
+            if self.stl[t]:
+                includes += ("from libcpp.%(type)s cimport %(type)s"
+                             % {"type": t}) + os.linesep
+
         if self.deref:
             includes += ("from cython.operator cimport dereference as deref" +
                          os.linesep)
