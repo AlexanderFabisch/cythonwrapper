@@ -7,7 +7,7 @@ except:
                     "Ubuntu 14.04.")
 import os
 import warnings
-from .type_conversion import typename
+from .type_conversion import cythontype_from_cpptype
 
 
 def parse(include_file, parsable_file, includes, verbose):
@@ -50,13 +50,13 @@ class AST:
             else:
                 self.namespace = self.namespace + "::" + node.displayname
         elif node.kind == ci.CursorKind.PARM_DECL:
-            tname = typename(node.type.spelling)
+            tname = cythontype_from_cpptype(node.type.spelling)
             self.includes.add_include_for(tname)
             param = Param(node.displayname, tname)
             if self.last_function is not None:
                 self.last_function.arguments.append(param)
         elif node.kind == ci.CursorKind.FUNCTION_DECL:
-            tname = typename(node.result_type.spelling)
+            tname = cythontype_from_cpptype(node.result_type.spelling)
             self.includes.add_include_for(tname)
             function = Function(
                 include_file, self.namespace, node.spelling, tname)
@@ -67,7 +67,7 @@ class AST:
             warnings.warn("Templates are not implemented yet")
         elif node.kind == ci.CursorKind.CXX_METHOD:
             if node.access_specifier == ci.AccessSpecifier.PUBLIC:
-                tname = typename(node.result_type.spelling)
+                tname = cythontype_from_cpptype(node.result_type.spelling)
                 self.includes.add_include_for(tname)
                 method = Method(node.spelling, tname, self.classes[-1].name)
                 self.classes[-1].methods.append(method)
@@ -92,7 +92,7 @@ class AST:
                 self.last_type = clazz
         elif node.kind == ci.CursorKind.FIELD_DECL:
             if node.access_specifier == ci.AccessSpecifier.PUBLIC:
-                tname = typename(node.type.spelling)
+                tname = cythontype_from_cpptype(node.type.spelling)
                 self.includes.add_include_for(tname)
                 field = Field(node.displayname, tname, self.last_type.name)
                 self.last_type.fields.append(field)
@@ -110,8 +110,9 @@ class AST:
                 parse_children = False
             else:
                 self.includes.add_include_for(underlying_tname)
-                self.typedefs.append(Typedef(include_file, self.namespace,
-                                             tname, typename(underlying_tname)))
+                self.typedefs.append(Typedef(
+                    include_file, self.namespace, tname,
+                    cythontype_from_cpptype(underlying_tname)))
         elif node.kind == ci.CursorKind.ENUM_DECL:
             enum = Enum(include_file, self.namespace, node.displayname)
             self.last_enum = enum

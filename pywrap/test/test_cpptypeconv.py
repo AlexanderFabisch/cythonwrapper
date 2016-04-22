@@ -1,33 +1,36 @@
-from pywrap.type_conversion import typename
-from pywrap.utils import assert_equal_linewise
+from pywrap.type_conversion import cythontype_from_cpptype
 from nose.tools import assert_equal
 
 
 def test_basic_typename():
-    assert_equal(typename("unsigned int"), "unsigned int")
+    assert_equal(cythontype_from_cpptype("unsigned int"), "unsigned int")
 
 
 def test_remove_const():
-    assert_equal(typename("const int"), "int")
+    assert_equal(cythontype_from_cpptype("const int"), "int")
 
 
 def test_container():
-    assert_equal(typename("std::vector<int>"), "vector[int]")
+    assert_equal(cythontype_from_cpptype("std::vector<int>"),
+                 "vector[int]")
 
 
 def test_container_of_complex_type():
-    assert_equal(typename("std::vector<std::string>"), "vector[string]")
+    assert_equal(cythontype_from_cpptype("std::vector<std::string>"),
+                 "vector[string]")
 
 
 def test_map():
-    assert_equal(typename("std::map<std::string, int>"), "map[string, int]")
+    assert_equal(cythontype_from_cpptype("std::map<std::string, int>"),
+                 "map[string, int]")
 
 
 def test_map_str_to_str():
-    assert_equal(typename("std::map<std::string, std::string>"),
+    assert_equal(cythontype_from_cpptype("std::map<std::string, std::string>"),
                  "map[string, string]")
 
 def test_complex_hierarchy():
     tname = ("std::map<std::string, "
              "std::vector<std::map<double, std::string> > >")
-    assert_equal(typename(tname), "map[string, vector[map[double, string] ] ]")
+    assert_equal(cythontype_from_cpptype(tname),
+                 "map[string, vector[map[double, string] ] ]")

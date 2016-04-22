@@ -18,8 +18,8 @@ def is_stl_type_with_automatic_conversion(typename):
     return False
 
 
-def typename(tname):
-    """Get cython type from C++ type."""
+def cythontype_from_cpptype(tname):
+    """Get Cython type from C++ type."""
     cython_tname = tname
     cython_tname = _remove_const_modifier(cython_tname)
     cython_tname = _remove_reference_modifier(cython_tname)
