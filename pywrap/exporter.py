@@ -67,7 +67,7 @@ class CythonDeclarationExporter:
         function_dict = {"args": ", ".join(self.arguments)}
         function_dict.update(function.__dict__)
         function_str = templates.function_decl % function_dict
-        self.output += (os.linesep * 2 + function_str + os.linesep)
+        self.output += function_str
         self.arguments = []
 
     def visit_param(self, param):
@@ -144,10 +144,10 @@ class CythonImplementationExporter:
 
     def visit_constructor(self, ctor):
         try:
-            function_def = ConstructorDefinition(
+            constructor_def = ConstructorDefinition(
                 ctor.class_name, ctor.arguments, self.includes,
                 self.type_info, self.config).make()
-            self.ctors.append(indent_block(function_def, 1))
+            self.ctors.append(indent_block(constructor_def, 1))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % ctor.name)
 
@@ -162,10 +162,10 @@ class CythonImplementationExporter:
 
     def visit_function(self, function):
         try:
-            function_def = FunctionDefinition(
+            self.output += os.linesep * 2 + FunctionDefinition(
                 function.name, function.arguments, self.includes,
-                function.result_type, self.type_info, self.config).make()
-            self.output += (os.linesep * 2 + function_def + os.linesep)
+                function.result_type, self.type_info,
+                self.config).make() + os.linesep
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring function '%s'" % function.name)
 
