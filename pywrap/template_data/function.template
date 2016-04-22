@@ -1,0 +1,14 @@
+{{def_prefix}} {{name}}({{args}}):
+{%- if input_conversions %}
+{%- for input_conversion in input_conversions %}
+    {%- if input_conversion != "" %}
+    {{ input_conversion|indent(4) }}
+    {%- endif %}
+{%- endfor %}
+{%- endif %}
+{%- if call %}
+    {{ call|indent(4) }}
+{%- endif %}
+{%- if return_output %}
+    {{ return_output|indent(4) }}
+{%- endif %}

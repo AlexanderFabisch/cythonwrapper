@@ -15,6 +15,7 @@ cdef class {{ name }}:
 {%- for ctor in ctors %}
 
 {{ ctor }}
+
 {%- endfor %}
 
 {%- for field in fields %}

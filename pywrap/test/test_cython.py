@@ -11,8 +11,7 @@ def test_simple_function_def():
             "Testclass", "testfun", [], Includes(),
             "void", TypeInfo({}), Config()).make(),
             lines("cpdef testfun(Testclass self):",
-                  "    self.thisptr.testfun()",
-                  ""))
+                  "    self.thisptr.testfun()"))
 
 
 def test_array_arg_function_def():
@@ -22,6 +21,4 @@ def test_array_arg_function_def():
         Includes(), "void", TypeInfo({}), Config()).make()
     assert_equal_linewise(testfun,
         lines("cpdef testfun(Testclass self, np.ndarray[double, ndim=1] a):",
-              "",
-              "    self.thisptr.testfun(&a[0], a.shape[0])",
-              ""))
+              "    self.thisptr.testfun(&a[0], a.shape[0])"))

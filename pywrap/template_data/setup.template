@@ -7,7 +7,7 @@ def configuration(parent_package='', top_path=None):
         '{{ module }}',
         sources=["{{ module }}.cpp",
 {%- for filename in filenames %}
-                 "{{ filename }}"
+                 "{{ filename }}",
 {%- endfor %}
                  ],
         include_dirs=["{{ sourcedir }}", numpy.get_include()],

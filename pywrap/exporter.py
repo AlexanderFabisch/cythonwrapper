@@ -207,19 +207,21 @@ class FunctionDefinition(object):
         self.output_type_converter.add_includes(self.includes)
 
     def make(self):
-        result = self._signature() + os.linesep
-        body, call_args = self._input_type_conversions(self.includes)
-        body += self._call_cpp_function(call_args)
-        body += self.output_type_converter.return_output(self.output_is_copy)
-        result += indent_block(body, 1)
-        return result
+        function = {}
+        function.update(self._signature())
+        function["input_conversions"], call_args = self._input_type_conversions(
+            self.includes)
+        function["call"] = self._call_cpp_function(call_args)
+        function["return_output"] = self.output_type_converter.return_output(
+            self.output_is_copy)
+        return render("function", **function)
 
     def _signature(self):
         function_name = from_camel_case(self.config.operators.get(
             self.name, self.name))
-        return render("signature", def_prefix=self._def_prefix(function_name),
-                      args=", ".join(self._cython_signature_args()),
-                      name=function_name)
+        return {"def_prefix": self._def_prefix(function_name),
+                "args": ", ".join(self._cython_signature_args()),
+                "name": function_name}
 
     def _def_prefix(self, function_name):
         special_method = (function_name.startswith("__") and
@@ -238,18 +240,18 @@ class FunctionDefinition(object):
         return cython_signature_args
 
     def _input_type_conversions(self, includes):
-        body = ""
+        conversions = []
         call_args = []
         for type_converter in self.type_converters:
-            body += type_converter.python_to_cpp() + os.linesep
+            conversions.append(type_converter.python_to_cpp())
             call_args.extend(type_converter.cpp_call_args())
-        return body, call_args
+        return conversions, call_args
 
     def _call_cpp_function(self, call_args):
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
         call = templates.fun_call % {"name": self.name,
                                      "args": ", ".join(call_args)}
-        return catch_result(cpp_type_decl, call) + os.linesep
+        return catch_result(cpp_type_decl, call)
 
 
 class ConstructorDefinition(FunctionDefinition):
@@ -262,7 +264,7 @@ class ConstructorDefinition(FunctionDefinition):
 
     def _call_cpp_function(self, call_args):
         return templates.ctor_call % {"class_name": self.class_name,
-                                      "args": ", ".join(call_args)} + os.linesep
+                                      "args": ", ".join(call_args)}
 
 
 class MethodDefinition(FunctionDefinition):
@@ -277,7 +279,7 @@ class MethodDefinition(FunctionDefinition):
         call = templates.method_call % {
             "name": self.config.call_operators.get(self.name, self.name),
             "args": ", ".join(call_args)}
-        return catch_result(cpp_type_decl, call) + os.linesep
+        return catch_result(cpp_type_decl, call)
 
 
 class SetterDefinition(MethodDefinition):
@@ -306,7 +308,7 @@ class GetterDefinition(MethodDefinition):
         assert len(call_args) == 0
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
         call = templates.getter_call % {"name": self.field_name}
-        return catch_result(cpp_type_decl, call) + os.linesep
+        return catch_result(cpp_type_decl, call)
 
 
 def catch_result(result_type_decl, call):
