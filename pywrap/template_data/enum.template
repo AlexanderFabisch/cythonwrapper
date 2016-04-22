@@ -1,0 +1,4 @@
+cdef class {{ tipe }}:
+{%- for constant in constants %}
+    {{ constant }} = cpp.{{ constant }}
+{%- endfor %}

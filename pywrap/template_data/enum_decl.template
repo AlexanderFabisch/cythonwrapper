@@ -1,0 +1,5 @@
+cdef extern from "{{ filename }}" namespace "{{ namespace }}":
+    cdef enum {{ tipe }}:
+{%- for constant in constants %}
+        {{ constant }}
+{%- endfor %}

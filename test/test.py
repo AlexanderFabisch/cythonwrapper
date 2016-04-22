@@ -4,8 +4,7 @@ import numpy as np
 from contextlib import contextmanager
 from nose.tools import (assert_equal, assert_not_equal, assert_true,
                         assert_false)
-import pywrap.cython as pycy
-from pywrap.defaultconfig import Config
+from pywrap import cython
 from pywrap.utils import assert_warns_message
 
 PREFIX = os.sep.join(__file__.split(os.sep)[:-1])
@@ -54,19 +53,19 @@ def hidden_stdout():
 
 
 def _write_cython_wrapper(filenames, modulename, custom_config, verbose=0):
-    results, cython_files = pycy.make_cython_wrapper(
+    results, cython_files = cython.make_cython_wrapper(
         filenames, modulename=modulename, custom_config=custom_config,
         target=".", verbose=verbose)
     results[SETUPPY_NAME] = results["setup.py"]
     del results["setup.py"]
-    pycy.write_files(results)
-    pycy.cython(cython_files)
+    cython.write_files(results)
+    cython.cython(cython_files)
 
     filenames = []
     filenames.extend(results.keys())
     for filename in cython_files:
-        filenames.append(filename.replace(pycy.file_ending(filename), "cpp"))
-        filenames.append(filename.replace(pycy.file_ending(filename), "so"))
+        filenames.append(filename.replace(cython.file_ending(filename), "cpp"))
+        filenames.append(filename.replace(cython.file_ending(filename), "so"))
     return filenames
 
 
@@ -83,7 +82,7 @@ def _remove_files(filenames):
 
 def test_twoctors():
     assert_warns_message(UserWarning, "'A' has more than one constructor",
-                         pycy.make_cython_wrapper, full_paths("twoctors.hpp"))
+                         cython.make_cython_wrapper, full_paths("twoctors.hpp"))
 
 
 def test_double_in_double_out():

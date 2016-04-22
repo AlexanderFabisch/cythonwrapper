@@ -1,6 +1,7 @@
 import os
 import warnings
 from . import templates
+from .templates import render
 from .type_conversion import create_type_converter
 from .utils import indent_block, from_camel_case
 
@@ -23,32 +24,28 @@ class CythonDeclarationExporter:
         pass
 
     def visit_enum(self, enum):
-        enum_decl_dict = {}
-        enum_decl_dict.update(enum.__dict__)
-        enum_decl_dict["constants"] = indent_block(
-            os.linesep.join(enum.constants), 2)
-        self.output += templates.enum_decl % enum_decl_dict + os.linesep
+        self.output += render("enum_decl", **enum.__dict__)
 
     def visit_typedef(self, typedef):
-        self.output += templates.typedef_decl % typedef.__dict__ + os.linesep
-
-    def visit_field(self, field):
-        self.fields.append(templates.field_decl % field.__dict__)
+        self.output += templates.typedef_decl % typedef.__dict__
 
     def visit_class(self, clazz):
-        class_decl_parts = [templates.class_decl % clazz.__dict__,
-                            os.linesep.join(self.fields),
-                            os.linesep.join(self.ctors),
-                            os.linesep.join(self.methods)]
-        class_decl_parts = [p for p in class_decl_parts if p != ""]
-        empty_body = len(self.fields) + len(self.methods) + len(self.ctors) == 0
-        if empty_body:
-            class_decl_parts.append(" " * 8 + "pass")
-        self.output += os.linesep * 2 + os.linesep.join(class_decl_parts)
+        class_decl = {}
+        class_decl.update(clazz.__dict__)
+        class_decl["fields"] = self.fields
+        class_decl["ctors"] = self.ctors
+        class_decl["methods"] = self.methods
+        class_decl["empty_body"] = (len(self.fields) + len(self.methods) +
+                                    len(self.ctors) == 0)
+
+        self.output += render("class_decl", **class_decl)
 
         self.fields = []
         self.ctors = []
         self.methods = []
+
+    def visit_field(self, field):
+        self.fields.append(templates.field_decl % field.__dict__)
 
     def visit_constructor(self, ctor):
         const_dict = {"args": ", ".join(self.arguments)}
@@ -105,28 +102,10 @@ class CythonImplementationExporter:
         pass
 
     def visit_enum(self, enum):
-        enum_def_dict = {}
-        enum_def_dict.update(enum.__dict__)
-        enum_def_dict["constants"] = indent_block(os.linesep.join(
-            ["%s = cpp.%s" % (c, c) for c in enum.constants]), 1)
-        self.output += templates.enum_def % enum_def_dict + os.linesep
+        self.output += render("enum", **enum.__dict__)
 
     def visit_typedef(self, typedef):
         pass
-
-    def visit_field(self, field):
-        try:
-            setter_def = SetterDefinition(
-                field, self.includes, self.type_info, self.config).make()
-            getter_def = GetterDefinition(
-                field, self.includes, self.type_info, self.config).make()
-            field_def_parts = [templates.field_def
-                               % {"name": from_camel_case(field.name)},
-                               indent_block(getter_def, 1),
-                               indent_block(setter_def, 1)]
-            self.fields.append(os.linesep.join(field_def_parts))
-        except NotImplementedError as e:
-            warnings.warn(e.message + " Ignoring field '%s'" % field.name)
 
     def visit_class(self, clazz):
         if len(self.ctors) > 1:
@@ -137,17 +116,31 @@ class CythonImplementationExporter:
         elif len(self.ctors) == 0:
             self.ctors.append(templates.ctor_default_def % clazz.__dict__)
 
-        class_def_parts = [templates.class_def % clazz.__dict__,
-                           os.linesep.join(self.fields),
-                           os.linesep.join(self.ctors),
-                           os.linesep.join(self.methods)]
+        class_def = {}
+        class_def.update(clazz.__dict__)
+        class_def["fields"] = self.fields
+        class_def["ctors"] = self.ctors
+        class_def["methods"] = self.methods
 
-        class_def_parts = [p for p in class_def_parts if p != ""]
-        self.output += os.linesep * 2 + os.linesep.join(class_def_parts)
+        self.output += render("class", **class_def)
 
         self.fields = []
         self.ctors = []
         self.methods = []
+
+    def visit_field(self, field):
+        try:
+            setter_def = SetterDefinition(
+                field, self.includes, self.type_info, self.config).make()
+            getter_def = GetterDefinition(
+                field, self.includes, self.type_info, self.config).make()
+            self.fields.append({
+                "name": from_camel_case(field.name),
+                "getter": indent_block(getter_def, 1),
+                "setter": indent_block(setter_def, 1)
+            })
+        except NotImplementedError as e:
+            warnings.warn(e.message + " Ignoring field '%s'" % field.name)
 
     def visit_constructor(self, ctor):
         try:
@@ -224,12 +217,9 @@ class FunctionDefinition(object):
     def _signature(self):
         function_name = from_camel_case(self.config.operators.get(
             self.name, self.name))
-        signature_config = {
-            "def": self._def_prefix(function_name),
-            "name": function_name,
-            "args": ", ".join(self._cython_signature_args())
-        }
-        return templates.signature_def % signature_config
+        return render("signature", def_prefix=self._def_prefix(function_name),
+                      args=", ".join(self._cython_signature_args()),
+                      name=function_name)
 
     def _def_prefix(self, function_name):
         special_method = (function_name.startswith("__") and

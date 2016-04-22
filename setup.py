@@ -15,4 +15,5 @@ if __name__ == "__main__":
           license="New BSD",
           scripts=["bin" + os.sep + "pywrap"],
           packages=['pywrap'],
-          requires=['numpy', 'cython'])
+          package_data={'pywrap': ['template_data/*.template']},
+          requires=['numpy', 'cython', 'Jinja2'])

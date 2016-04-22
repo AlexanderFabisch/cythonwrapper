@@ -4,7 +4,7 @@ try:
     from Cython.Build import cythonize
 except:
     raise Exception("Install 'cython'.")
-from . import templates
+from .templates import render
 from .defaultconfig import Config
 from .parser import parse, Includes
 from .exporter import CythonDeclarationExporter, CythonImplementationExporter
@@ -178,9 +178,5 @@ def _make_setup(filenames, modulename, target):
     sourcedir = os.path.relpath(".", start=target)
     header_relpaths = [os.path.relpath(filename, start=target)
                        for filename in filenames]
-    extension = {
-        "filename": ", ".join(header_relpaths),
-        "module": modulename,
-        "sourcedir": sourcedir
-    }
-    return templates.setup_py % extension
+    return render("setup", filenames=header_relpaths,
+                  module=modulename, sourcedir=sourcedir)

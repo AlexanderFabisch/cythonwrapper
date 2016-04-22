@@ -1,0 +1,30 @@
+
+
+cdef class {{ name }}:
+    cdef cpp.{{ name }} * thisptr
+    cdef bool delete_thisptr
+
+    def __cinit__(self):
+        self.thisptr = NULL
+        self.delete_thisptr = True
+
+    def __dealloc__(self):
+        if self.delete_thisptr and self.thisptr != NULL:
+            del self.thisptr
+
+{%- for ctor in ctors %}
+
+{{ ctor }}
+{%- endfor %}
+
+{%- for field in fields %}
+
+    {{ field["name"] }} = property(get_{{ field["name"] }}, set_{{ field["name"] }})
+
+{{ field["getter"] }}
+{{ field["setter"] }}
+{%- endfor %}
+
+{%- for method in methods %}
+{{ method }}
+{%- endfor %}
