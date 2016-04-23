@@ -1,4 +1,3 @@
-import os
 import warnings
 from . import templates
 from .templates import render
@@ -217,8 +216,7 @@ class FunctionDefinition(object):
         self.output_type_converter.add_includes(self.includes)
 
     def make(self):
-        function = {}
-        function.update(self._signature())
+        function = self._signature()
         function["input_conversions"], call_args = self._input_type_conversions(
             self.includes)
         function["call"] = self._call_cpp_function(call_args)
@@ -260,7 +258,7 @@ class FunctionDefinition(object):
     def _call_cpp_function(self, call_args):
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
         call = templates.fun_call % {"name": self.name,
-                                     "args": ", ".join(call_args)}
+                                     "call_args": ", ".join(call_args)}
         return catch_result(cpp_type_decl, call)
 
 
@@ -274,7 +272,7 @@ class ConstructorDefinition(FunctionDefinition):
 
     def _call_cpp_function(self, call_args):
         return templates.ctor_call % {"class_name": self.class_name,
-                                      "args": ", ".join(call_args)}
+                                      "call_args": ", ".join(call_args)}
 
 
 class MethodDefinition(FunctionDefinition):
@@ -288,7 +286,7 @@ class MethodDefinition(FunctionDefinition):
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
         call = templates.method_call % {
             "name": self.config.call_operators.get(self.name, self.name),
-            "args": ", ".join(call_args)}
+            "call_args": ", ".join(call_args)}
         return catch_result(cpp_type_decl, call)
 
 
@@ -303,7 +301,7 @@ class SetterDefinition(MethodDefinition):
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 1
         return templates.setter_call % {"name": self.field_name,
-                                        "call_arg": call_args[0]}
+                                        "call_args": call_args[0]}
 
 
 class GetterDefinition(MethodDefinition):
