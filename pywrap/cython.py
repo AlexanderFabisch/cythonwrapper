@@ -10,13 +10,13 @@ from .parser import parse, Includes
 from .exporter import CythonDeclarationExporter, CythonImplementationExporter
 
 
-def write_cython_wrapper(filenames, modulename=None, target=".",
+def write_cython_wrapper(filenames, sources, modulename=None, target=".",
                          custom_config=None, verbose=0):
     if not os.path.exists(target):
         os.makedirs(target)
 
     results, cython_files = make_cython_wrapper(
-        filenames, modulename, target, custom_config, verbose)
+        filenames, sources, modulename, target, custom_config, verbose)
     write_files(results, target)
     cython(cython_files, target)
 
@@ -34,14 +34,17 @@ def cython(cython_files, target="."):
         os.system("cython --cplus %s" % inputfile)
 
 
-def make_cython_wrapper(filenames, modulename=None, target=".",
+def make_cython_wrapper(filenames, sources, modulename=None, target=".",
                         custom_config=None, verbose=0):
     """Make Cython wrapper for C++ files.
 
     Parameters
     ----------
-    filenames : list or string
+    filenames : list of strings or string
         C++ files
+
+    sources : list of strings
+        C++ source files that have to be compiled
 
     modulename : string, optional (default: name of the only header)
         Name of the module
@@ -81,7 +84,7 @@ def make_cython_wrapper(filenames, modulename=None, target=".",
     results = {}
     results.update(ext_results)
     results.update(decl_results)
-    results["setup.py"] = _make_setup(filenames, modulename, target)
+    results["setup.py"] = _make_setup(sources, modulename, target)
 
     return results, files_to_cythonize
 
@@ -174,9 +177,9 @@ def _generate_declarations(asts, includes, config, verbose):
     return results
 
 
-def _make_setup(filenames, modulename, target):
+def _make_setup(sources, modulename, target):
     sourcedir = os.path.relpath(".", start=target)
-    header_relpaths = [os.path.relpath(filename, start=target)
-                       for filename in filenames]
-    return render("setup", filenames=header_relpaths,
+    source_relpaths = [os.path.relpath(filename, start=target)
+                       for filename in sources]
+    return render("setup", filenames=source_relpaths,
                   module=modulename, sourcedir=sourcedir)

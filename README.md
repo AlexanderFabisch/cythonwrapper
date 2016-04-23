@@ -34,6 +34,8 @@ will even manage all the type conversions between C++ and Python for you.
 
 At least that is the goal. ;)
 
+There are more examples in the subdirectory `examples`.
+
 ## Unsupported Features of C++
 
 Many things are not implemented yet, e.g.
@@ -56,7 +58,7 @@ Install the package with:
 We can generate a Python extension that wraps a library defined in C++ header
 with:
 
-    pywrap <headers> --modulename <name> --outdir <directory>
+    pywrap <headers> --sources <sources> --modulename <name> --outdir <directory>
 
 The result is located in the directory <target> and can be build with:
 

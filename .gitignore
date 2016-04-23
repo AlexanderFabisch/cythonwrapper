@@ -3,3 +3,4 @@ cover
 .coverage
 *.pyc
 build
+result
