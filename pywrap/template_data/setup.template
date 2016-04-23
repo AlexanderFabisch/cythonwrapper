@@ -12,7 +12,7 @@ def configuration(parent_package='', top_path=None):
                  ],
         include_dirs=["{{ sourcedir }}", numpy.get_include()],
         define_macros=[("NDEBUG",)],
-        extra_compile_args=["-O3"],
+        extra_compile_args=["-O3", "-std=c++11"],
         language="c++")
     return config
 

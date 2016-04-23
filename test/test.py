@@ -262,3 +262,16 @@ def test_primitive_pointers():
     with cython_extension_from("primitivepointers.hpp"):
         from primitivepointers import fun1
         assert_equal(fun1(5), 6)
+
+
+def test_vector_of_struct():
+    with cython_extension_from("vectorofstruct.hpp"):
+        from vectorofstruct import MyStruct, sum_of_activated_entries
+        a = MyStruct()
+        a.value = 5
+        a.active = False
+        b = MyStruct()
+        b.value = 10
+        b.active = True
+        entries = [a, b]
+        assert_equal(sum_of_activated_entries(entries), 10)

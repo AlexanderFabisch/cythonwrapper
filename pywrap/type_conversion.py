@@ -1,5 +1,7 @@
 import os
+import re
 from abc import ABCMeta, abstractmethod
+from itertools import chain
 from .utils import lines
 
 
@@ -78,6 +80,20 @@ def typedef_prefix(tname, typedefs):
         return "cpp." + tname
     else:
         return tname
+
+
+def find_all_subtypes(tname):
+    tname = tname.replace(" ", "")
+    result = set()
+    while len(tname) > 1:
+        match = re.match("([,\[\]]?([a-zA-Z0-9_]+?)[,\[\]]).*", tname)
+        if match is None:
+            return result
+
+        subtname = match.group(2)
+        result.add(subtname)
+        tname = tname[len(match.group(1)) - 1:]
+    return list(result)
 
 
 def create_type_converter(tname, python_argname, type_info, config,
@@ -418,13 +434,44 @@ class StlTypeConverter(PythonObjectConverter):
         tname = underlying_type(self.tname, self.type_info.typedefs)
         return is_stl_type_with_automatic_conversion(tname)
 
+    def add_includes(self, includes):
+        includes.add_include_for_deref()
+
     def cpp_call_args(self):
         return ["cpp_" + self.python_argname]
 
     def python_to_cpp(self):
+        # TODO does not work for complex template type hierarchies
+        subtypes = find_all_subtypes(self.tname)
         cython_argname = "cpp_" + self.python_argname
-        return "%s %s = %s" % (self.cpp_type_decl(), cython_argname,
-                               self.python_argname)
+        conversion = "%s %s" % (self.cpp_type_decl(), cython_argname)
+        if self.tname.startswith("vector") and underlying_type(
+                subtypes[1], self.type_info.typedefs) in self.type_info.classes:
+            # this seems to be possible only when we use C++11 (-std=c++11)
+            cpp_tname = underlying_type(subtypes[1], self.type_info.typedefs)
+            conversion += os.linesep
+            conversion += """cdef cpp.%(cpp_tname)s * %(python_argname)s_ptr = NULL
+cdef %(cpp_tname)s %(python_argname)s_element
+for %(python_argname)s_element in %(python_argname)s:
+    %(python_argname)s_ptr = <cpp.%(cpp_tname)s*> %(python_argname)s_element.thisptr
+    cpp_%(python_argname)s.push_back(deref(%(python_argname)s_ptr))""" % {
+                "python_argname": self.python_argname,
+                "cpp_tname": cpp_tname
+            }
+        else:
+            conversion += " = " + self.python_argname
+        return conversion
+
+    def cpp_type_decl(self):
+        tname = self.tname
+        subtypes = find_all_subtypes(tname)
+        for subtype in subtypes:
+            prefixed_subtype = typedef_prefix(subtype, self.type_info.typedefs)
+            if (prefixed_subtype in self.type_info.enums or
+                        prefixed_subtype in self.type_info.classes):
+                prefixed_subtype = "cpp." + prefixed_subtype
+            tname = tname.replace(subtype, prefixed_subtype)
+        return "cdef " + tname
 
 
 default_converters = [
