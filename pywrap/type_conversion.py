@@ -407,38 +407,22 @@ class CppPointerTypeConverter(AbstractTypeConverter):
         return "cdef cpp.%s" % self.tname
 
 
-class PythonObjectConverter(AbstractTypeConverter):
-    def matches(self):
-        return True
-
-    def n_cpp_args(self):
-        return 1
-
-    def python_to_cpp(self):
-        raise NotImplementedError(
-            "No known conversion from python type to '%s' (name: '%s')"
-            % (self.tname, self.python_argname))
-
-    def cpp_call_args(self):
-        return ["cpp_" + self.python_argname]
-
-    def python_type_decl(self):
-        return "object %s" % self.python_argname
-
-    def cpp_type_decl(self):
-        return "cdef " + typedef_prefix(self.tname, self.type_info.typedefs)
-
-
-class StlTypeConverter(PythonObjectConverter):
+class StlTypeConverter(AbstractTypeConverter):
     def matches(self):
         tname = underlying_type(self.tname, self.type_info.typedefs)
         return is_stl_type_with_automatic_conversion(tname)
+
+    def n_cpp_args(self):
+        return 1
 
     def add_includes(self, includes):
         includes.add_include_for_deref()
 
     def cpp_call_args(self):
         return ["cpp_" + self.python_argname]
+
+    def python_type_decl(self):
+        return "object %s" % self.python_argname
 
     def python_to_cpp(self):
         # TODO does not work for complex template type hierarchies
@@ -477,4 +461,4 @@ for %(python_argname)s_element in %(python_argname)s:
 default_converters = [
     DoubleArrayTypeConverter, VoidTypeConverter, AutomaticTypeConverter,
     AutomaticPointerTypeConverter, EnumConverter, CythonTypeConverter,
-    CppPointerTypeConverter, StlTypeConverter, PythonObjectConverter]
+    CppPointerTypeConverter, StlTypeConverter]
