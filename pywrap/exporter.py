@@ -14,20 +14,26 @@ class CythonDeclarationExporter:
     def __init__(self, includes, config):
         self.includes = includes
         self.config = config
-        self.output = ""
+        self.typedefs = []
+        self.enums = []
+        self.functions = []
+        self.classes = []
+        self.fields = []
         self.ctors = []
         self.methods = []
         self.arguments = []
-        self.fields = []
+        self.output = None
 
     def visit_ast(self, ast):
-        pass
+        self.output = render("declarations", typedefs=self.typedefs,
+                             enums=self.enums, functions=self.functions,
+                             classes=self.classes)
 
     def visit_enum(self, enum):
-        self.output += render("enum_decl", **enum.__dict__)
+        self.enums.append(render("enum_decl", **enum.__dict__))
 
     def visit_typedef(self, typedef):
-        self.output += templates.typedef_decl % typedef.__dict__
+        self.typedefs.append(templates.typedef_decl % typedef.__dict__)
 
     def visit_class(self, clazz):
         class_decl = {}
@@ -38,7 +44,7 @@ class CythonDeclarationExporter:
         class_decl["empty_body"] = (len(self.fields) + len(self.methods) +
                                     len(self.ctors) == 0)
 
-        self.output += render("class_decl", **class_decl)
+        self.classes.append(render("class_decl", **class_decl))
 
         self.fields = []
         self.ctors = []
@@ -67,7 +73,7 @@ class CythonDeclarationExporter:
         function_dict = {"args": ", ".join(self.arguments)}
         function_dict.update(function.__dict__)
         function_str = templates.function_decl % function_dict
-        self.output += function_str
+        self.functions.append(function_str)
         self.arguments = []
 
     def visit_param(self, param):
@@ -93,16 +99,20 @@ class CythonImplementationExporter:
         self.includes = includes
         self.type_info = type_info
         self.config = config
-        self.output = ""
+        self.enums = []
+        self.functions = []
+        self.classes = []
+        self.fields = []
         self.ctors = []
         self.methods = []
-        self.fields = []
+        self.output = None
 
     def visit_ast(self, ast):
-        pass
+        self.output = render("definitions", enums=self.enums,
+                             functions=self.functions, classes=self.classes)
 
     def visit_enum(self, enum):
-        self.output += render("enum", **enum.__dict__)
+        self.enums.append(render("enum", **enum.__dict__))
 
     def visit_typedef(self, typedef):
         pass
@@ -122,7 +132,7 @@ class CythonImplementationExporter:
         class_def["ctors"] = self.ctors
         class_def["methods"] = self.methods
 
-        self.output += render("class", **class_def)
+        self.classes.append(render("class", **class_def))
 
         self.fields = []
         self.ctors = []
@@ -162,10 +172,10 @@ class CythonImplementationExporter:
 
     def visit_function(self, function):
         try:
-            self.output += os.linesep * 2 + FunctionDefinition(
+            self.functions.append(FunctionDefinition(
                 function.name, function.arguments, self.includes,
                 function.result_type, self.type_info,
-                self.config).make() + os.linesep
+                self.config).make())
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring function '%s'" % function.name)
 

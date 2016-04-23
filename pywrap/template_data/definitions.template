@@ -1,0 +1,15 @@
+{%- if enums %}
+{% for enum in enums %}
+{{ enum }}
+{% endfor %}
+{%- endif %}
+{%- if functions %}
+{% for function in functions %}
+{{ function }}
+{% endfor %}
+{%- endif %}
+{%- if classes %}
+{% for class in classes %}
+{{ class }}
+{% endfor %}
+{%- endif %}

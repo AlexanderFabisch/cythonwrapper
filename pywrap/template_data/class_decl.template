@@ -1,5 +1,3 @@
-
-
 cdef extern from "{{ filename }}" namespace "{{ namespace }}":
     cdef cppclass {{ name }}:
 {%- if empty_body %}
