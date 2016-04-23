@@ -275,3 +275,9 @@ def test_vector_of_struct():
         b.active = True
         entries = [a, b]
         assert_equal(sum_of_activated_entries(entries), 10)
+
+
+def test_cstring():
+    with cython_extension_from("cstring.hpp"):
+        from cstring import length
+        assert_equal(length("test"), 4)

@@ -30,7 +30,7 @@ def cythontype_from_cpptype(tname):
 
 
 def _remove_const_modifier(tname):
-    return tname.replace("const ", "")
+    return tname.replace("const", "").strip()
 
 
 def _remove_reference_modifier(tname):
