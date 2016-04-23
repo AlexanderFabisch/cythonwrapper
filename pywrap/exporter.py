@@ -50,29 +50,33 @@ class CythonDeclarationExporter:
         self.methods = []
 
     def visit_field(self, field):
-        self.fields.append(templates.field_decl % field.__dict__)
+        if not field.ignored:
+            self.fields.append(templates.field_decl % field.__dict__)
 
     def visit_constructor(self, ctor):
-        const_dict = {"args": ", ".join(self.arguments)}
-        const_dict.update(ctor.__dict__)
-        const_str = templates.constructor_decl % const_dict
-        self.ctors.append(const_str)
+        if not ctor.ignored:
+            const_dict = {"args": ", ".join(self.arguments)}
+            const_dict.update(ctor.__dict__)
+            const_str = templates.constructor_decl % const_dict
+            self.ctors.append(const_str)
         self.arguments = []
 
     def visit_method(self, method):
-        method_dict = {"args": ", ".join(self.arguments)}
-        method_dict.update(method.__dict__)
-        method_dict["name"] = replace_operator_decl(method_dict["name"],
-                                                    self.config)
-        method_str = templates.method_decl % method_dict
-        self.methods.append(method_str)
+        if not method.ignored:
+            method_dict = {"args": ", ".join(self.arguments)}
+            method_dict.update(method.__dict__)
+            method_dict["name"] = replace_operator_decl(method_dict["name"],
+                                                        self.config)
+            method_str = templates.method_decl % method_dict
+            self.methods.append(method_str)
         self.arguments = []
 
     def visit_function(self, function):
-        function_dict = {"args": ", ".join(self.arguments)}
-        function_dict.update(function.__dict__)
-        function_str = templates.function_decl % function_dict
-        self.functions.append(function_str)
+        if not function.ignored:
+            function_dict = {"args": ", ".join(self.arguments)}
+            function_dict.update(function.__dict__)
+            function_str = templates.function_decl % function_dict
+            self.functions.append(function_str)
         self.arguments = []
 
     def visit_param(self, param):
@@ -150,6 +154,7 @@ class CythonImplementationExporter:
             })
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring field '%s'" % field.name)
+            field.ignored = True
 
     def visit_constructor(self, ctor):
         try:
@@ -159,6 +164,7 @@ class CythonImplementationExporter:
             self.ctors.append(indent_block(constructor_def, 1))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % ctor.name)
+            ctor.ignored = True
 
     def visit_method(self, method):
         try:
@@ -168,6 +174,7 @@ class CythonImplementationExporter:
             self.methods.append(indent_block(method_def, 1))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % method.name)
+            method.ignored = True
 
     def visit_function(self, function):
         try:
@@ -177,6 +184,7 @@ class CythonImplementationExporter:
                 self.config).make())
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring function '%s'" % function.name)
+            function.ignored = True
 
     def visit_param(self, param):
         pass

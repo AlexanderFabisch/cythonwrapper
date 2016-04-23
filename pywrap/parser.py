@@ -254,6 +254,7 @@ class FunctionBase(object):
     def __init__(self, name):
         self.name = name
         self.arguments = []
+        self.ignored = False
 
     def accept(self, exporter):
         for arg in self.arguments:
@@ -315,6 +316,7 @@ class Field:
         self.name = name
         self.tipe = tipe
         self.class_name = class_name
+        self.ignored = False
 
     def accept(self, exporter):
         exporter.visit_field(self)
