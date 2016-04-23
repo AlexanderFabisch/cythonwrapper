@@ -279,5 +279,6 @@ def test_vector_of_struct():
 
 def test_cstring():
     with cython_extension_from("cstring.hpp"):
-        from cstring import length
+        from cstring import length, helloworld
         assert_equal(length("test"), 4)
+        assert_equal(helloworld(), "hello world")

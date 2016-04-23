@@ -301,6 +301,26 @@ class DoubleArrayTypeConverter(AbstractTypeConverter):
         return "cdef double *"
 
 
+class CStringTypeConverter(AbstractTypeConverter):
+    def matches(self):
+        return self.tname == "char *"
+
+    def n_cpp_args(self):
+        return 1
+
+    def python_to_cpp(self):
+        return ""
+
+    def cpp_call_args(self):
+        return [self.python_argname]
+
+    def python_type_decl(self):
+        return self.tname + " " + self.python_argname
+
+    def cpp_type_decl(self):
+        return "cdef const char *"
+
+
 class EnumConverter(AbstractTypeConverter):
     def matches(self):
         return (underlying_type(self.tname, self.type_info.typedefs) in
@@ -458,6 +478,6 @@ for %(python_argname)s_element in %(python_argname)s:
 
 
 default_converters = [
-    DoubleArrayTypeConverter, VoidTypeConverter, AutomaticTypeConverter,
-    AutomaticPointerTypeConverter, EnumConverter, CythonTypeConverter,
-    CppPointerTypeConverter, StlTypeConverter]
+    DoubleArrayTypeConverter, CStringTypeConverter, VoidTypeConverter,
+    AutomaticTypeConverter, AutomaticPointerTypeConverter, EnumConverter,
+    CythonTypeConverter, CppPointerTypeConverter, StlTypeConverter]

@@ -5,3 +5,8 @@ int length(char const * const input)
         i++;
     return i;
 }
+
+char const * helloworld()
+{
+    return "hello world";
+}
