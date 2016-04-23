@@ -38,9 +38,8 @@ At least that is the goal. ;)
 
 Many things are not implemented yet, e.g.
 
+* arrays, e.g. `float[3]`
 * templates
-* pointer argument or return value of primitive type (e.g. `int*`)
-* collections of custom types (e.g. a vector of your struct)
 * linking to other libraries (you can modify the `setup.py` though)
 * integrating other Cython extensions (you can modify the `setup.py` though)
 
