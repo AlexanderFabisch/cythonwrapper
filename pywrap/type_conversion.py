@@ -1,7 +1,6 @@
 import os
 import re
 from abc import ABCMeta, abstractmethod
-from itertools import chain
 from .utils import lines
 
 
