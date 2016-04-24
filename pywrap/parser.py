@@ -15,12 +15,28 @@ def parse(include_file, parsable_file, includes, verbose):
     translation_unit = index.parse(parsable_file)
     cursor = translation_unit.cursor
 
-    ast = AST(includes)
-    convert_ast(ast, cursor, parsable_file, include_file, verbose)
+    ast = AST(includes, include_file)
+    convert_ast(ast, cursor, parsable_file, verbose)
     return ast
 
 
-def convert_ast(ast, node, parsable_file, include_file, verbose=0):
+def convert_ast(ast, node, parsable_file, verbose=0):
+    """Convert AST from Clang to our own representation.
+
+    Parameters
+    ----------
+    ast : AST
+        Our abstract syntax tree (result)
+
+    node : clang.cindex.Index
+        Currently visited node of Clang's AST
+
+    parsable_file : string
+        Name of the file that is actually parsed by Clang
+
+    verbose : int, optional (default: 0)
+        Verbosity level
+    """
     namespace = ast.namespace
     if verbose >= 2:
         print("Node: %s, %s" % (node.kind, node.displayname))
@@ -46,7 +62,7 @@ def convert_ast(ast, node, parsable_file, include_file, verbose=0):
             tname = cythontype_from_cpptype(node.result_type.spelling)
             ast.includes.add_include_for(tname)
             function = Function(
-                include_file, ast.namespace, node.spelling, tname)
+                ast.include_file, ast.namespace, node.spelling, tname)
             ast.functions.append(function)
             ast.last_function = function
         elif node.kind == ci.CursorKind.FUNCTION_TEMPLATE:
@@ -65,16 +81,16 @@ def convert_ast(ast, node, parsable_file, include_file, verbose=0):
                 ast.last_type.constructors.append(constructor)
                 ast.last_function = constructor
         elif node.kind == ci.CursorKind.CLASS_DECL:
-            clazz = Clazz(include_file, ast.namespace, node.displayname)
+            clazz = Clazz(ast.include_file, ast.namespace, node.displayname)
             ast.classes.append(clazz)
             ast.last_type = clazz
         elif node.kind == ci.CursorKind.STRUCT_DECL:
             if node.displayname == "" and ast.unnamed_struct is None:
                 ast.unnamed_struct = Clazz(
-                    include_file, ast.namespace, node.displayname)
+                    ast.include_file, ast.namespace, node.displayname)
                 ast.last_type = ast.unnamed_struct
             else:
-                clazz = Clazz(include_file, ast.namespace, node.displayname)
+                clazz = Clazz(ast.include_file, ast.namespace, node.displayname)
                 ast.classes.append(clazz)
                 ast.last_type = clazz
         elif node.kind == ci.CursorKind.FIELD_DECL:
@@ -98,10 +114,10 @@ def convert_ast(ast, node, parsable_file, include_file, verbose=0):
             else:
                 ast.includes.add_include_for(underlying_tname)
                 ast.typedefs.append(Typedef(
-                    include_file, ast.namespace, tname,
+                    ast.include_file, ast.namespace, tname,
                     cythontype_from_cpptype(underlying_tname)))
         elif node.kind == ci.CursorKind.ENUM_DECL:
-            enum = Enum(include_file, ast.namespace, node.displayname)
+            enum = Enum(ast.include_file, ast.namespace, node.displayname)
             ast.last_enum = enum
             ast.enums.append(enum)
         elif node.kind == ci.CursorKind.ENUM_CONSTANT_DECL:
@@ -117,16 +133,16 @@ def convert_ast(ast, node, parsable_file, include_file, verbose=0):
 
     if parse_children:
         for child in node.get_children():
-            convert_ast(ast, child, parsable_file, include_file, verbose)
+            convert_ast(ast, child, parsable_file, verbose)
 
     ast.namespace = namespace
 
 
 class AST:
     """Abstract Syntax Tree."""
-
-    def __init__(self, includes):
+    def __init__(self, includes, include_file):
         self.includes = includes
+        self.include_file = include_file
         self.namespace = ""
         self.last_function = None
         self.last_type = None
