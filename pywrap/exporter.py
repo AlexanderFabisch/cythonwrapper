@@ -233,8 +233,8 @@ class FunctionDefinition(object):
         return render("function", **function)
 
     def _signature(self):
-        function_name = from_camel_case(self.config.operators.get(
-            self.name, self.name))
+        function_name = from_camel_case(
+            self.config.cpp_to_py_operator(self.name))
         return {"def_prefix": self._def_prefix(function_name),
                 "args": ", ".join(self._cython_signature_args()),
                 "name": function_name}

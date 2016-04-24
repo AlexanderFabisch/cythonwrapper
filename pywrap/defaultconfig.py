@@ -26,3 +26,9 @@ class Config(object):
         }
 
         self.registered_converters = []
+
+    def cpp_to_py_operator(self, name):
+        if name.startswith("operator") and name not in self.operators:
+            raise NotImplementedError("Cannot convert C++ operator '%s' to "
+                                      "Python operator.")
+        return self.operators.get(name, name)
