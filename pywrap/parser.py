@@ -16,12 +16,115 @@ def parse(include_file, parsable_file, includes, verbose):
     cursor = translation_unit.cursor
 
     ast = AST(includes)
-    ast.parse(cursor, parsable_file, include_file, verbose)
+    convert_ast(ast, cursor, parsable_file, include_file, verbose)
     return ast
+
+
+def convert_ast(ast, node, parsable_file, include_file, verbose=0):
+    namespace = ast.namespace
+    if verbose >= 2:
+        print("Node: %s, %s" % (node.kind, node.displayname))
+
+    parse_children = True
+    try:
+        if node.location.file is None:
+            pass
+        elif node.location.file.name != parsable_file:
+            return
+        elif node.kind == ci.CursorKind.NAMESPACE:
+            if ast.namespace == "":
+                ast.namespace = node.displayname
+            else:
+                ast.namespace = ast.namespace + "::" + node.displayname
+        elif node.kind == ci.CursorKind.PARM_DECL:
+            tname = cythontype_from_cpptype(node.type.spelling)
+            ast.includes.add_include_for(tname)
+            param = Param(node.displayname, tname)
+            if ast.last_function is not None:
+                ast.last_function.arguments.append(param)
+        elif node.kind == ci.CursorKind.FUNCTION_DECL:
+            tname = cythontype_from_cpptype(node.result_type.spelling)
+            ast.includes.add_include_for(tname)
+            function = Function(
+                include_file, ast.namespace, node.spelling, tname)
+            ast.functions.append(function)
+            ast.last_function = function
+        elif node.kind == ci.CursorKind.FUNCTION_TEMPLATE:
+            ast.last_function = DummyFunction()
+            warnings.warn("Templates are not implemented yet")
+        elif node.kind == ci.CursorKind.CXX_METHOD:
+            if node.access_specifier == ci.AccessSpecifier.PUBLIC:
+                tname = cythontype_from_cpptype(node.result_type.spelling)
+                ast.includes.add_include_for(tname)
+                method = Method(node.spelling, tname, ast.classes[-1].name)
+                ast.classes[-1].methods.append(method)
+                ast.last_function = method
+        elif node.kind == ci.CursorKind.CONSTRUCTOR:
+            if node.access_specifier == ci.AccessSpecifier.PUBLIC:
+                constructor = Constructor(ast.last_type.name)
+                ast.last_type.constructors.append(constructor)
+                ast.last_function = constructor
+        elif node.kind == ci.CursorKind.CLASS_DECL:
+            clazz = Clazz(include_file, ast.namespace, node.displayname)
+            ast.classes.append(clazz)
+            ast.last_type = clazz
+        elif node.kind == ci.CursorKind.STRUCT_DECL:
+            if node.displayname == "" and ast.unnamed_struct is None:
+                ast.unnamed_struct = Clazz(
+                    include_file, ast.namespace, node.displayname)
+                ast.last_type = ast.unnamed_struct
+            else:
+                clazz = Clazz(include_file, ast.namespace, node.displayname)
+                ast.classes.append(clazz)
+                ast.last_type = clazz
+        elif node.kind == ci.CursorKind.FIELD_DECL:
+            if node.access_specifier == ci.AccessSpecifier.PUBLIC:
+                tname = cythontype_from_cpptype(node.type.spelling)
+                ast.includes.add_include_for(tname)
+                field = Field(node.displayname, tname, ast.last_type.name)
+                ast.last_type.fields.append(field)
+        elif node.kind == ci.CursorKind.TYPEDEF_DECL:
+            tname = node.displayname
+            underlying_tname = node.underlying_typedef_type.spelling
+            if "struct " + tname == underlying_tname:
+                if ast.unnamed_struct is None:
+                    raise LookupError("Struct typedef does not match any "
+                                      "unnamed struct")
+                ast.unnamed_struct.name = tname
+                ast.classes.append(ast.unnamed_struct)
+                ast.unnamed_struct = None
+                ast.last_type = None
+                parse_children = False
+            else:
+                ast.includes.add_include_for(underlying_tname)
+                ast.typedefs.append(Typedef(
+                    include_file, ast.namespace, tname,
+                    cythontype_from_cpptype(underlying_tname)))
+        elif node.kind == ci.CursorKind.ENUM_DECL:
+            enum = Enum(include_file, ast.namespace, node.displayname)
+            ast.last_enum = enum
+            ast.enums.append(enum)
+        elif node.kind == ci.CursorKind.ENUM_CONSTANT_DECL:
+            ast.last_enum.constants.append(node.displayname)
+        elif node.kind == ci.CursorKind.COMPOUND_STMT:
+            parse_children = False
+        else:
+            if verbose:
+                print("Ignored node: %s, %s" % (node.kind, node.displayname))
+    except NotImplementedError as e:
+        warnings.warn(e.message + " Ignoring node '%s'" % node.displayname)
+        parse_children = False
+
+    if parse_children:
+        for child in node.get_children():
+            convert_ast(ast, child, parsable_file, include_file, verbose)
+
+    ast.namespace = namespace
 
 
 class AST:
     """Abstract Syntax Tree."""
+
     def __init__(self, includes):
         self.includes = includes
         self.namespace = ""
@@ -33,107 +136,6 @@ class AST:
         self.classes = []
         self.typedefs = []
         self.enums = []
-
-    def parse(self, node, parsable_file, include_file, verbose=0):
-        namespace = self.namespace
-        if verbose >= 2:
-            print("Node: %s, %s" % (node.kind, node.displayname))
-
-        parse_children = True
-        try:
-            if node.location.file is None:
-                pass
-            elif node.location.file.name != parsable_file:
-                return
-            elif node.kind == ci.CursorKind.NAMESPACE:
-                if self.namespace == "":
-                    self.namespace = node.displayname
-                else:
-                    self.namespace = self.namespace + "::" + node.displayname
-            elif node.kind == ci.CursorKind.PARM_DECL:
-                tname = cythontype_from_cpptype(node.type.spelling)
-                self.includes.add_include_for(tname)
-                param = Param(node.displayname, tname)
-                if self.last_function is not None:
-                    self.last_function.arguments.append(param)
-            elif node.kind == ci.CursorKind.FUNCTION_DECL:
-                tname = cythontype_from_cpptype(node.result_type.spelling)
-                self.includes.add_include_for(tname)
-                function = Function(
-                    include_file, self.namespace, node.spelling, tname)
-                self.functions.append(function)
-                self.last_function = function
-            elif node.kind == ci.CursorKind.FUNCTION_TEMPLATE:
-                self.last_function = DummyFunction()
-                warnings.warn("Templates are not implemented yet")
-            elif node.kind == ci.CursorKind.CXX_METHOD:
-                if node.access_specifier == ci.AccessSpecifier.PUBLIC:
-                    tname = cythontype_from_cpptype(node.result_type.spelling)
-                    self.includes.add_include_for(tname)
-                    method = Method(node.spelling, tname, self.classes[-1].name)
-                    self.classes[-1].methods.append(method)
-                    self.last_function = method
-            elif node.kind == ci.CursorKind.CONSTRUCTOR:
-                if node.access_specifier == ci.AccessSpecifier.PUBLIC:
-                    constructor = Constructor(self.last_type.name)
-                    self.last_type.constructors.append(constructor)
-                    self.last_function = constructor
-            elif node.kind == ci.CursorKind.CLASS_DECL:
-                clazz = Clazz(include_file, self.namespace, node.displayname)
-                self.classes.append(clazz)
-                self.last_type = clazz
-            elif node.kind == ci.CursorKind.STRUCT_DECL:
-                if node.displayname == "" and self.unnamed_struct is None:
-                    self.unnamed_struct = Clazz(
-                        include_file, self.namespace, node.displayname)
-                    self.last_type = self.unnamed_struct
-                else:
-                    clazz = Clazz(include_file, self.namespace, node.displayname)
-                    self.classes.append(clazz)
-                    self.last_type = clazz
-            elif node.kind == ci.CursorKind.FIELD_DECL:
-                if node.access_specifier == ci.AccessSpecifier.PUBLIC:
-                    tname = cythontype_from_cpptype(node.type.spelling)
-                    self.includes.add_include_for(tname)
-                    field = Field(node.displayname, tname, self.last_type.name)
-                    self.last_type.fields.append(field)
-            elif node.kind == ci.CursorKind.TYPEDEF_DECL:
-                tname = node.displayname
-                underlying_tname = node.underlying_typedef_type.spelling
-                if "struct " + tname == underlying_tname:
-                    if self.unnamed_struct is None:
-                        raise LookupError("Struct typedef does not match any "
-                                          "unnamed struct")
-                    self.unnamed_struct.name = tname
-                    self.classes.append(self.unnamed_struct)
-                    self.unnamed_struct = None
-                    self.last_type = None
-                    parse_children = False
-                else:
-                    self.includes.add_include_for(underlying_tname)
-                    self.typedefs.append(Typedef(
-                        include_file, self.namespace, tname,
-                        cythontype_from_cpptype(underlying_tname)))
-            elif node.kind == ci.CursorKind.ENUM_DECL:
-                enum = Enum(include_file, self.namespace, node.displayname)
-                self.last_enum = enum
-                self.enums.append(enum)
-            elif node.kind == ci.CursorKind.ENUM_CONSTANT_DECL:
-                self.last_enum.constants.append(node.displayname)
-            elif node.kind == ci.CursorKind.COMPOUND_STMT:
-                parse_children = False
-            else:
-                if verbose:
-                    print("Ignored node: %s, %s" % (node.kind, node.displayname))
-        except NotImplementedError as e:
-            warnings.warn(e.message + " Ignoring node '%s'" % node.displayname)
-            parse_children = False
-
-        if parse_children:
-            for child in node.get_children():
-                self.parse(child, parsable_file, include_file, verbose)
-
-        self.namespace = namespace
 
     def accept(self, exporter):
         for enum in self.enums:
