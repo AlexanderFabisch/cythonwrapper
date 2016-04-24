@@ -150,7 +150,6 @@ class AST:
 class Includes:
     def __init__(self):
         self.numpy = False
-        self.boolean = True
         self.stl = {"vector": False,
                     "string": False,
                     "deque": False,
@@ -182,9 +181,7 @@ class Includes:
                 (", " + subtname + "]") in tname)
 
     def declarations_import(self):
-        includes = ""
-        if self.boolean:
-            includes += "from libcpp cimport bool" + os.linesep
+        includes = "from libcpp cimport bool" + os.linesep
 
         for t in self.stl.keys():
             if self.stl[t]:
@@ -194,12 +191,10 @@ class Includes:
         return includes
 
     def implementations_import(self):
-        includes = ""
+        includes = "from libcpp cimport bool" + os.linesep
         if self.numpy:
             includes += "cimport numpy as np" + os.linesep
             includes += "import numpy as np" + os.linesep
-        if self.boolean:
-            includes += "from libcpp cimport bool" + os.linesep
 
         for t in self.stl.keys():
             if self.stl[t]:
