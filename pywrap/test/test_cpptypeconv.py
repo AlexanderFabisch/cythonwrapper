@@ -1,5 +1,5 @@
 from pywrap.type_conversion import cythontype_from_cpptype, find_all_subtypes
-from nose.tools import assert_equal, assert_in, assert_true
+from nose.tools import assert_equal, assert_in, assert_true, assert_raises
 
 
 def test_basic_typename():
@@ -36,6 +36,17 @@ def test_complex_hierarchy():
                  "map[string, vector[map[double, string] ] ]")
 
 
+def test_iterator():
+    assert_raises(NotImplementedError, cythontype_from_cpptype,
+                  "std::vector<int>::const_iterator")
+
+
+def test_const_chars():
+    assert_equal(cythontype_from_cpptype("const char *const"), "char *")
+    assert_equal(cythontype_from_cpptype("const char *"), "char *")
+    assert_equal(cythontype_from_cpptype("char *const"), "char *")
+
+
 def test_find_subtypes_of_primitive():
     subtypes = find_all_subtypes("double")
     assert_true(len(subtypes) == 0)
@@ -45,6 +56,13 @@ def test_find_subtypes_of_vector():
     subtypes = find_all_subtypes("vector[double]")
     assert_in("vector", subtypes)
     assert_in("double", subtypes)
+    assert_equal(len(subtypes), 2)
+
+
+def test_find_subtypes_of_vector_with_pointer():
+    subtypes = find_all_subtypes("vector[double *]")
+    assert_in("vector", subtypes)
+    assert_in("double *", subtypes)
     assert_equal(len(subtypes), 2)
 
 

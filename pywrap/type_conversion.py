@@ -31,7 +31,7 @@ def cythontype_from_cpptype(tname):
 
 
 def _remove_const_modifier(tname):
-    return tname.replace("const", "").strip()
+    return tname.replace("const ", "").replace("*const", "*").strip()
 
 
 def _remove_reference_modifier(tname):
@@ -44,6 +44,8 @@ def _remove_namespace(tname):
         parts = result.split("::")
         head = parts[0]
         tail = "::".join(parts[1:])
+        if tail in ["iterator", "const_iterator"]:
+            raise NotImplementedError("Cannot handle iterator types")
 
         last_sep = head.rfind(", ")
         last_open = head.rfind("<")
@@ -86,11 +88,12 @@ def find_all_subtypes(tname):
     tname = tname.replace(" ", "")
     result = set()
     while len(tname) > 1:
-        match = re.match("([,\[\]]?([a-zA-Z0-9_]+?)[,\[\]]).*", tname)
+        match = re.match("([,\[\]]?([a-zA-Z0-9_\*]+?)[,\[\]]).*", tname)
         if match is None:
             return result
 
         subtname = match.group(2)
+        subtname = subtname.replace("*", " *")
         result.add(subtname)
         tname = tname[len(match.group(1)) - 1:]
     return list(result)
@@ -453,7 +456,6 @@ class StlTypeConverter(AbstractTypeConverter):
 
         if (self.tname.startswith("vector") and
                     subtypes[1] in self.type_info.classes):
-            # this seems to be possible only when we use C++11 (-std=c++11)
             conversion = render(
                 "convert_vector", python_argname=self.python_argname,
                 cpp_tname=underlying_type(subtypes[1], self.type_info.typedefs),
