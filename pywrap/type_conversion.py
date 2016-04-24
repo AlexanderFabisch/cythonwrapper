@@ -30,6 +30,18 @@ def cythontype_from_cpptype(tname):
     return cython_tname
 
 
+def replace_keyword_argnames(argname):
+    if argname is None:
+        return argname
+    keyword_replacements = {
+        "lambda": "lmbda",
+        "in": "input"
+    }
+    for keyword, replacement in keyword_replacements.items():
+        argname = argname.replace(keyword, replacement)
+    return argname
+
+
 def _remove_const_modifier(tname):
     return tname.replace("const ", "").replace("*const", "*").strip()
 
@@ -160,7 +172,7 @@ class AbstractTypeConverter(object):
 
     def __init__(self, tname, python_argname, type_info, context=None):
         self.tname = tname
-        self.python_argname = python_argname
+        self.python_argname = replace_keyword_argnames(python_argname)
         self.type_info = type_info
         self.context = context
 
