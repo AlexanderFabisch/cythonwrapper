@@ -2,6 +2,7 @@ import os
 import re
 from abc import ABCMeta, abstractmethod
 from .utils import lines
+from .templates import render
 
 
 def is_basic_type_with_automatic_conversion(typename):
@@ -446,23 +447,21 @@ class StlTypeConverter(AbstractTypeConverter):
     def python_to_cpp(self):
         # TODO does not work for complex template type hierarchies
         subtypes = find_all_subtypes(self.tname)
+        subtypes = [underlying_type(s, self.type_info.typedefs)
+                    for s in subtypes]
         cython_argname = "cpp_" + self.python_argname
-        conversion = "%s %s" % (self.cpp_type_decl(), cython_argname)
-        if self.tname.startswith("vector") and underlying_type(
-                subtypes[1], self.type_info.typedefs) in self.type_info.classes:
+
+        if (self.tname.startswith("vector") and
+                    subtypes[1] in self.type_info.classes):
             # this seems to be possible only when we use C++11 (-std=c++11)
-            cpp_tname = underlying_type(subtypes[1], self.type_info.typedefs)
-            conversion += os.linesep
-            conversion += """cdef cpp.%(cpp_tname)s * %(python_argname)s_ptr = NULL
-cdef %(cpp_tname)s %(python_argname)s_element
-for %(python_argname)s_element in %(python_argname)s:
-    %(python_argname)s_ptr = <cpp.%(cpp_tname)s*> %(python_argname)s_element.thisptr
-    cpp_%(python_argname)s.push_back(deref(%(python_argname)s_ptr))""" % {
-                "python_argname": self.python_argname,
-                "cpp_tname": cpp_tname
-            }
+            conversion = render(
+                "convert_vector", python_argname=self.python_argname,
+                cpp_tname=underlying_type(subtypes[1], self.type_info.typedefs),
+                cpp_type_decl=self.cpp_type_decl(),
+                cython_argname=cython_argname)
         else:
-            conversion += " = " + self.python_argname
+            conversion = "%s %s = %s" % (self.cpp_type_decl(), cython_argname,
+                                         self.python_argname)
         return conversion
 
     def cpp_type_decl(self):
