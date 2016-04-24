@@ -1,4 +1,4 @@
-from pywrap.parser import Includes
+from pywrap.ast import Includes
 from nose.tools import assert_true
 
 

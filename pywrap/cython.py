@@ -6,7 +6,8 @@ except:
     raise Exception("Install 'cython'.")
 from .templates import render
 from .defaultconfig import Config
-from .parser import parse, Includes
+from .parser import parse
+from .ast import Includes
 from .exporter import CythonDeclarationExporter, CythonImplementationExporter
 
 
