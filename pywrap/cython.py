@@ -1,9 +1,5 @@
 import os
 import sys
-try:
-    from Cython.Build import cythonize
-except:
-    raise Exception("Install 'cython'.")
 from .templates import render
 from .defaultconfig import Config
 from .parser import parse
@@ -31,6 +27,7 @@ def write_files(files, target="."):
 def cython(cython_files, target="."):
     for cython_file in cython_files:
         inputfile = os.path.join(target, cython_file)
+        #from Cython.Build import cythonize
         #cythonize(inputfile, cplus=True)
         os.system("cython --cplus %s" % inputfile)
 

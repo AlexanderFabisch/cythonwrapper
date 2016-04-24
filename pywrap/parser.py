@@ -1,10 +1,5 @@
-try:
-    import clang.cindex as ci
-    ci.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
-except:
-    raise Exception("Install 'python-clang-3.5' and 'libclang-3.5-dev'. "
-                    "Note that a recent operating system is required, e.g. "
-                    "Ubuntu 14.04.")
+from clang import cindex
+cindex.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
 import warnings
 from .type_conversion import cythontype_from_cpptype
 from .ast import (AST, Enum, Typedef, Clazz, Function, Constructor, Method,
@@ -12,7 +7,7 @@ from .ast import (AST, Enum, Typedef, Clazz, Function, Constructor, Method,
 
 
 def parse(include_file, parsable_file, includes, verbose):
-    index = ci.Index.create()
+    index = cindex.Index.create()
     translation_unit = index.parse(parsable_file)
     cursor = translation_unit.cursor
 
@@ -48,44 +43,44 @@ def convert_ast(ast, node, parsable_file, verbose=0):
             pass
         elif node.location.file.name != parsable_file:
             return
-        elif node.kind == ci.CursorKind.NAMESPACE:
+        elif node.kind == cindex.CursorKind.NAMESPACE:
             if ast.namespace == "":
                 ast.namespace = node.displayname
             else:
                 ast.namespace = ast.namespace + "::" + node.displayname
-        elif node.kind == ci.CursorKind.PARM_DECL:
+        elif node.kind == cindex.CursorKind.PARM_DECL:
             tname = cythontype_from_cpptype(node.type.spelling)
             ast.includes.add_include_for(tname)
             param = Param(node.displayname, tname)
             if ast.last_function is not None:
                 ast.last_function.arguments.append(param)
-        elif node.kind == ci.CursorKind.FUNCTION_DECL:
+        elif node.kind == cindex.CursorKind.FUNCTION_DECL:
             tname = cythontype_from_cpptype(node.result_type.spelling)
             ast.includes.add_include_for(tname)
             function = Function(
                 ast.include_file, ast.namespace, node.spelling, tname)
             ast.functions.append(function)
             ast.last_function = function
-        elif node.kind == ci.CursorKind.FUNCTION_TEMPLATE:
+        elif node.kind == cindex.CursorKind.FUNCTION_TEMPLATE:
             ast.last_function = DummyFunction()
             warnings.warn("Templates are not implemented yet")
-        elif node.kind == ci.CursorKind.CXX_METHOD:
-            if node.access_specifier == ci.AccessSpecifier.PUBLIC:
+        elif node.kind == cindex.CursorKind.CXX_METHOD:
+            if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
                 tname = cythontype_from_cpptype(node.result_type.spelling)
                 ast.includes.add_include_for(tname)
                 method = Method(node.spelling, tname, ast.classes[-1].name)
                 ast.classes[-1].methods.append(method)
                 ast.last_function = method
-        elif node.kind == ci.CursorKind.CONSTRUCTOR:
-            if node.access_specifier == ci.AccessSpecifier.PUBLIC:
+        elif node.kind == cindex.CursorKind.CONSTRUCTOR:
+            if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
                 constructor = Constructor(ast.last_type.name)
                 ast.last_type.constructors.append(constructor)
                 ast.last_function = constructor
-        elif node.kind == ci.CursorKind.CLASS_DECL:
+        elif node.kind == cindex.CursorKind.CLASS_DECL:
             clazz = Clazz(ast.include_file, ast.namespace, node.displayname)
             ast.classes.append(clazz)
             ast.last_type = clazz
-        elif node.kind == ci.CursorKind.STRUCT_DECL:
+        elif node.kind == cindex.CursorKind.STRUCT_DECL:
             if node.displayname == "" and ast.unnamed_struct is None:
                 ast.unnamed_struct = Clazz(
                     ast.include_file, ast.namespace, node.displayname)
@@ -94,13 +89,13 @@ def convert_ast(ast, node, parsable_file, verbose=0):
                 clazz = Clazz(ast.include_file, ast.namespace, node.displayname)
                 ast.classes.append(clazz)
                 ast.last_type = clazz
-        elif node.kind == ci.CursorKind.FIELD_DECL:
-            if node.access_specifier == ci.AccessSpecifier.PUBLIC:
+        elif node.kind == cindex.CursorKind.FIELD_DECL:
+            if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
                 tname = cythontype_from_cpptype(node.type.spelling)
                 ast.includes.add_include_for(tname)
                 field = Field(node.displayname, tname, ast.last_type.name)
                 ast.last_type.fields.append(field)
-        elif node.kind == ci.CursorKind.TYPEDEF_DECL:
+        elif node.kind == cindex.CursorKind.TYPEDEF_DECL:
             tname = node.displayname
             underlying_tname = node.underlying_typedef_type.spelling
             if "struct " + tname == underlying_tname:
@@ -117,13 +112,13 @@ def convert_ast(ast, node, parsable_file, verbose=0):
                 ast.typedefs.append(Typedef(
                     ast.include_file, ast.namespace, tname,
                     cythontype_from_cpptype(underlying_tname)))
-        elif node.kind == ci.CursorKind.ENUM_DECL:
+        elif node.kind == cindex.CursorKind.ENUM_DECL:
             enum = Enum(ast.include_file, ast.namespace, node.displayname)
             ast.last_enum = enum
             ast.enums.append(enum)
-        elif node.kind == ci.CursorKind.ENUM_CONSTANT_DECL:
+        elif node.kind == cindex.CursorKind.ENUM_CONSTANT_DECL:
             ast.last_enum.constants.append(node.displayname)
-        elif node.kind == ci.CursorKind.COMPOUND_STMT:
+        elif node.kind == cindex.CursorKind.COMPOUND_STMT:
             parse_children = False
         else:
             if verbose:
