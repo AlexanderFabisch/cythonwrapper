@@ -20,16 +20,6 @@ def is_stl_type_with_automatic_conversion(typename):
     return False
 
 
-def cythontype_from_cpptype(tname):
-    """Get Cython type from C++ type."""
-    cython_tname = tname
-    cython_tname = _remove_const_modifier(cython_tname)
-    cython_tname = _remove_reference_modifier(cython_tname)
-    cython_tname = _remove_namespace(cython_tname)
-    cython_tname = _replace_angle_brackets(cython_tname)
-    return cython_tname
-
-
 def replace_keyword_argnames(argname):
     if argname is None:
         return argname
@@ -40,6 +30,16 @@ def replace_keyword_argnames(argname):
     for keyword, replacement in keyword_replacements.items():
         argname = argname.replace(keyword, replacement)
     return argname
+
+
+def cythontype_from_cpptype(tname):
+    """Get Cython type from C++ type."""
+    cython_tname = tname
+    cython_tname = _remove_const_modifier(cython_tname)
+    cython_tname = _remove_reference_modifier(cython_tname)
+    cython_tname = _remove_namespace(cython_tname)
+    cython_tname = _replace_angle_brackets(cython_tname)
+    return cython_tname
 
 
 def _remove_const_modifier(tname):
