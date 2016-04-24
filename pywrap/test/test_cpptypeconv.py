@@ -1,4 +1,7 @@
-from pywrap.type_conversion import cythontype_from_cpptype, find_all_subtypes
+from pywrap.cython import TypeInfo
+from pywrap.defaultconfig import Config
+from pywrap.type_conversion import (cythontype_from_cpptype, find_all_subtypes,
+                                    create_type_converter)
 from nose.tools import assert_equal, assert_in, assert_true, assert_raises
 
 
@@ -76,3 +79,8 @@ def test_find_subtypes_of_complex_hierarchy():
     assert_in("type5", subtypes)
     assert_in("type6", subtypes)
     assert_equal(len(subtypes), 6)
+
+
+def test_converter_not_available():
+    assert_raises(NotImplementedError, create_type_converter,
+                  "UnknownType", "unknownType", TypeInfo([]), Config())
