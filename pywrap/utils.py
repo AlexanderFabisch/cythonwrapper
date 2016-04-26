@@ -36,7 +36,7 @@ def from_camel_case(name):
     new_name = str(name)
     i = 0
     while i < len(new_name):
-        if new_name[i].isupper():
+        if new_name[i].isupper() and i > 0:
             new_name = new_name[:i] + "_" + new_name[i:]
             i += 1
         i += 1

@@ -1,8 +1,13 @@
 from pywrap.cython import TypeInfo
 from pywrap.defaultconfig import Config
-from pywrap.type_conversion import (cythontype_from_cpptype, find_all_subtypes,
-                                    create_type_converter)
+from pywrap.type_conversion import (
+    cythontype_from_cpptype, find_all_subtypes, create_type_converter,
+    is_stl_type_with_automatic_conversion, underlying_type, typedef_prefix)
 from nose.tools import assert_equal, assert_in, assert_true, assert_raises
+
+
+def test_is_stl_type():
+    assert_true(is_stl_type_with_automatic_conversion("string"))
 
 
 def test_basic_typename():
@@ -48,6 +53,16 @@ def test_const_chars():
     assert_equal(cythontype_from_cpptype("const char *const"), "char *")
     assert_equal(cythontype_from_cpptype("const char *"), "char *")
     assert_equal(cythontype_from_cpptype("char *const"), "char *")
+
+
+def test_underlying_type():
+    assert_equal(underlying_type("tdef", {}), "tdef")
+    assert_equal(underlying_type("tdef", {"tdef": "float"}), "float")
+
+
+def test_typedef_prefix():
+    assert_equal(typedef_prefix("tdef", {}), "tdef")
+    assert_equal(typedef_prefix("tdef", {"tdef": "float"}), "cpp.tdef")
 
 
 def test_find_subtypes_of_primitive():
