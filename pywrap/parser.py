@@ -49,69 +49,39 @@ def convert_ast(ast, node, parsable_file, verbose=0):
             else:
                 ast.namespace = ast.namespace + "::" + node.displayname
         elif node.kind == cindex.CursorKind.PARM_DECL:
-            tname = cythontype_from_cpptype(node.type.spelling)
-            ast.includes.add_include_for(tname)
-            param = Param(node.displayname, tname)
-            if ast.last_function is not None:
-                ast.last_function.arguments.append(param)
+            parse_children = add_param(ast, node.displayname,
+                                       node.type.spelling)
         elif node.kind == cindex.CursorKind.FUNCTION_DECL:
-            tname = cythontype_from_cpptype(node.result_type.spelling)
-            ast.includes.add_include_for(tname)
-            function = Function(
-                ast.include_file, ast.namespace, node.spelling, tname)
-            ast.functions.append(function)
-            ast.last_function = function
+            parse_children = add_function(ast, node.spelling,
+                                          node.result_type.spelling)
         elif node.kind == cindex.CursorKind.FUNCTION_TEMPLATE:
             ast.last_function = DummyFunction()
             warnings.warn("Templates are not implemented yet")
         elif node.kind == cindex.CursorKind.CXX_METHOD:
             if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
-                tname = cythontype_from_cpptype(node.result_type.spelling)
-                ast.includes.add_include_for(tname)
-                method = Method(node.spelling, tname, ast.classes[-1].name)
-                ast.classes[-1].methods.append(method)
-                ast.last_function = method
+                parse_children = add_method(ast, node.spelling,
+                                            node.result_type.spelling)
+            else:
+                parse_children = False
         elif node.kind == cindex.CursorKind.CONSTRUCTOR:
             if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
-                constructor = Constructor(ast.last_type.name)
-                ast.last_type.constructors.append(constructor)
-                ast.last_function = constructor
-        elif node.kind == cindex.CursorKind.CLASS_DECL:
-            clazz = Clazz(ast.include_file, ast.namespace, node.displayname)
-            ast.classes.append(clazz)
-            ast.last_type = clazz
-        elif node.kind == cindex.CursorKind.STRUCT_DECL:
-            if node.displayname == "" and ast.unnamed_struct is None:
-                ast.unnamed_struct = Clazz(
-                    ast.include_file, ast.namespace, node.displayname)
-                ast.last_type = ast.unnamed_struct
+                parse_children = add_ctor(ast)
             else:
-                clazz = Clazz(ast.include_file, ast.namespace, node.displayname)
-                ast.classes.append(clazz)
-                ast.last_type = clazz
+                parse_children = False
+        elif node.kind == cindex.CursorKind.CLASS_DECL:
+            parse_children = add_class(ast, node.displayname)
+        elif node.kind == cindex.CursorKind.STRUCT_DECL:
+            parse_children = add_struct_decl(ast, node.displayname)
         elif node.kind == cindex.CursorKind.FIELD_DECL:
             if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
-                tname = cythontype_from_cpptype(node.type.spelling)
-                ast.includes.add_include_for(tname)
-                field = Field(node.displayname, tname, ast.last_type.name)
-                ast.last_type.fields.append(field)
+                parse_children = add_field(ast, node.displayname,
+                                           node.type.spelling)
+            else:
+                parse_children = False
         elif node.kind == cindex.CursorKind.TYPEDEF_DECL:
             tname = node.displayname
-            underlying_tname = node.underlying_typedef_type.spelling
-            if "struct " + tname == underlying_tname:
-                if ast.unnamed_struct is None:
-                    raise LookupError("Struct typedef does not match any "
-                                      "unnamed struct")
-                ast.unnamed_struct.name = tname
-                ast.classes.append(ast.unnamed_struct)
-                ast.unnamed_struct = None
-                ast.last_type = None
-                parse_children = False
-            else:
-                ast.includes.add_include_for(underlying_tname)
-                ast.typedefs.append(Typedef(
-                    ast.include_file, ast.namespace, tname,
-                    cythontype_from_cpptype(underlying_tname)))
+            parse_children = add_typedef(
+                ast, node.underlying_typedef_type.spelling, tname)
         elif node.kind == cindex.CursorKind.ENUM_DECL:
             enum = Enum(ast.include_file, ast.namespace, node.displayname)
             ast.last_enum = enum
@@ -132,3 +102,84 @@ def convert_ast(ast, node, parsable_file, verbose=0):
             convert_ast(ast, child, parsable_file, verbose)
 
     ast.namespace = namespace
+
+
+def add_typedef(ast, underlying_tname, tname):
+    if underlying_tname == "struct " + tname:
+        if ast.unnamed_struct is None:
+            raise LookupError("Struct typedef does not match any "
+                              "unnamed struct")
+        ast.unnamed_struct.name = tname
+        ast.classes.append(ast.unnamed_struct)
+        ast.unnamed_struct = None
+        ast.last_type = None
+        return False
+    else:
+        ast.includes.add_include_for(underlying_tname)
+        ast.typedefs.append(Typedef(
+            ast.include_file, ast.namespace, tname,
+            cythontype_from_cpptype(underlying_tname)))
+        return True
+
+
+def add_struct_decl(ast, name):
+    if name == "" and ast.unnamed_struct is None:
+        ast.unnamed_struct = Clazz(
+            ast.include_file, ast.namespace, name)
+        ast.last_type = ast.unnamed_struct
+    else:
+        add_class(ast, name)
+    return True
+
+
+def add_function(ast, name, tname):
+    tname = cythontype_from_cpptype(tname)
+    ast.includes.add_include_for(tname)
+    function = Function(
+        ast.include_file, ast.namespace, name, tname)
+    ast.functions.append(function)
+    ast.last_function = function
+    return True
+
+
+def add_class(ast, name):
+    clazz = Clazz(ast.include_file, ast.namespace, name)
+    ast.classes.append(clazz)
+    ast.last_type = clazz
+    return True
+
+
+def add_ctor(ast):
+    constructor = Constructor(ast.last_type.name)
+    ast.last_type.constructors.append(constructor)
+    ast.last_function = constructor
+    return True
+
+
+def add_method(ast, name, tname):
+    tname = cythontype_from_cpptype(tname)
+    ast.includes.add_include_for(tname)
+    method = Method(name, tname, ast.last_type.name)
+    ast.last_type.methods.append(method)
+    ast.last_function = method
+    return True
+
+
+def add_param(ast, name, tname):
+    tname = cythontype_from_cpptype(tname)
+    ast.includes.add_include_for(tname)
+    param = Param(name, tname)
+    if ast.last_function is not None:
+        ast.last_function.arguments.append(param)
+    else:
+        warnings.warn("Ignored function parameter '%s' (type: '%s'), no "
+                      "function in current context." % (name, tname))
+    return True
+
+
+def add_field(ast, name, tname):
+    tname = cythontype_from_cpptype(tname)
+    ast.includes.add_include_for(tname)
+    field = Field(name, tname, ast.last_type.name)
+    ast.last_type.fields.append(field)
+    return True
