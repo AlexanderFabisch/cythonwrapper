@@ -3,14 +3,7 @@ import os
 
 class AST:
     """Abstract Syntax Tree."""
-    def __init__(self, includes, include_file):
-        self.includes = includes
-        self.include_file = include_file
-        self.namespace = ""
-        self.last_function = None
-        self.last_type = None
-        self.last_enum = None
-        self.unnamed_struct = None
+    def __init__(self):
         self.functions = []
         self.classes = []
         self.typedefs = []

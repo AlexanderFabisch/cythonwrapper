@@ -32,7 +32,7 @@ def test_distributed_struct():
     parser.add_struct_decl("")
     assert_is_not_none(parser.ast.unnamed_struct)
     parser.add_typedef("struct mystruct", "mystruct")
-    assert_is_none(parser.ast.unnamed_struct)
+    assert_is_none(parser.unnamed_struct)
     assert_equal(len(parser.ast.classes), 1)
 
 

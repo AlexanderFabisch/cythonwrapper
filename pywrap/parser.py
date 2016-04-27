@@ -23,7 +23,12 @@ class Parser(object):
         return self.ast
 
     def init_ast(self):
-        self.ast = AST(self.includes, self.include_file)
+        self.ast = AST()
+        self.last_type = None
+        self.last_enum = None
+        self.unnamed_struct = None
+        self.last_function = None
+        self.namespace = ""
 
     def convert_ast(self, node, parsable_file, verbose=0):
         """Convert AST from Clang to our own representation.
@@ -42,7 +47,7 @@ class Parser(object):
         verbose : int, optional (default: 0)
             Verbosity level
         """
-        namespace = self.ast.namespace
+        namespace = self.namespace
         if verbose >= 2:
             print("Node: %s, %s" % (node.kind, node.displayname))
 
@@ -53,10 +58,10 @@ class Parser(object):
             elif node.location.file.name != parsable_file:
                 return
             elif node.kind == cindex.CursorKind.NAMESPACE:
-                if self.ast.namespace == "":
-                    self.ast.namespace = node.displayname
+                if self.namespace == "":
+                    self.namespace = node.displayname
                 else:
-                    self.ast.namespace = self.ast.namespace + "::" + node.displayname
+                    self.namespace = self.namespace + "::" + node.displayname
             elif node.kind == cindex.CursorKind.PARM_DECL:
                 parse_children = self.add_param(
                     node.displayname, node.type.spelling)
@@ -64,7 +69,7 @@ class Parser(object):
                 parse_children = self.add_function(
                     node.spelling, node.result_type.spelling)
             elif node.kind == cindex.CursorKind.FUNCTION_TEMPLATE:
-                self.ast.last_function = DummyFunction()
+                self.last_function = DummyFunction()
                 warnings.warn("Templates are not implemented yet")
             elif node.kind == cindex.CursorKind.CXX_METHOD:
                 if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
@@ -92,11 +97,11 @@ class Parser(object):
                 parse_children = self.add_typedef(
                     node.underlying_typedef_type.spelling, tname)
             elif node.kind == cindex.CursorKind.ENUM_DECL:
-                enum = Enum(self.ast.include_file, self.ast.namespace, node.displayname)
-                self.ast.last_enum = enum
+                enum = Enum(self.include_file, self.namespace, node.displayname)
+                self.last_enum = enum
                 self.ast.enums.append(enum)
             elif node.kind == cindex.CursorKind.ENUM_CONSTANT_DECL:
-                self.ast.last_enum.constants.append(node.displayname)
+                self.last_enum.constants.append(node.displayname)
             elif node.kind == cindex.CursorKind.COMPOUND_STMT:
                 parse_children = False
             else:
@@ -110,8 +115,7 @@ class Parser(object):
             for child in node.get_children():
                 self.convert_ast(child, parsable_file, verbose)
 
-        self.ast.namespace = namespace
-
+        self.namespace = namespace
 
     def add_typedef(self, underlying_tname, tname):
         if underlying_tname == "struct " + tname:
@@ -121,74 +125,67 @@ class Parser(object):
             self.ast.unnamed_struct.name = tname
             self.ast.classes.append(self.ast.unnamed_struct)
             self.ast.unnamed_struct = None
-            self.ast.last_type = None
+            self.last_type = None
             return False
         else:
-            self.ast.includes.add_include_for(underlying_tname)
+            self.includes.add_include_for(underlying_tname)
             self.ast.typedefs.append(Typedef(
-                self.ast.include_file, self.ast.namespace, tname,
+                self.include_file, self.namespace, tname,
                 cythontype_from_cpptype(underlying_tname)))
             return True
 
-
     def add_struct_decl(self, name):
-        if name == "" and self.ast.unnamed_struct is None:
+        if name == "" and self.unnamed_struct is None:
             self.ast.unnamed_struct = Clazz(
-                self.ast.include_file, self.ast.namespace, name)
-            self.ast.last_type = self.ast.unnamed_struct
+                self.include_file, self.namespace, name)
+            self.last_type = self.ast.unnamed_struct
         else:
             self.add_class(name)
         return True
 
-
     def add_function(self, name, tname):
         tname = cythontype_from_cpptype(tname)
-        self.ast.includes.add_include_for(tname)
+        self.includes.add_include_for(tname)
         function = Function(
-            self.ast.include_file, self.ast.namespace, name, tname)
+            self.include_file, self.namespace, name, tname)
         self.ast.functions.append(function)
-        self.ast.last_function = function
+        self.last_function = function
         return True
-
 
     def add_class(self, name):
-        clazz = Clazz(self.ast.include_file, self.ast.namespace, name)
+        clazz = Clazz(self.include_file, self.namespace, name)
         self.ast.classes.append(clazz)
-        self.ast.last_type = clazz
+        self.last_type = clazz
         return True
-
 
     def add_ctor(self):
-        constructor = Constructor(self.ast.last_type.name)
-        self.ast.last_type.constructors.append(constructor)
-        self.ast.last_function = constructor
+        constructor = Constructor(self.last_type.name)
+        self.last_type.constructors.append(constructor)
+        self.last_function = constructor
         return True
-
 
     def add_method(self, name, tname):
         tname = cythontype_from_cpptype(tname)
-        self.ast.includes.add_include_for(tname)
-        method = Method(name, tname, self.ast.last_type.name)
-        self.ast.last_type.methods.append(method)
-        self.ast.last_function = method
+        self.includes.add_include_for(tname)
+        method = Method(name, tname, self.last_type.name)
+        self.last_type.methods.append(method)
+        self.last_function = method
         return True
-
 
     def add_param(self, name, tname):
         tname = cythontype_from_cpptype(tname)
-        self.ast.includes.add_include_for(tname)
+        self.includes.add_include_for(tname)
         param = Param(name, tname)
-        if self.ast.last_function is not None:
-            self.ast.last_function.arguments.append(param)
+        if self.last_function is not None:
+            self.last_function.arguments.append(param)
         else:
             warnings.warn("Ignored function parameter '%s' (type: '%s'), no "
                           "function in current context." % (name, tname))
         return True
 
-
     def add_field(self, name, tname):
         tname = cythontype_from_cpptype(tname)
-        self.ast.includes.add_include_for(tname)
-        field = Field(name, tname, self.ast.last_type.name)
-        self.ast.last_type.fields.append(field)
+        self.includes.add_include_for(tname)
+        field = Field(name, tname, self.last_type.name)
+        self.last_type.fields.append(field)
         return True
