@@ -2,7 +2,7 @@ import os
 import sys
 from .templates import render
 from .defaultconfig import Config
-from .parser import parse
+from .parser import Parser
 from .ast import Includes
 from .exporter import CythonDeclarationExporter, CythonImplementationExporter
 
@@ -131,7 +131,7 @@ def _parse_files(filenames, includes, config, verbose):
         else:
             parsable_file = filename
 
-        asts.append(parse(filename, parsable_file, includes, verbose))
+        asts.append(Parser(filename, parsable_file, includes, verbose).parse())
 
         if is_header:
             os.remove(parsable_file)
