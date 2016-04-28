@@ -10,3 +10,7 @@ def test_missing_modulename():
 def test_missing_config():
     assert_raises(ValueError, make_cython_wrapper,
                   "test.hpp", [], custom_config="doesnotexist.py")
+
+
+def test_no_header():
+    assert_raises(ValueError, make_cython_wrapper, "test.cpp", [])

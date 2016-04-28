@@ -123,18 +123,18 @@ class TypeInfo:
 def _parse_files(filenames, includes, config, verbose):
     asts = []
     for filename in filenames:
-        is_header = file_ending(filename) in config.cpp_header_endings
+        if file_ending(filename) not in config.cpp_header_endings:
+            raise ValueError("'%s' does not seem to be a header file which is "
+                             "required.")
 
-        if is_header:  # Clang does not really parse headers
-            parsable_file = filename + ".cc"
-            with open(parsable_file, "w") as f:
-                f.write(open(filename, "r").read())
-        else:
-            parsable_file = filename
+        # Clang does not really parse headers
+        parsable_file = filename + ".cc"
+        with open(parsable_file, "w") as f:
+            f.write(open(filename, "r").read())
 
-        asts.append(Parser(filename, parsable_file, includes, verbose).parse())
-
-        if is_header:
+        try:
+            asts.append(Parser(filename, parsable_file, includes, verbose).parse())
+        finally:
             os.remove(parsable_file)
 
     return asts
