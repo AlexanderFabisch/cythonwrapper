@@ -254,9 +254,14 @@ def test_enum():
 
 
 def test_register_custom_type_converter():
-    assert_warns_message(UserWarning, "Ignoring method",_write_cython_wrapper,
-                         full_paths("boolinboolout.hpp"), None,
-                         full_paths("config_register_converter.py")[0])
+    try:
+        assert_warns_message(
+            UserWarning, "Ignoring method", _write_cython_wrapper,
+            full_paths("boolinboolout.hpp"), None,
+            full_paths("config_register_converter.py")[0])
+    finally:
+        _remove_files(["boolinboolout.cpp", "boolinboolout.pyx",
+                       "_declarations.pxd", "setup_test.py"])
 
 
 def test_primitive_pointers():

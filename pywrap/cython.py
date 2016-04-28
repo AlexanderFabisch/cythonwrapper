@@ -21,7 +21,8 @@ def write_cython_wrapper(filenames, sources, modulename=None, target=".",
 def write_files(files, target="."):
     for filename, content in files.items():
         outputfile = os.path.join(target, filename)
-        open(outputfile, "w").write(content)
+        with open(outputfile, "w") as f:
+            f.write(content)
 
 
 def cython(cython_files, target="."):
