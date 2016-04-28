@@ -171,9 +171,6 @@ class DummyFunction(FunctionBase):
     def __init__(self):
         super(DummyFunction, self).__init__("")
 
-    def accept(self, exporter):
-        pass
-
 
 class Param:
     def __init__(self, name, tipe):
