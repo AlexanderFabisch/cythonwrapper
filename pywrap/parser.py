@@ -6,7 +6,18 @@ from .ast import (AST, Enum, Typedef, Clazz, Function, Constructor, Method,
                   TemplateMethod, Param, Field)
 
 
-IGNORED_NODES = [cindex.CursorKind.CXX_ACCESS_SPEC_DECL]
+IGNORED_NODES = [
+    cindex.CursorKind.CALL_EXPR,
+    cindex.CursorKind.CXX_ACCESS_SPEC_DECL,
+    cindex.CursorKind.DECL_REF_EXPR,
+    cindex.CursorKind.DECL_REF_EXPR,
+    cindex.CursorKind.MEMBER_REF,
+    cindex.CursorKind.NAMESPACE_REF,
+    cindex.CursorKind.STRING_LITERAL,
+    cindex.CursorKind.TEMPLATE_REF,
+    cindex.CursorKind.TYPE_REF,
+    cindex.CursorKind.UNEXPOSED_EXPR
+]
 
 
 class Parser(object):
