@@ -190,30 +190,9 @@ class CythonImplementationExporter:
             method.ignored = True
 
     def visit_template_method(self, template_method):
-        method_key = "%s::%s" % (template_method.class_name,
-                                 template_method.name)
-        if method_key not in self.config.registered_template_specializations:
-            warnings.warn(
-                "No template specialization registered for template method "
-                "'%s' with the following template types: %s"
-                % (method_key, ", ".join(template_method.template_types)))
-            template_method.ignored = True
-        else:
-            specs = self.config.registered_template_specializations[method_key]
-            for name, spec in specs:
-                if template_method.result_type in spec:
-                    result_type = spec[template_method.result_type]
-                else:
-                    result_type = template_method.result_type
-                method = Method(name, result_type, template_method.class_name)
-                for arg in template_method.arguments:
-                    if arg.tipe in spec:
-                        tipe = spec[arg.tipe]
-                    else:
-                        tipe = arg.tipe
-                    method.arguments.append(Param(arg.name, tipe))
-
-                self.visit_method(method, cppname=template_method.name)
+        specializer = MethodSpecializer(self.config)
+        for method in specializer.specialize(template_method):
+            self.visit_method(method, cppname=template_method.name)
 
     def visit_function(self, function):
         try:
@@ -231,6 +210,49 @@ class CythonImplementationExporter:
 
     def export(self):
         return self.output
+
+
+class MethodSpecializer(object):
+    """Convert a template method to a method."""
+    def __init__(self, config):
+        self.config = config
+
+    def specialize(self, template_method):
+        try:
+            specs = self._lookup_specification(template_method)
+        except LookupError as e:
+            warnings.warn(e.message)
+            template_method.ignored = True
+            return []
+
+        specialized_methods = []
+
+        for name, spec in specs:
+            result_type = self._replace_specification(
+                template_method.result_type, spec)
+
+            method = Method(name, result_type, template_method.class_name)
+
+            for arg in template_method.arguments:
+                tipe = self._replace_specification(arg.tipe, spec)
+                method.arguments.append(Param(arg.name, tipe))
+
+            specialized_methods.append(method)
+
+        return specialized_methods
+
+    def _lookup_specification(self, template_method):
+        method_key = "%s::%s" % (template_method.class_name,
+                                 template_method.name)
+        if method_key not in self.config.registered_template_specializations:
+            raise LookupError(
+                "No template specialization registered for template method "
+                "'%s' with the following template types: %s"
+                % (method_key, ", ".join(template_method.template_types)))
+        return self.config.registered_template_specializations[method_key]
+
+    def _replace_specification(self, tipe, spec):
+        return spec.get(tipe, tipe)
 
 
 class FunctionDefinition(object):
