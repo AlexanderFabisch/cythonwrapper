@@ -3,6 +3,7 @@ from . import templates
 from .templates import render
 from .type_conversion import create_type_converter
 from .utils import indent_block, from_camel_case
+from .ast import Method, Param
 
 
 class CythonDeclarationExporter:
@@ -71,6 +72,17 @@ class CythonDeclarationExporter:
             self.methods.append(method_str)
         self.arguments = []
 
+    def visit_template_method(self, template_method):
+        if not template_method.ignored:
+            method_dict = {"args": ", ".join(self.arguments),
+                           "types": ", ".join(template_method.template_types)}
+            method_dict.update(template_method.__dict__)
+            method_dict["name"] = replace_operator_decl(method_dict["name"],
+                                                        self.config)
+            method_str = templates.template_method_decl % method_dict
+            self.methods.append(method_str)
+        self.arguments = []
+
     def visit_function(self, function):
         if not function.ignored:
             function_dict = {"args": ", ".join(self.arguments)}
@@ -78,10 +90,6 @@ class CythonDeclarationExporter:
             function_str = templates.function_decl % function_dict
             self.functions.append(function_str)
         self.arguments = []
-
-    def visit_template_method(self, template_method):
-        if not template_method.ignored:
-            raise NotImplementedError("Template methods not implemented")
 
     def visit_param(self, param):
         self.arguments.append(templates.arg_decl % param.__dict__)
@@ -170,15 +178,42 @@ class CythonImplementationExporter:
             warnings.warn(e.message + " Ignoring method '%s'" % ctor.name)
             ctor.ignored = True
 
-    def visit_method(self, method):
+    def visit_method(self, method, cppname=None):
         try:
             method_def = MethodDefinition(
                 method.class_name, method.name, method.arguments, self.includes,
-                method.result_type, self.type_info, self.config).make()
+                method.result_type, self.type_info, self.config,
+                cppname=cppname).make()
             self.methods.append(indent_block(method_def, 1))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % method.name)
             method.ignored = True
+
+    def visit_template_method(self, template_method):
+        method_key = "%s::%s" % (template_method.class_name,
+                                 template_method.name)
+        if method_key not in self.config.registered_template_specializations:
+            warnings.warn(
+                "No template specialization registered for template method "
+                "'%s' with the following template types: %s"
+                % (method_key, ", ".join(template_method.template_types)))
+            template_method.ignored = True
+        else:
+            specs = self.config.registered_template_specializations[method_key]
+            for name, spec in specs:
+                if template_method.result_type in spec:
+                    result_type = spec[template_method.result_type]
+                else:
+                    result_type = template_method.result_type
+                method = Method(name, result_type, template_method.class_name)
+                for arg in template_method.arguments:
+                    if arg.tipe in spec:
+                        tipe = spec[arg.tipe]
+                    else:
+                        tipe = arg.tipe
+                    method.arguments.append(Param(arg.name, tipe))
+
+                self.visit_method(method, cppname=template_method.name)
 
     def visit_function(self, function):
         try:
@@ -190,14 +225,6 @@ class CythonImplementationExporter:
             warnings.warn(e.message + " Ignoring function '%s'" % function.name)
             function.ignored = True
 
-    def visit_template_method(self, template_method):
-        method_key = "%s::%s" % (template_method.class_name,
-                                 template_method.name)
-        warnings.warn(
-            "No template specialization registered for template method %s "
-            "with the following template types: %s"
-            % (method_key, ", ".join(template_method.template_types)))
-        template_method.ignored = True
 
     def visit_param(self, param):
         pass
@@ -298,15 +325,19 @@ class ConstructorDefinition(FunctionDefinition):
 
 class MethodDefinition(FunctionDefinition):
     def __init__(self, class_name, name, arguments, includes, result_type,
-                 type_info, config):
+                 type_info, config, cppname=None):
         super(MethodDefinition, self).__init__(
             name, arguments, includes, result_type, type_info, config)
         self.initial_args = ["%s self" % class_name]
+        if cppname is None:
+            self.cppname = self.name
+        else:
+            self.cppname = cppname
 
     def _call_cpp_function(self, call_args):
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
         call = templates.method_call % {
-            "name": self.config.call_operators.get(self.name, self.name),
+            "name": self.config.call_operators.get(self.cppname, self.cppname),
             "call_args": ", ".join(call_args)}
         return catch_result(cpp_type_decl, call)
 

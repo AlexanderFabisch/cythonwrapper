@@ -9,4 +9,5 @@ omit =
 exclude_lines =
     pragma: no cover
     if verbose
+    if self.verbose
     @abstractmethod

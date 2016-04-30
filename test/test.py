@@ -3,7 +3,7 @@ import sys
 import numpy as np
 from contextlib import contextmanager
 from nose.tools import (assert_equal, assert_not_equal, assert_true,
-                        assert_false)
+                        assert_false, assert_is_instance)
 from pywrap import cython
 from pywrap.utils import assert_warns_message
 
@@ -288,3 +288,14 @@ def test_cstring():
         from cstring import length, helloworld
         assert_equal(length("test"), 4)
         assert_equal(helloworld(), "hello world")
+
+
+def test_template_method():
+    with cython_extension_from("templatemethod.hpp",
+                               custom_config="templatemethodconfig.py"):
+        from templatemethod import A
+        a = A()
+        assert_equal(a.add_one_i(1), 2)
+        assert_is_instance(a.add_one_i(1), int)
+        assert_equal(a.add_one_d(2.0), 3.0)
+        assert_is_instance(a.add_one_d(2.0), float)

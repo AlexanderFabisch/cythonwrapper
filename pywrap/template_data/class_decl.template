@@ -4,12 +4,12 @@ cdef extern from "{{ filename }}" namespace "{{ namespace }}":
         pass
 {%- else %}
 {%- for field in fields %}
-{{ field }}
+        {{ field }}
 {%- endfor %}
 {%- for ctor in ctors %}
-{{ ctor }}
+        {{ ctor }}
 {%- endfor %}
 {%- for method in methods %}
-{{ method }}
+        {{ method }}
 {%- endfor %}
 {%- endif %}
