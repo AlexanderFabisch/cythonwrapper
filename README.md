@@ -41,7 +41,7 @@ There are more examples in the subdirectory `examples`.
 Many things are not implemented yet, e.g.
 
 * arrays, e.g. `float[3]`
-* templates
+* class or function templates (template methods are supported)
 * linking to other libraries (you can modify the `setup.py` though)
 * integrating other Cython extensions (you can modify the `setup.py` though)
 
