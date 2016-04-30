@@ -3,7 +3,10 @@ cindex.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
 import warnings
 from .type_conversion import cythontype_from_cpptype
 from .ast import (AST, Enum, Typedef, Clazz, Function, Constructor, Method,
-                  DummyFunction, Param, Field)
+                  TemplateMethod, Param, Field)
+
+
+IGNORED_NODES = [cindex.CursorKind.CXX_ACCESS_SPEC_DECL]
 
 
 class Parser(object):
@@ -28,6 +31,7 @@ class Parser(object):
         self.last_enum = None
         self.unnamed_struct = None
         self.last_function = None
+        self.last_template = None
         self.namespace = ""
 
     def convert_ast(self, node):
@@ -60,8 +64,10 @@ class Parser(object):
                 parse_children = self.add_function(
                     node.spelling, node.result_type.spelling)
             elif node.kind == cindex.CursorKind.FUNCTION_TEMPLATE:
-                self.last_function = DummyFunction()
-                warnings.warn("Templates are not implemented yet")
+                self.add_template_method(
+                    node.spelling, node.result_type.spelling)
+            elif node.kind == cindex.CursorKind.TEMPLATE_TYPE_PARAMETER:
+                self.last_template.template_types.append(node.displayname)
             elif node.kind == cindex.CursorKind.CXX_METHOD:
                 if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
                     parse_children = self.add_method(
@@ -95,10 +101,13 @@ class Parser(object):
                 self.last_enum.constants.append(node.displayname)
             elif node.kind == cindex.CursorKind.COMPOUND_STMT:
                 parse_children = False
-            else:
-                if self.verbose:
+            elif node.kind in IGNORED_NODES:
+                if self.verbose >= 3:
                     print("Ignored node: %s, %s"
                           % (node.kind, node.displayname))
+            else:
+                print("Unknown node: %s, %s"
+                      % (node.kind, node.displayname))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring node '%s'" % node.displayname)
             parse_children = False
@@ -163,6 +172,17 @@ class Parser(object):
         self.last_type.methods.append(method)
         self.last_function = method
         return True
+
+
+    def add_template_method(self, name, tname):
+        tname = cythontype_from_cpptype(tname)
+        self.includes.add_include_for(tname)
+        method = TemplateMethod(name, tname, self.last_type.name)
+        self.last_type.methods.append(method)
+        self.last_function = method
+        self.last_template = method
+        return True
+
 
     def add_param(self, name, tname):
         tname = cythontype_from_cpptype(tname)

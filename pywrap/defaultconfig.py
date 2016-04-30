@@ -26,6 +26,7 @@ class Config(object):
         }
 
         self.registered_converters = []
+        self.registered_template_specializations = {}
 
     def cpp_to_py_operator(self, name):
         if name.startswith("operator") and name not in self.operators:

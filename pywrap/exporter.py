@@ -79,6 +79,10 @@ class CythonDeclarationExporter:
             self.functions.append(function_str)
         self.arguments = []
 
+    def visit_template_method(self, template_method):
+        if not template_method.ignored:
+            raise NotImplementedError("Template methods not implemented")
+
     def visit_param(self, param):
         self.arguments.append(templates.arg_decl % param.__dict__)
 
@@ -185,6 +189,15 @@ class CythonImplementationExporter:
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring function '%s'" % function.name)
             function.ignored = True
+
+    def visit_template_method(self, template_method):
+        method_key = "%s::%s" % (template_method.class_name,
+                                 template_method.name)
+        warnings.warn(
+            "No template specialization registered for template method %s "
+            "with the following template types: %s"
+            % (method_key, ", ".join(template_method.template_types)))
+        template_method.ignored = True
 
     def visit_param(self, param):
         pass
