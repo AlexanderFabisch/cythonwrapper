@@ -19,7 +19,7 @@ class Parser(object):
         cursor = translation_unit.cursor
 
         self.init_ast()
-        self.convert_ast(cursor, self.parsable_file, self.verbose)
+        self.convert_ast(cursor)
         return self.ast
 
     def init_ast(self):
@@ -30,32 +30,23 @@ class Parser(object):
         self.last_function = None
         self.namespace = ""
 
-    def convert_ast(self, node, parsable_file, verbose=0):
+    def convert_ast(self, node):
         """Convert AST from Clang to our own representation.
 
         Parameters
         ----------
-        ast : AST
-            Our abstract syntax tree (result)
-
         node : clang.cindex.Index
             Currently visited node of Clang's AST
-
-        parsable_file : string
-            Name of the file that is actually parsed by Clang
-
-        verbose : int, optional (default: 0)
-            Verbosity level
         """
         namespace = self.namespace
-        if verbose >= 2:
+        if self.verbose >= 2:
             print("Node: %s, %s" % (node.kind, node.displayname))
 
         parse_children = True
         try:
             if node.location.file is None:
                 pass
-            elif node.location.file.name != parsable_file:
+            elif node.location.file.name != self.parsable_file:
                 return
             elif node.kind == cindex.CursorKind.NAMESPACE:
                 if self.namespace == "":
@@ -105,15 +96,16 @@ class Parser(object):
             elif node.kind == cindex.CursorKind.COMPOUND_STMT:
                 parse_children = False
             else:
-                if verbose:
-                    print("Ignored node: %s, %s" % (node.kind, node.displayname))
+                if self.verbose:
+                    print("Ignored node: %s, %s"
+                          % (node.kind, node.displayname))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring node '%s'" % node.displayname)
             parse_children = False
 
         if parse_children:
             for child in node.get_children():
-                self.convert_ast(child, parsable_file, verbose)
+                self.convert_ast(child)
 
         self.namespace = namespace
 
