@@ -24,11 +24,11 @@ def full_paths(filenames):
 
 @contextmanager
 def cython_extension_from(headers, modulename=None, custom_config=None,
-                          cleanup=True):
+                          assert_warn=None, warn_msg=None, cleanup=True):
     if custom_config is not None:
         custom_config = full_paths(custom_config)[0]
     filenames = _write_cython_wrapper(full_paths(headers), modulename,
-                                      custom_config)
+                                      custom_config, assert_warn, warn_msg)
     _run_setup()
     try:
         yield
@@ -52,10 +52,17 @@ def hidden_stdout():
         os.dup2(oldstdout_fno, 1)
 
 
-def _write_cython_wrapper(filenames, modulename, custom_config, verbose=0):
-    results, cython_files = cython.make_cython_wrapper(
-        filenames, sources=[], modulename=modulename,
-        custom_config=custom_config, target=".", verbose=verbose)
+def _write_cython_wrapper(filenames, modulename, custom_config, assert_warn,
+                          warn_msg, verbose=0):
+    if assert_warn is None:
+        results, cython_files = cython.make_cython_wrapper(
+            filenames, sources=[], modulename=modulename,
+            custom_config=custom_config, target=".", verbose=verbose)
+    else:
+        results, cython_files = assert_warns_message(
+            assert_warn, warn_msg, cython.make_cython_wrapper,
+            filenames, sources=[], modulename=modulename,
+            custom_config=custom_config, target=".", verbose=verbose)
     results[SETUPPY_NAME] = results["setup.py"]
     del results["setup.py"]
     cython.write_files(results)
@@ -78,6 +85,13 @@ def _remove_files(filenames):
     for f in filenames:
         if os.path.exists(f):
             os.remove(f)
+
+
+def test_fails():
+    with cython_extension_from("fails.hpp", assert_warn=UserWarning,
+                               warn_msg="Ignoring method"):
+        from fails import A
+        assert_false(hasattr(A, "my_function"))
 
 
 def test_twoctors():
@@ -254,14 +268,10 @@ def test_enum():
 
 
 def test_register_custom_type_converter():
-    try:
-        assert_warns_message(
-            UserWarning, "Ignoring method", _write_cython_wrapper,
-            full_paths("boolinboolout.hpp"), None,
-            full_paths("config_register_converter.py")[0])
-    finally:
-        _remove_files(["boolinboolout.cpp", "boolinboolout.pyx",
-                       "_declarations.pxd", "setup_test.py"])
+    with cython_extension_from("boolinboolout.hpp", assert_warn=UserWarning,
+                               warn_msg="Ignoring method",
+                               custom_config="config_register_converter.py"):
+        pass
 
 
 def test_primitive_pointers():
