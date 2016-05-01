@@ -226,3 +226,10 @@ def test_template_method():
         assert_is_instance(a.add_one_i(1), int)
         assert_equal(a.add_one_d(2.0), 3.0)
         assert_is_instance(a.add_one_d(2.0), float)
+
+
+def test_missing_specialization():
+    with cython_extension_from("templatemethod.hpp", assert_warn=UserWarning,
+                               warn_msg="No template specialization"):
+        from templatemethod import A
+        assert_false(hasattr(A, "add_one"))
