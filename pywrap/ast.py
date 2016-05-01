@@ -242,9 +242,8 @@ class TemplateMethod(Method, Template):
 
     def __str__(self):
         result = super(TemplateMethod, self).__str__()
-        if len(self.template_types) > 0:
-            result += os.linesep + indent_block(os.linesep.join(
-                ["Template type '%s'" % tt for tt in self.template_types]), 1)
+        result += os.linesep + indent_block(os.linesep.join(
+            ["Template type '%s'" % tt for tt in self.template_types]), 1)
         return result
 
 
