@@ -82,11 +82,11 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
     config = _load_config(custom_config)
 
     for filename in filenames:
-        if not os.path.exists(filename):
-            raise ValueError("File '%s' does not exist" % filename)
         if file_ending(filename) not in config.cpp_header_endings:
             raise ValueError("'%s' does not seem to be a header file which is "
-                             "required.")
+                             "required." % filename)
+        if not os.path.exists(filename):
+            raise ValueError("File '%s' does not exist" % filename)
 
     includes = Includes()
     asts = _parse_files(filenames, includes, config, verbose)
