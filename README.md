@@ -40,6 +40,7 @@ There are more examples in the subdirectory `examples`.
 
 Many things are not implemented yet, e.g.
 
+* static methods
 * arrays, e.g. `float[3]`
 * class or function templates (template methods are supported)
 * linking to other libraries (you can modify the `setup.py` though)
