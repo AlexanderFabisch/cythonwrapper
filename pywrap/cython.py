@@ -8,6 +8,16 @@ from .exporter import CythonDeclarationExporter, CythonImplementationExporter
 
 
 def write_files(files, target="."):
+    """Write files.
+
+    Parameters
+    ----------
+    files : dict
+        Mapping from file name to content
+
+    target : string, optional (default: '.')
+        Target directory
+    """
     for filename, content in files.items():
         outputfile = os.path.join(target, filename)
         with open(outputfile, "w") as f:
@@ -15,6 +25,16 @@ def write_files(files, target="."):
 
 
 def cython(cython_files, target="."):
+    """Cythonize Cython implementation files.
+
+    Parameters
+    ----------
+    cython_files : list
+        List of files that will be cythonized
+
+    target : string, optional (default: '.')
+        Target directory
+    """
     for cython_file in cython_files:
         inputfile = os.path.join(target, cython_file)
         #from Cython.Build import cythonize
