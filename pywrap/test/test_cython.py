@@ -1,5 +1,11 @@
+import os
 from pywrap.cython import make_cython_wrapper
-from nose.tools import assert_raises
+from nose.tools import assert_raises, assert_false
+
+
+def test_missing_file():
+    assert_raises(ValueError, make_cython_wrapper, "missing.hpp", [])
+    assert_false(os.path.exists("missing.hpp.cc"))
 
 
 def test_missing_modulename():

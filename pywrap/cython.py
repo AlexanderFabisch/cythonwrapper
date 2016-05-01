@@ -61,6 +61,13 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
 
     config = _load_config(custom_config)
 
+    for filename in filenames:
+        if not os.path.exists(filename):
+            raise ValueError("File '%s' does not exist" % filename)
+        if file_ending(filename) not in config.cpp_header_endings:
+            raise ValueError("'%s' does not seem to be a header file which is "
+                             "required.")
+
     includes = Includes()
     asts = _parse_files(filenames, includes, config, verbose)
     type_info = TypeInfo(asts)
@@ -112,14 +119,11 @@ class TypeInfo:
 def _parse_files(filenames, includes, config, verbose):
     asts = []
     for filename in filenames:
-        if file_ending(filename) not in config.cpp_header_endings:
-            raise ValueError("'%s' does not seem to be a header file which is "
-                             "required.")
-
         # Clang does not really parse headers
         parsable_file = filename + ".cc"
-        with open(parsable_file, "w") as f:
-            f.write(open(filename, "r").read())
+        with open(parsable_file, "w") as outfile:
+            with open(filename, "r") as infile:
+                outfile.write(infile.read())
 
         try:
             asts.append(Parser(filename, parsable_file, includes, verbose).parse())
