@@ -60,6 +60,16 @@ def test_class_string_with_members():
         ))
 
 
+def test_function_string_with_return():
+    f = Function("test.hpp", "", "my_fun", "double")
+    assert_equal(
+        str(f), lines(
+            "Function 'my_fun'",
+            "    Returns (double)"
+        )
+    )
+
+
 def test_template_mathod_string():
     m = TemplateMethod("my_template_method", "void", "MyClass")
     m.arguments.append(Param("t", "T"))
