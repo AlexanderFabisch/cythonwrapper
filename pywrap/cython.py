@@ -7,17 +7,6 @@ from .ast import Includes
 from .exporter import CythonDeclarationExporter, CythonImplementationExporter
 
 
-def write_cython_wrapper(filenames, sources, modulename=None, target=".",
-                         custom_config=None, verbose=0):
-    if not os.path.exists(target):
-        os.makedirs(target)
-
-    results, cython_files = make_cython_wrapper(
-        filenames, sources, modulename, target, custom_config, verbose)
-    write_files(results, target)
-    cython(cython_files, target)
-
-
 def write_files(files, target="."):
     for filename, content in files.items():
         outputfile = os.path.join(target, filename)

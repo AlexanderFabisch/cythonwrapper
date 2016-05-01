@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-
+import os
 import argparse
 import pywrap
-from pywrap.cython import write_cython_wrapper
+from pywrap.cython import make_cython_wrapper, write_files, cython
 
 
-if __name__ == "__main__":
+def parse_args():
     argparser = argparse.ArgumentParser(description=pywrap.__description__)
     argparser.add_argument("header", nargs="*", type=str,
                            help="C++ header file")
@@ -20,7 +20,19 @@ if __name__ == "__main__":
                            help="Configuration (Python file)")
     argparser.add_argument("--verbose", "-v", action="count",
                            help="verbosity level")
-    args = argparser.parse_args()
+    return argparser.parse_args()
 
-    write_cython_wrapper(args.header, args.sources, args.modulename,
-                         args.outdir, args.config, args.verbose)
+
+def main(args):
+    if not os.path.exists(args.outdir):
+        os.makedirs(args.outdir)
+
+    results, cython_files = make_cython_wrapper(
+        args.header, args.sources, args.modulename, args.outdir, args.config,
+        args.verbose)
+    write_files(results, args.outdir)
+    cython(cython_files, args.outdir)
+
+
+if __name__ == "__main__":
+    main(parse_args())
