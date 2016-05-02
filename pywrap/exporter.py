@@ -1,9 +1,10 @@
 import warnings
+
 from . import templates
+from .ast import Method, Function, Param
 from .templates import render
 from .type_conversion import create_type_converter
 from .utils import indent_block, from_camel_case
-from .ast import Method, Param
 
 
 class CythonDeclarationExporter:
@@ -88,6 +89,16 @@ class CythonDeclarationExporter:
             function_dict = {"args": ", ".join(self.arguments)}
             function_dict.update(function.__dict__)
             function_str = templates.function_decl % function_dict
+            self.functions.append(function_str)
+        self.arguments = []
+
+    def visit_template_function(self, template_function):
+        if not template_function.ignored:
+            function_dict = {
+                "args": ", ".join(self.arguments),
+                "types": ", ".join(template_function.template_types)}
+            function_dict.update(template_function.__dict__)
+            function_str = templates.template_function_decl % function_dict
             self.functions.append(function_str)
         self.arguments = []
 
@@ -194,16 +205,20 @@ class CythonImplementationExporter:
         for method in specializer.specialize(template_method):
             self.visit_method(method, cppname=template_method.name)
 
-    def visit_function(self, function):
+    def visit_function(self, function, cppname=None):
         try:
             self.functions.append(FunctionDefinition(
                 function.name, function.arguments, self.includes,
                 function.result_type, self.type_info,
-                self.config).make())
+                self.config, cppname=cppname).make())
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring function '%s'" % function.name)
             function.ignored = True
 
+    def visit_template_function(self, template_function):
+        specializer = FunctionSpecializer(self.config)
+        for method in specializer.specialize(template_function):
+            self.visit_function(method, cppname=template_function.name)
 
     def visit_param(self, param):
         pass
@@ -212,52 +227,93 @@ class CythonImplementationExporter:
         return self.output
 
 
-class MethodSpecializer(object):
-    """Convert a template method to a method."""
+class Specializer(object):
     def __init__(self, config):
         self.config = config
 
-    def specialize(self, template_method):
+    def specialize(self, general):
         try:
-            specs = self._lookup_specification(template_method)
+            specs = self._lookup_specification(general)
         except LookupError as e:
             warnings.warn(e.message)
-            template_method.ignored = True
+            general.ignored = True
             return []
 
-        specialized_methods = []
+        return self._specialize(general, specs)
 
-        for name, spec in specs:
-            result_type = self._replace_specification(
-                template_method.result_type, spec)
-
-            method = Method(name, result_type, template_method.class_name)
-
-            for arg in template_method.arguments:
-                tipe = self._replace_specification(arg.tipe, spec)
-                method.arguments.append(Param(arg.name, tipe))
-
-            specialized_methods.append(method)
-
-        return specialized_methods
-
-    def _lookup_specification(self, template_method):
-        method_key = "%s::%s" % (template_method.class_name,
-                                 template_method.name)
-        if method_key not in self.config.registered_template_specializations:
+    def _lookup_specification(self, general):
+        key = self._key(general)
+        if key not in self.config.registered_template_specializations:
             raise LookupError(
                 "No template specialization registered for template method "
                 "'%s' with the following template types: %s"
-                % (method_key, ", ".join(template_method.template_types)))
-        return self.config.registered_template_specializations[method_key]
+                % (key, ", ".join(general.template_types)))
+        return self.config.registered_template_specializations[key]
+
+    def _key(self, general):
+        raise NotImplementedError()
 
     def _replace_specification(self, tipe, spec):
         return spec.get(tipe, tipe)
 
+    def _specialize(self, general, specs):
+        raise NotImplementedError()
+
+
+class FunctionSpecializer(Specializer):
+    """Convert a template method to a method."""
+
+    def __init__(self, config):
+        super(FunctionSpecializer, self).__init__(config)
+
+    def _key(self, general):
+        if general.namespace != "":
+            return "%s::%s" % (general.namespace, general.name)
+        else:
+            return general.name
+
+    def _specialize(self, general, specs):
+        specialized_functions = []
+        for name, spec in specs:
+            result_type = self._replace_specification(general.result_type, spec)
+
+            specialized = Function(general.filename, general.namespace, name,
+                                   result_type)
+
+            for arg in general.arguments:
+                tipe = self._replace_specification(arg.tipe, spec)
+                specialized.arguments.append(Param(arg.name, tipe))
+
+            specialized_functions.append(specialized)
+        return specialized_functions
+
+
+class MethodSpecializer(Specializer):
+    """Convert a template method to a method."""
+    def __init__(self, config):
+        super(MethodSpecializer, self).__init__(config)
+
+    def _key(self, general):
+        return "%s::%s" % (general.class_name, general.name)
+
+    def _specialize(self, general, specs):
+        specialized_methods = []
+        for name, spec in specs:
+            result_type = self._replace_specification(general.result_type, spec)
+
+            specialized = Method(name, result_type, general.class_name)
+
+            for arg in general.arguments:
+                tipe = self._replace_specification(arg.tipe, spec)
+                specialized.arguments.append(Param(arg.name, tipe))
+
+            specialized_methods.append(specialized)
+        return specialized_methods
+
 
 class FunctionDefinition(object):
     def __init__(self, name, arguments, includes, result_type, type_info,
-                 config):
+                 config, cppname=None):
         self.name = name
         self.arguments = arguments
         self.includes = includes
@@ -265,6 +321,10 @@ class FunctionDefinition(object):
         self.result_type = result_type
         self.type_info = type_info
         self.config = config
+        if cppname is None:
+            self.cppname = self.name
+        else:
+            self.cppname = cppname
         self.output_is_copy = True
         self._create_type_converters()
 
@@ -327,7 +387,7 @@ class FunctionDefinition(object):
 
     def _call_cpp_function(self, call_args):
         cpp_type_decl = self.output_type_converter.cpp_type_decl()
-        call = templates.fun_call % {"name": self.name,
+        call = templates.fun_call % {"name": self.cppname,
                                      "call_args": ", ".join(call_args)}
         return catch_result(cpp_type_decl, call)
 
@@ -349,12 +409,8 @@ class MethodDefinition(FunctionDefinition):
     def __init__(self, class_name, name, arguments, includes, result_type,
                  type_info, config, cppname=None):
         super(MethodDefinition, self).__init__(
-            name, arguments, includes, result_type, type_info, config)
+            name, arguments, includes, result_type, type_info, config, cppname)
         self.initial_args = ["%s self" % class_name]
-        if cppname is None:
-            self.cppname = self.name
-        else:
-            self.cppname = cppname
 
     def _call_cpp_function(self, call_args):
         cpp_type_decl = self.output_type_converter.cpp_type_decl()

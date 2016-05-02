@@ -2,8 +2,8 @@ from clang import cindex
 cindex.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
 import warnings
 from .type_conversion import cythontype_from_cpptype
-from .ast import (AST, Enum, Typedef, Clazz, Function, Constructor, Method,
-                  TemplateMethod, Param, Field)
+from .ast import (AST, Enum, Typedef, Clazz, Function, TemplateFunction,
+                  Constructor, Method, TemplateMethod, Param, Field)
 
 
 IGNORED_NODES = [
@@ -75,8 +75,12 @@ class Parser(object):
                 parse_children = self.add_function(
                     node.spelling, node.result_type.spelling)
             elif node.kind == cindex.CursorKind.FUNCTION_TEMPLATE:
-                self.add_template_method(
-                    node.spelling, node.result_type.spelling)
+                if self.last_type is None:
+                    self.add_template_function(
+                        node.spelling, node.result_type.spelling)
+                else:
+                    self.add_template_method(
+                        node.spelling, node.result_type.spelling)
             elif node.kind == cindex.CursorKind.TEMPLATE_TYPE_PARAMETER:
                 self.last_template.template_types.append(node.displayname)
             elif node.kind == cindex.CursorKind.CXX_METHOD:
@@ -164,6 +168,16 @@ class Parser(object):
         self.last_function = function
         return True
 
+    def add_template_function(self, name, tname):
+        tname = cythontype_from_cpptype(tname)
+        self.includes.add_include_for(tname)
+        function = TemplateFunction(self.include_file, self.namespace, name,
+                                    tname)
+        self.ast.functions.append(function)
+        self.last_function = function
+        self.last_template = function
+        return True
+
     def add_class(self, name):
         clazz = Clazz(self.include_file, self.namespace, name)
         self.ast.classes.append(clazz)
@@ -184,7 +198,6 @@ class Parser(object):
         self.last_function = method
         return True
 
-
     def add_template_method(self, name, tname):
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
@@ -193,7 +206,6 @@ class Parser(object):
         self.last_function = method
         self.last_template = method
         return True
-
 
     def add_param(self, name, tname):
         tname = cythontype_from_cpptype(tname)

@@ -230,6 +230,25 @@ class Template:
     def __init__(self):
         self.template_types = []
 
+    def __str__(self):
+        return indent_block(os.linesep.join(
+            ["Template type '%s'" % tt for tt in self.template_types]), 1)
+
+
+class TemplateFunction(Function, Template):
+    def __init__(self, filename, namespace, name, result_type):
+        Function.__init__(self, filename, namespace, name, result_type)
+        Template.__init__(self)
+
+    def accept(self, exporter):
+        super(Function, self).accept(exporter)
+        exporter.visit_template_function(self)
+
+    def __str__(self):
+        result = Function.__str__(self)
+        result += os.linesep + Template.__str__(self)
+        return result
+
 
 class TemplateMethod(Method, Template):
     def __init__(self, name, result_type, class_name):
@@ -241,9 +260,8 @@ class TemplateMethod(Method, Template):
         exporter.visit_template_method(self)
 
     def __str__(self):
-        result = super(TemplateMethod, self).__str__()
-        result += os.linesep + indent_block(os.linesep.join(
-            ["Template type '%s'" % tt for tt in self.template_types]), 1)
+        result = Method.__str__(self)
+        result += os.linesep + Template.__str__(self)
         return result
 
 

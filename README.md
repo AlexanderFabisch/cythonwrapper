@@ -42,7 +42,7 @@ Many things are not implemented yet, e.g.
 
 * static methods
 * arrays, e.g. `float[3]`
-* class or function templates (template methods are supported)
+* class templates (template methods and functions are supported)
 * linking to other libraries (you can modify the `setup.py` though)
 * integrating other Cython extensions (you can modify the `setup.py` though)
 
