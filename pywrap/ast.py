@@ -235,6 +235,17 @@ class Template:
             ["Template type '%s'" % tt for tt in self.template_types]), 1)
 
 
+class TemplateClass(Clazz, Template):
+    def __init__(self, filename, namespace, name):
+        Clazz.__init__(self, filename, namespace, name)
+        Template.__init__(self)
+
+    def __str__(self):
+        result = Clazz.__str__(self)
+        result += os.linesep + Template.__str__(self)
+        return result
+
+
 class TemplateFunction(Function, Template):
     def __init__(self, filename, namespace, name, result_type):
         Function.__init__(self, filename, namespace, name, result_type)

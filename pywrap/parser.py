@@ -2,8 +2,9 @@ from clang import cindex
 cindex.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
 import warnings
 from .type_conversion import cythontype_from_cpptype
-from .ast import (AST, Enum, Typedef, Clazz, Function, TemplateFunction,
-                  Constructor, Method, TemplateMethod, Param, Field)
+from .ast import (AST, Enum, Typedef, Clazz, Function, TemplateClass,
+                  TemplateFunction, Constructor, Method, TemplateMethod,
+                  Param, Field)
 
 
 IGNORED_NODES = [
@@ -74,6 +75,9 @@ class Parser(object):
             elif node.kind == cindex.CursorKind.FUNCTION_DECL:
                 parse_children = self.add_function(
                     node.spelling, node.result_type.spelling)
+            elif node.kind == cindex.CursorKind.CLASS_TEMPLATE:
+                name = node.displayname.split("<")[0]
+                self.add_template_class(name)
             elif node.kind == cindex.CursorKind.FUNCTION_TEMPLATE:
                 if self.last_type is None:
                     self.add_template_function(
@@ -182,6 +186,13 @@ class Parser(object):
         clazz = Clazz(self.include_file, self.namespace, name)
         self.ast.classes.append(clazz)
         self.last_type = clazz
+        return True
+
+    def add_template_class(self, name):
+        clazz = TemplateClass(self.include_file, self.namespace, name)
+        self.ast.classes.append(clazz)
+        self.last_type = clazz
+        self.last_template = clazz
         return True
 
     def add_ctor(self):
