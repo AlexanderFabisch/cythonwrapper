@@ -1,4 +1,4 @@
-# Example testcode
+# Example Rotations
 
 This is a little example for demonstration purposes. You can build and test
 the Cython extenion with the following commands:
@@ -7,14 +7,14 @@ the Cython extenion with the following commands:
 $ pywrap -h
 ... prints the help message
 
-$ pywrap test*.hpp --modulename test --outdir result
+$ pywrap *.hpp --modulename rotations --outdir result
 
 $ cd result/
 
 $ python setup.py build_ext -i
 ...
 
-$ python example.py 
+$ python example.py
 ...
 ```
 

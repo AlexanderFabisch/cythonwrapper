@@ -8,6 +8,8 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   complex_example
+
 :ref:`search`
 
 Example
