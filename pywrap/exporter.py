@@ -1,7 +1,7 @@
 import warnings
 
 from . import templates
-from .ast import Method, Function, Param
+from .ast import Clazz, Method, Function, Param
 from .templates import render
 from .type_conversion import create_type_converter
 from .utils import indent_block, from_camel_case
@@ -64,7 +64,12 @@ class CythonDeclarationExporter:
         self.arguments = []
 
     def visit_template_class(self, template_class):
-        raise NotImplementedError()
+        if not template_class.ignored:
+            raise NotImplementedError()
+
+        self.fields = []
+        self.ctors = []
+        self.methods = []
 
     def visit_method(self, method):
         if not method.ignored:
@@ -168,7 +173,8 @@ class CythonImplementationExporter:
         self.methods = []
 
     def visit_template_class(self, template_class):
-        raise NotImplementedError()
+        specializer = ClassSpecializer(self.config)
+        specializer.specialize(template_class)
 
     def visit_field(self, field):
         try:
@@ -257,10 +263,21 @@ class Specializer(object):
         return self.config.registered_template_specializations[key]
 
     def _key(self, general):
-        raise NotImplementedError()
+        if general.namespace != "":
+            return "%s::%s" % (general.namespace, general.name)
+        else:
+            return general.name
 
     def _replace_specification(self, tipe, spec):
         return spec.get(tipe, tipe)
+
+    def _specialize(self, general, specs):
+        raise NotImplementedError()
+
+
+class ClassSpecializer(Specializer):
+    def __init__(self, config):
+        super(ClassSpecializer, self).__init__(config)
 
     def _specialize(self, general, specs):
         raise NotImplementedError()
@@ -271,12 +288,6 @@ class FunctionSpecializer(Specializer):
 
     def __init__(self, config):
         super(FunctionSpecializer, self).__init__(config)
-
-    def _key(self, general):
-        if general.namespace != "":
-            return "%s::%s" % (general.namespace, general.name)
-        else:
-            return general.name
 
     def _specialize(self, general, specs):
         specialized_functions = []

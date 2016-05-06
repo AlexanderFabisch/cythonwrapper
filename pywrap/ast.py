@@ -239,6 +239,7 @@ class TemplateClass(Clazz, Template):
     def __init__(self, filename, namespace, name):
         Clazz.__init__(self, filename, namespace, name)
         Template.__init__(self)
+        self.ignored = False
 
     def accept(self, exporter):
         super(TemplateClass, self).accept(exporter)
