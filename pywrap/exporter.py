@@ -63,6 +63,9 @@ class CythonDeclarationExporter:
             self.ctors.append(const_str)
         self.arguments = []
 
+    def visit_template_class(self, template_class):
+        raise NotImplementedError()
+
     def visit_method(self, method):
         if not method.ignored:
             method_dict = {"args": ", ".join(self.arguments)}
@@ -163,6 +166,9 @@ class CythonImplementationExporter:
         self.fields = []
         self.ctors = []
         self.methods = []
+
+    def visit_template_class(self, template_class):
+        raise NotImplementedError()
 
     def visit_field(self, field):
         try:

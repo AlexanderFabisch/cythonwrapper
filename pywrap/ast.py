@@ -127,7 +127,7 @@ class Typedef:
         return "Typedef (%s) %s" % (self.underlying_type, self.tipe)
 
 
-class Clazz:
+class Clazz(object):
     def __init__(self, filename, namespace, name):
         self.filename = filename
         self.namespace = namespace
@@ -239,6 +239,10 @@ class TemplateClass(Clazz, Template):
     def __init__(self, filename, namespace, name):
         Clazz.__init__(self, filename, namespace, name)
         Template.__init__(self)
+
+    def accept(self, exporter):
+        super(TemplateClass, self).accept(exporter)
+        exporter.visit_template_class(self)
 
     def __str__(self):
         result = Clazz.__str__(self)
