@@ -74,7 +74,8 @@ class Parser(object):
                     node.displayname, node.type.spelling)
             elif node.kind == cindex.CursorKind.FUNCTION_DECL:
                 parse_children = self.add_function(
-                    node.spelling, node.result_type.spelling)
+                    node.spelling, node.result_type.spelling,
+                    self.namespace)
             elif node.kind == cindex.CursorKind.CLASS_TEMPLATE:
                 name = node.displayname.split("<")[0]
                 self.add_template_class(name)
@@ -89,8 +90,17 @@ class Parser(object):
                 self.last_template.template_types.append(node.displayname)
             elif node.kind == cindex.CursorKind.CXX_METHOD:
                 if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
-                    parse_children = self.add_method(
-                        node.spelling, node.result_type.spelling)
+                    if node.is_static_method():
+                        namespace = self.namespace
+                        if namespace != "":
+                            namespace += "::"
+                        namespace += self.last_type.name
+                        parse_children = self.add_function(
+                            node.spelling, node.result_type.spelling,
+                            namespace)
+                    else:
+                        parse_children = self.add_method(
+                            node.spelling, node.result_type.spelling)
                 else:
                     parse_children = False
             elif node.kind == cindex.CursorKind.CONSTRUCTOR:
@@ -163,11 +173,11 @@ class Parser(object):
             self.add_class(name)
         return True
 
-    def add_function(self, name, tname):
+    def add_function(self, name, tname, namespace):
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
         function = Function(
-            self.include_file, self.namespace, name, tname)
+            self.include_file, namespace, name, tname)
         self.ast.functions.append(function)
         self.last_function = function
         return True

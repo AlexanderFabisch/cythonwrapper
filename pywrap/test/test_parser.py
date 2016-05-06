@@ -46,7 +46,7 @@ def test_struct():
 def test_add_function():
     parser = Parser("test.hpp", None, Includes())
     parser.init_ast()
-    parser.add_function("myFun", "void")
+    parser.add_function("myFun", "void", "")
     assert_equal(len(parser.ast.functions), 1)
 
 

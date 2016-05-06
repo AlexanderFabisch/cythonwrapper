@@ -243,3 +243,9 @@ def test_template_function():
         assert_is_instance(add_one_i(1), int)
         assert_equal(add_one_d(2.0), 3.0)
         assert_is_instance(add_one_d(2.0), float)
+
+
+def test_static_method():
+    with cython_extension_from("staticmethod.hpp"):
+        from staticmethod import plus1
+        assert_equal(plus1(1), 2)
