@@ -146,7 +146,8 @@ class Clazz(object):
         exporter.visit_class(self)
 
     def __str__(self):
-        result = "Class '%s'" % self.name
+        result = "%s '%s'" % (self.__class__.__name__.replace("zz", "ss"),
+                              self.name)
         if self.namespace != "":
             result += " (namespace: '%s')" % self.namespace
         if len(self.fields) > 0:

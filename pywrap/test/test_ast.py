@@ -1,5 +1,5 @@
 from pywrap.ast import (AST, Enum, Typedef, Function, Clazz, Constructor,
-                        Method, Field, Param, TemplateMethod)
+                        Method, Field, Param, TemplateMethod, TemplateClass)
 from pywrap.utils import assert_equal_linewise, lines
 from nose.tools import assert_equal
 
@@ -70,7 +70,7 @@ def test_function_string_with_return():
     )
 
 
-def test_template_mathod_string():
+def test_template_method_string():
     m = TemplateMethod("my_template_method", "void", "MyClass")
     m.arguments.append(Param("t", "T"))
     m.template_types.append("T")
@@ -78,6 +78,17 @@ def test_template_mathod_string():
         str(m), lines(
             "TemplateMethod 'my_template_method'",
             "    Parameter (T) t",
+            "    Template type 'T'"
+        )
+    )
+
+
+def test_template_class_string():
+    c = TemplateClass("test.hpp", "", "MyTemplateClass")
+    c.template_types.append("T")
+    assert_equal(
+        str(c), lines(
+            "TemplateClass 'MyTemplateClass'",
             "    Template type 'T'"
         )
     )
