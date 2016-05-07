@@ -1,6 +1,7 @@
 from pywrap.ast import (AST, Enum, Typedef, Function, Clazz, Constructor,
                         Method, Field, Param, TemplateMethod, TemplateClass)
-from pywrap.utils import assert_equal_linewise, lines
+from pywrap.utils import lines
+from pywrap.testing import assert_equal_linewise
 from nose.tools import assert_equal
 
 

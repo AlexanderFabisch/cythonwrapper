@@ -1,5 +1,5 @@
-from pywrap.utils import (lines, indent_block, assert_equal_linewise,
-                          from_camel_case)
+from pywrap.utils import lines, indent_block, from_camel_case
+from pywrap.testing import assert_equal_linewise
 from nose.tools import assert_equal
 
 

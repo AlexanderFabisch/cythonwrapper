@@ -1,7 +1,8 @@
 from pywrap.exporter import MethodDefinition
 from pywrap.cython import TypeInfo
 from pywrap.ast import Includes, Param
-from pywrap.utils import assert_equal_linewise, lines
+from pywrap.utils import lines
+from pywrap.testing import assert_equal_linewise
 from pywrap.defaultconfig import Config
 
 
