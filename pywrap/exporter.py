@@ -65,7 +65,17 @@ class CythonDeclarationExporter:
 
     def visit_template_class(self, template_class):
         if not template_class.ignored:
-            raise NotImplementedError()
+            class_decl = {}
+            class_decl.update(template_class.__dict__)
+            class_decl["name"] = "%s[%s]" % (
+                template_class.name, ", ".join(template_class.template_types))
+            class_decl["fields"] = self.fields
+            class_decl["ctors"] = self.ctors
+            class_decl["methods"] = self.methods
+            class_decl["empty_body"] = (len(self.fields) + len(self.methods) +
+                                        len(self.ctors) == 0)
+
+            self.classes.append(render("class_decl", **class_decl))
 
         self.fields = []
         self.ctors = []
@@ -151,7 +161,7 @@ class CythonImplementationExporter:
     def visit_typedef(self, typedef):
         pass
 
-    def visit_class(self, clazz):
+    def visit_class(self, clazz, cppname=None):
         if len(self.ctors) > 1:
             msg = ("Class '%s' has more than one constructor. This is not "
                    "compatible to Python. The last constructor will overwrite "
@@ -159,9 +169,12 @@ class CythonImplementationExporter:
             warnings.warn(msg)
         elif len(self.ctors) == 0:
             self.ctors.append(templates.ctor_default_def % clazz.__dict__)
+        if cppname is None:
+            cppname = clazz.name
 
         class_def = {}
         class_def.update(clazz.__dict__)
+        class_def["cppname"] = cppname
         class_def["fields"] = self.fields
         class_def["ctors"] = self.ctors
         class_def["methods"] = self.methods
@@ -174,7 +187,8 @@ class CythonImplementationExporter:
 
     def visit_template_class(self, template_class):
         specializer = ClassSpecializer(self.config)
-        specializer.specialize(template_class)
+        for clazz in specializer.specialize(template_class):
+            self.visit_class(clazz, cppname=template_class.name)
 
     def visit_field(self, field):
         try:
@@ -280,7 +294,13 @@ class ClassSpecializer(Specializer):
         super(ClassSpecializer, self).__init__(config)
 
     def _specialize(self, general, specs):
-        raise NotImplementedError()
+        specialized_classes = []
+
+        for name, spec in specs:
+            specialized = Clazz(general.filename, general.namespace, name)
+            specialized_classes.append(specialized)
+
+        return specialized_classes
 
 
 class FunctionSpecializer(Specializer):

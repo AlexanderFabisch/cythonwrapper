@@ -243,7 +243,12 @@ class TemplateClass(Clazz, Template):
         self.ignored = False
 
     def accept(self, exporter):
-        super(TemplateClass, self).accept(exporter)
+        for field in self.fields:
+            field.accept(exporter)
+        for ctor in self.constructors:
+            ctor.accept(exporter)
+        for method in self.methods:
+            method.accept(exporter)
         exporter.visit_template_class(self)
 
     def __str__(self):

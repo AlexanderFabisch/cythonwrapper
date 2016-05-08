@@ -249,3 +249,11 @@ def test_static_method():
     with cython_extension_from("staticmethod.hpp"):
         from staticmethod import plus1
         assert_equal(plus1(1), 2)
+
+
+def test_template_class():
+    with cython_extension_from("templateclass.hpp",
+                               custom_config="templateclassconfig.py"):
+        from templateclass import A
+        a = A(5)
+        assert_equal(a.get(), 5)

@@ -1,5 +1,5 @@
 cdef class {{ name }}:
-    cdef cpp.{{ name }} * thisptr
+    cdef cpp.{{ cppname }} * thisptr
     cdef bool delete_thisptr
 
     def __cinit__(self):
