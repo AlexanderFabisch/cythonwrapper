@@ -32,7 +32,8 @@ def test_ast_string_with_class():
     ast = AST()
     ast.classes.append(Clazz("test.hpp", "bla", "MyClass"))
     assert_equal_linewise(
-        str(ast), lines("AST", "    Class 'MyClass' (namespace: 'bla')"))
+        str(ast), lines(
+            "AST", "    Class 'MyClass' ('MyClass') (namespace: 'bla')"))
 
 
 def test_class_string_with_members():
@@ -51,7 +52,7 @@ def test_class_string_with_members():
 
     assert_equal_linewise(
         str(c), lines(
-            "Class 'MyClass'",
+            "Class 'MyClass' ('MyClass')",
             "    Field (bool) my_field",
             "    Constructor '__init__'",
             "        Parameter (double) a",
@@ -89,7 +90,7 @@ def test_template_class_string():
     c.template_types.append("T")
     assert_equal(
         str(c), lines(
-            "TemplateClass 'MyTemplateClass'",
+            "TemplateClass 'MyTemplateClass' ('MyTemplateClass')",
             "    Template type 'T'"
         )
     )

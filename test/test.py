@@ -254,6 +254,6 @@ def test_static_method():
 def test_template_class():
     with cython_extension_from("templateclass.hpp",
                                custom_config="templateclassconfig.py"):
-        from templateclass import A
-        a = A(5)
+        from templateclass import Ai
+        a = Ai(5)
         assert_equal(a.get(), 5)

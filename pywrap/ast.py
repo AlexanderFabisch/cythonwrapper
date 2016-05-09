@@ -146,8 +146,9 @@ class Clazz(object):
         exporter.visit_class(self)
 
     def __str__(self):
-        result = "%s '%s'" % (self.__class__.__name__.replace("zz", "ss"),
-                              self.name)
+        result = "%s '%s' ('%s')" % (
+            self.__class__.__name__.replace("zz", "ss"),
+            self.name, self.get_cppname())
         if self.namespace != "":
             result += " (namespace: '%s')" % self.namespace
         if len(self.fields) > 0:
@@ -160,6 +161,19 @@ class Clazz(object):
             result += os.linesep + indent_block(os.linesep.join(
                 [str(method) for method in self.methods]), 1)
         return result
+
+    def get_cppname(self):
+        return self.name
+
+
+class TemplateClazzSpecialization(Clazz):
+    def __init__(self, filename, namespace, name, cppname):
+        super(TemplateClazzSpecialization, self).__init__(
+            filename, namespace, name)
+        self.cppname = cppname
+
+    def get_cppname(self):
+        return self.cppname
 
 
 class FunctionBase(object):

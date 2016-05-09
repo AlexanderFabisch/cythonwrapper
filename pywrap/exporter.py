@@ -1,7 +1,7 @@
 import warnings
-
+from functools import partial
 from . import templates
-from .ast import Clazz, Method, Function, Param
+from .ast import TemplateClazzSpecialization, Method, Function, Param, Constructor
 from .templates import render
 from .type_conversion import create_type_converter
 from .utils import indent_block, from_camel_case
@@ -168,16 +168,21 @@ class CythonImplementationExporter:
                    "all others." % clazz.name)
             warnings.warn(msg)
         elif len(self.ctors) == 0:
-            self.ctors.append(templates.ctor_default_def % clazz.__dict__)
+            self.ctors.append(Constructor(clazz.name))
         if cppname is None:
             cppname = clazz.name
 
         class_def = {}
         class_def.update(clazz.__dict__)
         class_def["cppname"] = cppname
-        class_def["fields"] = self.fields
-        class_def["ctors"] = self.ctors
-        class_def["methods"] = self.methods
+        class_def["fields"] = map(partial(self._process_field,
+                                          selftype=clazz.name), self.fields)
+        class_def["ctors"] = map(partial(self._process_constructor,
+                                         selftype=clazz.name,
+                                         cpptype=clazz.get_cppname()),
+                                 self.ctors)
+        class_def["methods"] = map(partial(self._process_method,
+                                           selftype=clazz.name), self.methods)
 
         self.classes.append(render("class", **class_def))
 
@@ -188,43 +193,58 @@ class CythonImplementationExporter:
     def visit_template_class(self, template_class):
         specializer = ClassSpecializer(self.config)
         for clazz in specializer.specialize(template_class):
-            self.visit_class(clazz, cppname=template_class.name)
+            self.visit_class(clazz, cppname=clazz.get_cppname())
 
     def visit_field(self, field):
+        self.fields.append(field)
+
+    def _process_field(self, field, selftype):
         try:
             setter_def = SetterDefinition(
-                field, self.includes, self.type_info, self.config).make()
+                selftype, field, self.includes, self.type_info,
+                self.config).make()
             getter_def = GetterDefinition(
-                field, self.includes, self.type_info, self.config).make()
-            self.fields.append({
+                selftype, field, self.includes, self.type_info,
+                self.config).make()
+            return {
                 "name": from_camel_case(field.name),
                 "getter": indent_block(getter_def, 1),
                 "setter": indent_block(setter_def, 1)
-            })
+            }
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring field '%s'" % field.name)
             field.ignored = True
+            return {}
 
     def visit_constructor(self, ctor):
+        self.ctors.append(ctor)
+
+    def _process_constructor(self, ctor, selftype, cpptype):
         try:
             constructor_def = ConstructorDefinition(
-                ctor.class_name, ctor.arguments, self.includes,
-                self.type_info, self.config).make()
-            self.ctors.append(indent_block(constructor_def, 1))
+                selftype, ctor.arguments, self.includes,
+                self.type_info, self.config, cpptype).make()
+            return indent_block(constructor_def, 1)
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % ctor.name)
             ctor.ignored = True
+            return ""
 
     def visit_method(self, method, cppname=None):
+        self.methods.append((method, cppname))
+
+    def _process_method(self, arg, selftype):
+        method, cppname = arg
         try:
             method_def = MethodDefinition(
-                method.class_name, method.name, method.arguments, self.includes,
+                selftype, method.name, method.arguments, self.includes,
                 method.result_type, self.type_info, self.config,
                 cppname=cppname).make()
-            self.methods.append(indent_block(method_def, 1))
+            return indent_block(method_def, 1)
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % method.name)
             method.ignored = True
+            return ""
 
     def visit_template_method(self, template_method):
         specializer = MethodSpecializer(self.config)
@@ -297,7 +317,10 @@ class ClassSpecializer(Specializer):
         specialized_classes = []
 
         for name, spec in specs:
-            specialized = Clazz(general.filename, general.namespace, name)
+            types = [spec[t] for t in general.template_types]
+            cppname = "%s[%s]" % (general.name, ", ".join(types))
+            specialized = TemplateClazzSpecialization(
+                general.filename, general.namespace, name, cppname)
             specialized_classes.append(specialized)
 
         return specialized_classes
@@ -430,15 +453,16 @@ class FunctionDefinition(object):
 
 
 class ConstructorDefinition(FunctionDefinition):
-    def __init__(self, class_name, arguments, includes, type_info, config):
+    def __init__(self, class_name, arguments, includes, type_info, config,
+                 cpp_classname):
         super(ConstructorDefinition, self).__init__(
             "__init__", arguments, includes, result_type=None,
             type_info=type_info, config=config)
         self.initial_args = ["%s self" % class_name]
-        self.class_name = class_name
+        self.cpp_classname = cpp_classname
 
     def _call_cpp_function(self, call_args):
-        return templates.ctor_call % {"class_name": self.class_name,
+        return templates.ctor_call % {"class_name": self.cpp_classname,
                                       "call_args": ", ".join(call_args)}
 
 
@@ -458,11 +482,10 @@ class MethodDefinition(FunctionDefinition):
 
 
 class SetterDefinition(MethodDefinition):
-    def __init__(self, field, includes, type_info, config):
+    def __init__(self, class_name, field, includes, type_info, config):
         name = "set_%s" % field.name
         super(SetterDefinition, self).__init__(
-            field.class_name, name, [field], includes, "void", type_info,
-            config)
+            class_name, name, [field], includes, "void", type_info, config)
         self.field_name = field.name
 
     def _call_cpp_function(self, call_args):
@@ -472,10 +495,10 @@ class SetterDefinition(MethodDefinition):
 
 
 class GetterDefinition(MethodDefinition):
-    def __init__(self, field, includes, type_info, config):
+    def __init__(self, class_name, field, includes, type_info, config):
         name = "get_%s" % field.name
         super(GetterDefinition, self).__init__(
-            field.class_name, name, [], includes, field.tipe, type_info, config)
+            class_name, name, [], includes, field.tipe, type_info, config)
         self.output_is_copy = False
         self.field_name = field.name
 
