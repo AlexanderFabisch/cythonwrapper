@@ -89,8 +89,8 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
             raise ValueError("File '%s' does not exist" % filename)
 
     includes = Includes()
-    asts = _parse_files(filenames, includes, config, verbose)
-    type_info = TypeInfo(asts)
+    asts = _parse_files(filenames, includes, verbose)
+    type_info = TypeInfo(asts, config)
 
     ext_results, files_to_cythonize = _generate_extension(
         modulename, asts, includes, type_info, config, verbose)
@@ -129,14 +129,30 @@ def _load_config(custom_config):
 
 
 class TypeInfo:
-    def __init__(self, asts):
-        self.classes = [clazz.name for ast in asts for clazz in ast.classes]
+    def __init__(self, asts, config=Config()):
+        self.classes = self._collect_classes(asts, config)
         self.typedefs = {typedef.tipe: typedef.underlying_type for ast in asts
                          for typedef in ast.typedefs}
         self.enums = [enum.tipe for ast in asts for enum in ast.enums]
 
+    def _collect_classes(self, asts, config):
+        specializations = config.registered_template_specializations
+        classes = []
+        for ast in asts:
+            for clazz in ast.classes:
+                template = False
+                for key in specializations:
+                    if clazz.name == key:
+                        template = True
+                        for name, _ in specializations[key]:
+                            classes.append(name)
+                        break
+                if not template:
+                    classes.append(clazz.name)
+        return classes
 
-def _parse_files(filenames, includes, config, verbose):
+
+def _parse_files(filenames, includes, verbose):
     asts = []
     for filename in filenames:
         # Clang does not really parse headers
