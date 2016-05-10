@@ -1,6 +1,6 @@
 import os
-from pywrap.cython import make_cython_wrapper
-from nose.tools import assert_raises_regexp, assert_false
+from pywrap.cython import make_cython_wrapper, TypeInfo
+from nose.tools import assert_raises_regexp, assert_false, assert_equal
 
 
 def test_missing_file():
@@ -22,3 +22,9 @@ def test_missing_config():
 def test_no_header():
     assert_raises_regexp(ValueError, "does not seem to be a header file",
                          make_cython_wrapper, "test.cpp", [])
+
+def test_underlying_type():
+    assert_equal(TypeInfo().underlying_type("tdef"), "tdef")
+    assert_equal(TypeInfo(typedefs={"tdef": "float"}).underlying_type("tdef"),
+                 "float")
+

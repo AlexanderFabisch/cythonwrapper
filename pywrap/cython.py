@@ -129,11 +129,13 @@ def _load_config(custom_config):
 
 
 class TypeInfo:
-    def __init__(self, asts, config=Config()):
+    def __init__(self, asts=[], config=Config(), typedefs={}):
         self.classes = self._collect_classes(asts, config)
         self.typedefs = {typedef.tipe: typedef.underlying_type for ast in asts
                          for typedef in ast.typedefs}
+        self.typedefs.update(typedefs)
         self.enums = [enum.tipe for ast in asts for enum in ast.enums]
+        self.spec = {}
 
     def _collect_classes(self, asts, config):
         specializations = config.registered_template_specializations
@@ -150,6 +152,23 @@ class TypeInfo:
                 if not template:
                     classes.append(clazz.name)
         return classes
+
+    def attach_specialization(self, spec):
+        self.spec = spec
+
+    def remove_specialization(self):
+        self.spec = {}
+
+    def underlying_type(self, tname):
+        while tname in self.typedefs or tname in self.spec:
+            if tname in self.typedefs:
+                tname = self.typedefs[tname]
+            else:
+                tname = self.spec[tname]
+        return tname
+
+    def get_specialization(self, tname):
+        return self.spec.get(tname, tname)
 
 
 def _parse_files(filenames, includes, verbose):

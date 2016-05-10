@@ -1,10 +1,10 @@
 template<typename T>
 class A
 {
-    int a;
+    T a;
 public:
-    A(int a) : a(a) {}
-    int get()
+    A(T a) : a(a) {}
+    T get()
     {
         return a;
     }

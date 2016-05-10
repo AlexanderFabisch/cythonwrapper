@@ -172,17 +172,22 @@ class CythonImplementationExporter:
         if cppname is None:
             cppname = clazz.name
 
-        class_def = {}
-        class_def.update(clazz.__dict__)
-        class_def["cppname"] = cppname
-        class_def["fields"] = map(partial(self._process_field,
-                                          selftype=clazz.name), self.fields)
-        class_def["ctors"] = map(partial(self._process_constructor,
-                                         selftype=clazz.name,
-                                         cpptype=clazz.get_cppname()),
-                                 self.ctors)
-        class_def["methods"] = map(partial(self._process_method,
-                                           selftype=clazz.name), self.methods)
+        try:
+            self.type_info.attach_specialization(clazz.get_attached_typeinfo())
+            class_def = {}
+            class_def.update(clazz.__dict__)
+            class_def["cppname"] = cppname
+            class_def["fields"] = map(partial(
+                self._process_field, selftype=clazz.name), self.fields)
+            class_def["ctors"] = map(partial(
+                self._process_constructor, selftype=clazz.name,
+                cpptype=clazz.get_cppname()),
+                                     self.ctors)
+            class_def["methods"] = map(partial(
+                self._process_method, selftype=clazz.name), self.methods)
+        finally:
+            self.type_info.remove_specialization()
+
 
         self.classes.append(render("class", **class_def))
 
@@ -320,7 +325,7 @@ class ClassSpecializer(Specializer):
             types = [spec[t] for t in general.template_types]
             cppname = "%s[%s]" % (general.name, ", ".join(types))
             specialized = TemplateClazzSpecialization(
-                general.filename, general.namespace, name, cppname)
+                general.filename, general.namespace, name, cppname, spec)
             specialized_classes.append(specialized)
 
         return specialized_classes

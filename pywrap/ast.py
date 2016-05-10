@@ -165,15 +165,22 @@ class Clazz(object):
     def get_cppname(self):
         return self.name
 
+    def get_attached_typeinfo(self):
+        return {}
+
 
 class TemplateClazzSpecialization(Clazz):
-    def __init__(self, filename, namespace, name, cppname):
+    def __init__(self, filename, namespace, name, cppname, specialization):
         super(TemplateClazzSpecialization, self).__init__(
             filename, namespace, name)
         self.cppname = cppname
+        self.specialization = specialization
 
     def get_cppname(self):
         return self.cppname
+
+    def get_attached_typeinfo(self):
+        return self.specialization
 
 
 class FunctionBase(object):
