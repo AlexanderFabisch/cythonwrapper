@@ -91,5 +91,6 @@ def test_enum():
 
 def test_static_method():
     with cython_extension_from("staticmethod.hpp"):
-        from staticmethod import plus1
+        from staticmethod import plus1, plus2
         assert_equal(plus1(1), 2)
+        assert_equal(plus2(1), 3)
