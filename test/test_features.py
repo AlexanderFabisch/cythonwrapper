@@ -2,6 +2,11 @@ from pywrap.testing import cython_extension_from
 from nose.tools import assert_equal, assert_not_equal
 
 
+def test_namespaces():
+    with cython_extension_from("namespaces.hpp"):
+        from namespaces import ClassA, ClassB
+
+
 def test_constructor_args():
     with cython_extension_from("constructorargs.hpp"):
         from constructorargs import A
