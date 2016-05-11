@@ -392,10 +392,11 @@ class MethodDefinition(FunctionDefinition):
 
 
 class SetterDefinition(MethodDefinition):
-    def __init__(self, class_name, field, includes, type_info, config):
+    def __init__(self, python_classname, field, includes, type_info, config):
         name = "set_%s" % field.name
         super(SetterDefinition, self).__init__(
-            class_name, name, [field], includes, "void", type_info, config)
+            python_classname, name, [field], includes, "void", type_info,
+            config)
         self.field_name = field.name
 
     def _call_cpp_function(self, call_args):
@@ -405,10 +406,10 @@ class SetterDefinition(MethodDefinition):
 
 
 class GetterDefinition(MethodDefinition):
-    def __init__(self, class_name, field, includes, type_info, config):
+    def __init__(self, python_classname, field, includes, type_info, config):
         name = "get_%s" % field.name
         super(GetterDefinition, self).__init__(
-            class_name, name, [], includes, field.tipe, type_info, config)
+            python_classname, name, [], includes, field.tipe, type_info, config)
         self.output_is_copy = False
         self.field_name = field.name
 
