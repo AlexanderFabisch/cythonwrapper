@@ -33,3 +33,19 @@ class Config(object):
             raise NotImplementedError("Cannot convert C++ operator '%s' to "
                                       "Python operator.")
         return self.operators.get(name, name)
+
+    def register_class_specialization(self, cpp_classname, python_classname,
+                                      template_to_type):
+        self._register_specialization(cpp_classname, python_classname,
+                                      template_to_type)
+
+    def register_function_specialization(self, cpp_functionname,
+                                         python_classname, template_to_type):
+        self._register_specialization(cpp_functionname, python_classname,
+                                      template_to_type)
+
+    def _register_specialization(self, key, name, template_to_type):
+        if key not in self.registered_template_specializations:
+            self.registered_template_specializations[key] = []
+        self.registered_template_specializations[key].append(
+            (name, template_to_type))

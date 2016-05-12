@@ -57,7 +57,6 @@ class ClassSpecializer(Specializer):
 
 class FunctionSpecializer(Specializer):
     """Convert a template method to a method."""
-
     def __init__(self, config):
         super(FunctionSpecializer, self).__init__(config)
 
