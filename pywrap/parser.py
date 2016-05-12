@@ -87,7 +87,7 @@ class Parser(object):
                     self.add_template_method(
                         node.spelling, node.result_type.spelling)
             elif node.kind == cindex.CursorKind.TEMPLATE_TYPE_PARAMETER:
-                self.last_template.template_types.append(node.displayname)
+                self.add_template_type(node.displayname)
             elif node.kind == cindex.CursorKind.CXX_METHOD:
                 if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
                     if node.is_static_method():
@@ -172,6 +172,9 @@ class Parser(object):
         else:
             self.add_class(name)
         return True
+
+    def add_template_type(self, template_type):
+        self.last_template.template_types.append(template_type)
 
     def add_function(self, name, tname, namespace):
         tname = cythontype_from_cpptype(tname)

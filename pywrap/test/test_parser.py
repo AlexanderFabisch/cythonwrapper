@@ -69,3 +69,46 @@ def test_add_argument_without_method():
     parser.init_ast()
     assert_warns_message(UserWarning, "Ignored function parameter",
                          parser.add_param, "a", "void")
+
+
+def test_add_template_function():
+    parser = Parser("test.hpp", None, Includes())
+    parser.init_ast()
+    parser.add_template_function("myFun", "void")
+    assert_equal(len(parser.ast.functions), 1)
+    parser.add_template_type("T")
+    assert_equal(len(parser.ast.functions[0].template_types), 1)
+
+
+def test_add_template_class():
+    parser = Parser("test.hpp", None, Includes())
+    parser.init_ast()
+    parser.add_template_class("MyTemplateClass")
+    assert_equal(len(parser.ast.classes), 1)
+    parser.add_template_type("T")
+    assert_equal(len(parser.ast.classes[0].template_types), 1)
+    parser.add_ctor()
+    assert_equal(len(parser.ast.classes[0].constructors), 1)
+    parser.add_param("a", "T")
+    assert_equal(len(parser.ast.classes[0].constructors[0].arguments), 1)
+    parser.add_method("myMethod", "int")
+    assert_equal(len(parser.ast.classes[0].methods), 1)
+    parser.add_field("b", "bool")
+    assert_equal(len(parser.ast.classes[0].fields), 1)
+
+
+def test_add_template_method():
+    parser = Parser("test.hpp", None, Includes())
+    parser.init_ast()
+    parser.add_class("MyClass")
+    assert_equal(len(parser.ast.classes), 1)
+    parser.add_ctor()
+    assert_equal(len(parser.ast.classes[0].constructors), 1)
+    parser.add_param("a", "int")
+    assert_equal(len(parser.ast.classes[0].constructors[0].arguments), 1)
+    parser.add_template_method("myMethod", "T")
+    assert_equal(len(parser.ast.classes[0].methods), 1)
+    parser.add_template_type("T")
+    assert_equal(len(parser.ast.classes[0].methods[0].template_types[0]), 1)
+    parser.add_field("b", "T")
+    assert_equal(len(parser.ast.classes[0].fields), 1)
