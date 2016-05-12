@@ -8,4 +8,6 @@ specs = {
         ("add_one_d", {"T": "double"})
     ]
 }
-config.registered_template_specializations.update(specs)
+config.register_method_specialization("A", "addOne", "add_one_i", {"T": "int"})
+config.register_method_specialization("A", "addOne", "add_one_d",
+                                      {"T": "double"})

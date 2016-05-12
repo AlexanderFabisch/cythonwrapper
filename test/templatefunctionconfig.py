@@ -2,10 +2,5 @@ from pywrap.defaultconfig import Config
 
 
 config = Config()
-specs = {
-    "addOne": [
-        ("add_one_i", {"T": "int"}),
-        ("add_one_d", {"T": "double"})
-    ]
-}
-config.registered_template_specializations.update(specs)
+config.register_function_specialization("addOne", "add_one_i", {"T": "int"})
+config.register_function_specialization("addOne", "add_one_d", {"T": "double"})

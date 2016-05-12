@@ -44,6 +44,11 @@ class Config(object):
         self._register_specialization(cpp_functionname, python_classname,
                                       template_to_type)
 
+    def register_method_specialization(self, cpp_classname, cpp_methodname,
+                                       python_methodname, template_to_type):
+        self._register_specialization(cpp_classname + "::" + cpp_methodname,
+                                      python_methodname, template_to_type)
+
     def _register_specialization(self, key, name, template_to_type):
         if key not in self.registered_template_specializations:
             self.registered_template_specializations[key] = []
