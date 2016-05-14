@@ -24,11 +24,14 @@ def full_paths(filenames):
 
 @contextmanager
 def cython_extension_from(headers, modulename=None, custom_config=None,
-                          assert_warn=None, warn_msg=None, cleanup=True):
+                          assert_warn=None, warn_msg=None, incdirs=[],
+                          cleanup=True):
     if custom_config is not None:
         custom_config = full_paths(custom_config)[0]
+    incdirs = full_paths(incdirs)
     filenames = _write_cython_wrapper(full_paths(headers), modulename,
-                                      custom_config, assert_warn, warn_msg)
+                                      custom_config, incdirs, assert_warn,
+                                      warn_msg)
     _run_setup()
     try:
         yield
@@ -52,17 +55,19 @@ def hidden_stdout():
         os.dup2(oldstdout_fno, 1)
 
 
-def _write_cython_wrapper(filenames, modulename, custom_config, assert_warn,
-                          warn_msg, verbose=0):
+def _write_cython_wrapper(filenames, modulename, custom_config, incdirs,
+                          assert_warn, warn_msg, verbose=0):
     if assert_warn is None:
         results, cython_files = cython.make_cython_wrapper(
             filenames, sources=[], modulename=modulename,
-            custom_config=custom_config, target=".", verbose=verbose)
+            custom_config=custom_config, target=".", incdirs=incdirs,
+            verbose=verbose)
     else:
         results, cython_files = assert_warns_message(
             assert_warn, warn_msg, cython.make_cython_wrapper,
             filenames, sources=[], modulename=modulename,
-            custom_config=custom_config, target=".", verbose=verbose)
+            custom_config=custom_config, target=".", incdirs=incdirs,
+            verbose=verbose)
     results[SETUPPY_NAME] = results["setup.py"]
     del results["setup.py"]
     cython.write_files(results)

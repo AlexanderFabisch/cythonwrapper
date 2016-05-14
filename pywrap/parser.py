@@ -18,20 +18,28 @@ IGNORED_NODES = [
     cindex.CursorKind.STRING_LITERAL,
     cindex.CursorKind.TEMPLATE_REF,
     cindex.CursorKind.TYPE_REF,
-    cindex.CursorKind.UNEXPOSED_EXPR
+    cindex.CursorKind.UNEXPOSED_EXPR,
+    cindex.CursorKind.CXX_BASE_SPECIFIER,
 ]
+TEMPORARILY_IGNORED_NODES = [
+    cindex.CursorKind.INTEGER_LITERAL,  # use this one for default values
+]
+IGNORED_NODES.extend(TEMPORARILY_IGNORED_NODES)
 
 
 class Parser(object):
-    def __init__(self, include_file, parsable_file, includes, verbose=0):
+    def __init__(self, include_file, parsable_file, includes, incdirs=[],
+                 verbose=0):
         self.include_file = include_file
         self.parsable_file = parsable_file
         self.includes = includes
+        self.incdirs = incdirs
         self.verbose = verbose
 
     def parse(self):
         index = cindex.Index.create()
-        translation_unit = index.parse(self.parsable_file)
+        incdirs = ["-I" + incdir for incdir in self.incdirs]
+        translation_unit = index.parse(self.parsable_file, incdirs)
         cursor = translation_unit.cursor
 
         self.init_ast()

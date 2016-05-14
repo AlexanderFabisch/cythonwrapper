@@ -44,7 +44,7 @@ def cython(cython_files, target="."):
 
 
 def make_cython_wrapper(filenames, sources, modulename=None, target=".",
-                        custom_config=None, verbose=0):
+                        custom_config=None, incdirs=[], verbose=0):
     """Make Cython wrapper for C++ files.
 
     Parameters
@@ -60,6 +60,9 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
 
     target : string, optional (default: ".")
         Target directory
+
+    incdirs : list, optional (default: [])
+        Include directories
 
     verbose : int, optional (default: 0)
         Verbosity level
@@ -80,6 +83,10 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
         raise ValueError("Please give a module name when there are multiple "
                          "C++ files that you want to wrap.")
 
+    for incdir in incdirs:
+        if not os.path.exists(incdir):
+            raise ValueError("Include directory '%s' does not exist." % incdir)
+
     config = _load_config(custom_config)
 
     for filename in filenames:
@@ -90,7 +97,7 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
             raise ValueError("File '%s' does not exist" % filename)
 
     includes = Includes()
-    asts = _parse_files(filenames, includes, verbose)
+    asts = _parse_files(filenames, includes, incdirs, verbose)
     type_info = TypeInfo(asts, config)
 
     ext_results, files_to_cythonize = _generate_extension(
@@ -100,7 +107,7 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
     results = {}
     results.update(ext_results)
     results.update(decl_results)
-    results["setup.py"] = _make_setup(sources, modulename, target)
+    results["setup.py"] = _make_setup(sources, modulename, target, incdirs)
 
     return results, files_to_cythonize
 
@@ -172,7 +179,7 @@ class TypeInfo:
         return self.spec.get(tname, tname)
 
 
-def _parse_files(filenames, includes, verbose):
+def _parse_files(filenames, includes, incdirs, verbose):
     asts = []
     for filename in filenames:
         # Clang does not really parse headers
@@ -182,7 +189,8 @@ def _parse_files(filenames, includes, verbose):
                 outfile.write(infile.read())
 
         try:
-            asts.append(Parser(filename, parsable_file, includes, verbose).parse())
+            asts.append(Parser(filename, parsable_file, includes, incdirs,
+                               verbose).parse())
         finally:
             os.remove(parsable_file)
 
@@ -227,9 +235,10 @@ def _generate_declarations(asts, includes, config, verbose):
     return results
 
 
-def _make_setup(sources, modulename, target):
+def _make_setup(sources, modulename, target, incdirs):
     sourcedir = os.path.relpath(".", start=target)
     source_relpaths = [os.path.relpath(filename, start=target)
                        for filename in sources]
     return render("setup", filenames=source_relpaths,
-                  module=modulename, sourcedir=sourcedir)
+                  module=modulename, sourcedir=sourcedir,
+                  incdirs=incdirs)

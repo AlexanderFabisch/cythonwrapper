@@ -10,7 +10,13 @@ def configuration(parent_package='', top_path=None):
                  "{{ filename }}",
 {%- endfor %}
                  ],
-        include_dirs=["{{ sourcedir }}", numpy.get_include()],
+        include_dirs=[
+            "{{ sourcedir }}",
+            numpy.get_include(),
+{%- for incdir in incdirs %}
+            "{{ incdir }}",
+{%- endfor %}
+        ],
         define_macros=[("NDEBUG",)],
         extra_compile_args=["-O3", "-std=c++11"],
         language="c++")

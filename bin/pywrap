@@ -18,6 +18,9 @@ def parse_args():
                            help="output directory")
     argparser.add_argument("--config", type=str, nargs="?", default=None,
                            help="Configuration (Python file)")
+    argparser.add_argument(
+        "--incdirs", type=str, nargs="*", default=[],
+        help="Include directories (will be translated to -I flag for compiler)")
     argparser.add_argument("--verbose", "-v", action="count",
                            help="verbosity level")
     return argparser.parse_args()
@@ -29,7 +32,7 @@ def main(args):
 
     results, cython_files = make_cython_wrapper(
         args.header, args.sources, args.modulename, args.outdir, args.config,
-        args.verbose)
+        args.incdirs, args.verbose)
     write_files(results, args.outdir)
     cython(cython_files, args.outdir)
 
