@@ -1,12 +1,11 @@
 from pywrap.utils import lines, indent_block, from_camel_case, make_header
-from pywrap.testing import assert_equal_linewise
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_multi_line_equal
 
 
 def test_indent_block():
     block = lines("a", "", "b")
     indented_block = indent_block(block, 1)
-    assert_equal_linewise(indented_block, lines("    a", "", "    b"))
+    assert_multi_line_equal(indented_block, lines("    a", "", "    b"))
 
 
 def test_from_camel_case():
@@ -15,7 +14,7 @@ def test_from_camel_case():
 
 
 def test_make_header():
-    assert_equal_linewise(
+    assert_multi_line_equal(
         make_header("a b c d"),
         lines(
             "+" + "=" * 78 + "+",

@@ -165,12 +165,3 @@ def clean_warning_registry():
     for mod_name, mod in list(sys.modules.items()):
         if hasattr(mod, reg):
             getattr(mod, reg).clear()
-
-
-def assert_equal_linewise(expected, actual, *args, **kwargs):
-    from nose.tools import assert_equal
-    expected_lines = expected.split(os.linesep)
-    actual_lines = actual.split(os.linesep)
-    assert_equal(len(expected_lines), len(actual_lines), *args, **kwargs)
-    for eline, aline in zip(expected_lines, actual_lines):
-        assert_equal(eline, aline, *args, **kwargs)
