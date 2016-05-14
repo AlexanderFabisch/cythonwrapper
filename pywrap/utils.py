@@ -29,3 +29,9 @@ def from_camel_case(name):
             i += 1
         i += 1
     return new_name.lower()
+
+
+def make_header(header):
+    return lines("+" + "=" * 78 + "+",
+                 ("| " + header).ljust(79) + "|",
+                 "+" + "=" * 78 + "+")

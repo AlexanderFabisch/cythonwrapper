@@ -5,6 +5,7 @@ from .defaultconfig import Config
 from .parser import Parser
 from .ast import Includes
 from .exporter import CythonDeclarationExporter, CythonImplementationExporter
+from .utils import make_header
 
 
 def write_files(files, target="."):
@@ -204,8 +205,9 @@ def _generate_extension(modulename, asts, includes, type_info, config, verbose):
     results[pyx_filename] = includes.implementations_import() + extension
     files_to_cythonize.append(pyx_filename)
     if verbose >= 2:
-        print("= %s =" % pyx_filename)
+        print(make_header("Extension '%s':" % pyx_filename))
         print(extension)
+        print("=" * 80)
     return results, files_to_cythonize
 
 
@@ -219,8 +221,9 @@ def _generate_declarations(asts, includes, config, verbose):
     pxd_filename = "_declarations." + config.pxd_file_ending
     results[pxd_filename] = includes.declarations_import() + declarations
     if verbose >= 2:
-        print("= %s =" % pxd_filename)
+        print(make_header("Declaration '%s':" % pxd_filename))
         print(declarations)
+        print("=" * 80)
     return results
 
 

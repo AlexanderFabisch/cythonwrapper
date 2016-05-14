@@ -5,6 +5,7 @@ from .type_conversion import cythontype_from_cpptype
 from .ast import (AST, Enum, Typedef, Clazz, Function, TemplateClass,
                   TemplateFunction, Constructor, Method, TemplateMethod,
                   Param, Field)
+from .utils import make_header
 
 
 IGNORED_NODES = [
@@ -34,6 +35,8 @@ class Parser(object):
         cursor = translation_unit.cursor
 
         self.init_ast()
+        if self.verbose >= 1:
+            print(make_header("Parsing"))
         self.convert_ast(cursor)
         return self.ast
 
@@ -55,7 +58,7 @@ class Parser(object):
             Currently visited node of Clang's AST
         """
         namespace = self.namespace
-        if self.verbose >= 2:
+        if self.verbose >= 1:
             print("Node: %s, %s" % (node.kind, node.displayname))
 
         parse_children = True
