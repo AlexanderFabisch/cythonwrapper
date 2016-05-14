@@ -67,6 +67,7 @@ Contents
    :maxdepth: 2
 
    function
+   template_class
    complex_example
 
 :ref:`search`
