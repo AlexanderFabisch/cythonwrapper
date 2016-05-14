@@ -3,6 +3,18 @@ from pywrap.template_specialization import (FunctionSpecializer,
                                             ClassSpecializer, MethodSpecializer)
 from pywrap.ast import Param, TemplateFunction, TemplateClass, TemplateMethod
 from nose.tools import assert_equal
+from pywrap.testing import assert_warns_message
+
+
+def test_missing_template_specialization():
+    config = Config()
+    specializer = FunctionSpecializer(config)
+
+    template = TemplateFunction("test.hpp", "", "myFun", "T")
+    template.template_types.append("T")
+
+    assert_warns_message(UserWarning, "No template specialization registered",
+                         specializer.specialize, template)
 
 
 def test_function_specializer():

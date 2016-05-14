@@ -1,8 +1,10 @@
 import warnings
+from abc import ABCMeta, abstractmethod
 from .ast import TemplateClazzSpecialization, Function, Param, Method
 
 
 class Specializer(object):
+    __metaclass__ = ABCMeta
     def __init__(self, config):
         self.config = config
 
@@ -34,8 +36,9 @@ class Specializer(object):
     def _replace_specification(self, tipe, spec):
         return spec.get(tipe, tipe)
 
+    @abstractmethod
     def _specialize(self, general, specs):
-        raise NotImplementedError()
+        """Specialize the given template."""
 
 
 class ClassSpecializer(Specializer):
