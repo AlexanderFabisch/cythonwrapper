@@ -37,7 +37,10 @@ class Parser(object):
         self.init_ast()
         if self.verbose >= 1:
             print(make_header("Parsing"))
-        self.convert_ast(cursor)
+        self.convert_ast(cursor, 0)
+        if self.verbose >= 2:
+            print(make_header("AST"))
+            print(self.ast)
         return self.ast
 
     def init_ast(self):
@@ -49,17 +52,20 @@ class Parser(object):
         self.last_template = None
         self.namespace = ""
 
-    def convert_ast(self, node):
+    def convert_ast(self, node, depth):
         """Convert AST from Clang to our own representation.
 
         Parameters
         ----------
         node : clang.cindex.Index
             Currently visited node of Clang's AST
+
+        depth : int
+            Current depth in the AST
         """
         namespace = self.namespace
         if self.verbose >= 1:
-            print("Node: %s, %s" % (node.kind, node.displayname))
+            print("  " * depth + "Node: %s, %s" % (node.kind, node.displayname))
 
         parse_children = True
         try:
@@ -135,10 +141,10 @@ class Parser(object):
                 parse_children = False
             elif node.kind in IGNORED_NODES:
                 if self.verbose >= 3:
-                    print("Ignored node: %s, %s"
+                    print("  " * depth + "Ignored node: %s, %s"
                           % (node.kind, node.displayname))
             else:
-                print("Unknown node: %s, %s"
+                print("  " * depth + "Unknown node: %s, %s"
                       % (node.kind, node.displayname))
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring node '%s'" % node.displayname)
@@ -146,7 +152,7 @@ class Parser(object):
 
         if parse_children:
             for child in node.get_children():
-                self.convert_ast(child)
+                self.convert_ast(child, depth + 1)
 
         self.namespace = namespace
 
