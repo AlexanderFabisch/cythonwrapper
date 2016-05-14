@@ -19,21 +19,26 @@ def test_missing_template_specialization():
 
 def test_function_specializer():
     config = Config()
-    config.register_function_specialization("myFun", "myFunInt",
+    config.register_function_specialization("MyNamespace::myFun", "myFunInt",
                                             {"T": "int"})
+    config.register_function_specialization("MyNamespace::myFun", "myFunDouble",
+                                            {"T": "double"})
     specializer = FunctionSpecializer(config)
 
-    template = TemplateFunction("test.hpp", "", "myFun", "T")
+    template = TemplateFunction("test.hpp", "MyNamespace", "myFun", "T")
     template.arguments.append(Param("a", "T"))
     template.template_types.append("T")
 
     functions = specializer.specialize(template)
-    assert_equal(len(functions), 1)
-    function = functions[0]
-    assert_equal(function.name, "myFunInt")
-    assert_equal(function.result_type, "int")
-    assert_equal(len(function.arguments), 1)
-    assert_equal(function.arguments[0].tipe, "int")
+    assert_equal(len(functions), 2)
+    assert_equal(functions[0].name, "myFunInt")
+    assert_equal(functions[0].result_type, "int")
+    assert_equal(len(functions[0].arguments), 1)
+    assert_equal(functions[0].arguments[0].tipe, "int")
+    assert_equal(functions[1].name, "myFunDouble")
+    assert_equal(functions[1].result_type, "double")
+    assert_equal(len(functions[1].arguments), 1)
+    assert_equal(functions[1].arguments[0].tipe, "double")
 
 
 def test_class_specializer():
