@@ -3,15 +3,6 @@ cythonwrapper
 
 Automatically generate a Cython wrapper for C++ code.
 
-Contents:
-
-.. toctree::
-   :maxdepth: 2
-
-   complex_example
-
-:ref:`search`
-
 Example
 -------
 
@@ -68,3 +59,14 @@ If we must link against a library or we have to compile C++ source files,
 we will have to add that to the setup.py that has been generated.
 Note that you can use this as a Pyhon library that you can use in your
 setup.py as well.
+
+Contents
+--------
+
+.. toctree::
+   :maxdepth: 2
+
+   function
+   complex_example
+
+:ref:`search`

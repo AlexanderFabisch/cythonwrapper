@@ -1,6 +1,6 @@
-=======
-Example
-=======
+===============
+Complex Example
+===============
 
 The following C++ header can be wrapped easily
 
