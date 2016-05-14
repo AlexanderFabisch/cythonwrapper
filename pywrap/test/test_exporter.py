@@ -3,11 +3,10 @@ from pywrap.exporter import (MethodDefinition, SetterDefinition,
                              FunctionDefinition, CythonDeclarationExporter)
 from pywrap.cython import TypeInfo
 from pywrap.ast import (Includes, Param, Function, Clazz, Constructor, Method,
-                        Field)
+                        Field, Enum, Typedef)
 from pywrap.utils import lines
 from pywrap.defaultconfig import Config
-from pywrap.ast import Field
-from nose.tools import assert_equal, assert_multi_line_equal
+from nose.tools import assert_multi_line_equal
 
 
 def test_simple_function_def():
@@ -190,5 +189,39 @@ def test_field_decl():
             "cdef extern from \"test.hpp\" namespace \"\":",
             "    cdef cppclass MyClass:",
             "        double myField"
+        )
+    )
+
+
+def test_enum_decl():
+    enum = Enum("test.hpp", "", "MyEnum")
+    enum.constants.append("one")
+    enum.constants.append("two")
+    exporter = CythonDeclarationExporter(Includes(), Config())
+    exporter.visit_enum(enum)
+    exporter.visit_ast(None)
+    decl = exporter.export()
+    assert_multi_line_equal(
+        decl.strip(),
+        lines(
+            "cdef extern from \"test.hpp\" namespace \"\":",
+            "    cdef enum MyEnum:",
+            "        one",
+            "        two"
+        )
+    )
+
+
+def test_typedef_decl():
+    typedef = Typedef("test.hpp", "", "MyType", "double")
+    exporter = CythonDeclarationExporter(Includes(), Config())
+    exporter.visit_typedef(typedef)
+    exporter.visit_ast(None)
+    decl = exporter.export()
+    assert_multi_line_equal(
+        decl.strip(),
+        lines(
+            "cdef extern from \"test.hpp\" namespace \"\":",
+            "    ctypedef double MyType"
         )
     )
