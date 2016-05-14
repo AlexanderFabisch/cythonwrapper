@@ -305,13 +305,13 @@ class DoubleArrayTypeConverter(AbstractTypeConverter):
                 self.python_argname + ".shape[0]"]
 
     def return_output(self, copy=True):
-        raise NotImplementedError()
+        raise NotImplementedError("Cannot return double array")
 
     def python_type_decl(self):
         return "np.ndarray[double, ndim=1] %s" % self.python_argname
 
     def cpp_type_decl(self):
-        return "cdef double *"
+        raise NotImplementedError("Double array must provide additional size")
 
 
 class CStringTypeConverter(AbstractTypeConverter):
@@ -359,7 +359,7 @@ class EnumConverter(AbstractTypeConverter):
         return "cpp.%s %s" % (spec, self.python_argname)
 
     def cpp_type_decl(self):
-        return "cdef " + self.tname
+        raise NotImplementedError("Cannot declare new enum instance")
 
 
 class CythonTypeConverter(AbstractTypeConverter):

@@ -11,3 +11,4 @@ exclude_lines =
     if verbose
     if self.verbose
     @abstractmethod
+    raise NotImplementedError
