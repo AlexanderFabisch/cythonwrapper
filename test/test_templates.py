@@ -33,6 +33,6 @@ def test_template_function():
 def test_template_class():
     with cython_extension_from("templateclass.hpp",
                                custom_config="templateclassconfig.py"):
-        from templateclass import Ai
-        a = Ai(5)
-        assert_equal(a.get(), 5)
+        from templateclass import Ad
+        a = Ad(5.0)
+        assert_equal(a.get(), 5.0)

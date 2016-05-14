@@ -137,13 +137,16 @@ class Clazz(object):
         self.fields = []
 
     def accept(self, exporter):
+        self._accept_class_members(exporter)
+        exporter.visit_class(self)
+
+    def _accept_class_members(self, exporter):
         for field in self.fields:
             field.accept(exporter)
         for ctor in self.constructors:
             ctor.accept(exporter)
         for method in self.methods:
             method.accept(exporter)
-        exporter.visit_class(self)
 
     def __str__(self):
         result = "%s '%s' ('%s')" % (
@@ -264,12 +267,7 @@ class TemplateClass(Clazz, Template):
         self.ignored = False
 
     def accept(self, exporter):
-        for field in self.fields:
-            field.accept(exporter)
-        for ctor in self.constructors:
-            ctor.accept(exporter)
-        for method in self.methods:
-            method.accept(exporter)
+        self._accept_class_members(exporter)
         exporter.visit_template_class(self)
 
     def __str__(self):

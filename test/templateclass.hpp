@@ -1,8 +1,8 @@
 template<typename T>
 class A
 {
-    T a;
 public:
+    T a;
     A(T a) : a(a) {}
     T get()
     {
