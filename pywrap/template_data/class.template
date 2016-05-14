@@ -17,10 +17,12 @@ cdef class {{ name }}:
 {%- endif %}
 {%- if fields -%}
 {% for field in fields %}
+{%- if "name" in field %}
     {{ field["name"] }} = property(get_{{ field["name"] }}, set_{{ field["name"] }})
 
 {{ field["getter"] }}
 {{ field["setter"] }}
+{%- endif %}
 {% endfor %}
 {%- endif -%}
 {%- if methods %}

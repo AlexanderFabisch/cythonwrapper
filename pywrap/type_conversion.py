@@ -115,8 +115,7 @@ def create_type_converter(tname, python_argname, type_info, config,
         if converter.matches():
             return converter
     raise NotImplementedError(
-        "No type converter available for type '%s', using the Python object "
-        "converter." % tname)
+        "No type converter available for type '%s'." % tname)
 
 
 class AbstractTypeConverter(object):

@@ -264,4 +264,4 @@ class Parser(object):
         self.includes.add_include_for(tname)
         field = Field(name, tname, self.last_type.name)
         self.last_type.fields.append(field)
-        return True
+        return False
