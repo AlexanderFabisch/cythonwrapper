@@ -18,7 +18,8 @@ def full_paths(filenames):
     if PREFIX == "":
         return filenames
     else:
-        attach_prefix = lambda filename: PREFIX + os.sep + filename
+        attach_prefix = lambda filename: (filename if filename.startswith("/")
+                                          else PREFIX + os.sep + filename)
         return map(attach_prefix, filenames)
 
 

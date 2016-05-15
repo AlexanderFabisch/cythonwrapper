@@ -27,12 +27,16 @@ class Config(object):
 
         self.registered_converters = []
         self.registered_template_specializations = {}
+        self.additional_declerations = []
 
     def cpp_to_py_operator(self, name):
         if name.startswith("operator") and name not in self.operators:
             raise NotImplementedError("Cannot convert C++ operator '%s' to "
                                       "Python operator.")
         return self.operators.get(name, name)
+
+    def add_decleration(self, decl):
+        self.additional_declerations.append(decl)
 
     def register_class_specialization(self, cpp_classname, python_classname,
                                       template_to_type):

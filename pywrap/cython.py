@@ -226,6 +226,8 @@ def _generate_declarations(asts, includes, config, verbose):
         cde = CythonDeclarationExporter(includes, config)
         ast.accept(cde)
         declarations += cde.export()
+    for decl in config.additional_declerations:
+        declarations += decl
     pxd_filename = "_declarations." + config.pxd_file_ending
     results[pxd_filename] = includes.declarations_import() + declarations
     if verbose >= 2:
