@@ -33,8 +33,15 @@ if __name__ == '__main__':
                 "{{ incdir }}",
 {%- endfor %}
             ],
-            define_macros = [("NDEBUG",)],
-            extra_compile_args = ["-O3", "-std=c++11"],
+            define_macros = [
+                ("NDEBUG",),
+             ],
+            extra_compile_args = [
+                "-O3", "-std=c++11",
+                # disable warnings caused by Cython using the deprecated
+                # NumPy C-API
+                "-Wno-cpp", "-Wno-unused-function"
+            ],
             language = "c++"
         )
     ]
