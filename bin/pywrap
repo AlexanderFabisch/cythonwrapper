@@ -34,7 +34,6 @@ def main(args):
         args.header, args.sources, args.modulename, args.outdir, args.config,
         args.incdirs, args.verbose)
     write_files(results, args.outdir)
-    cython(cython_files, args.outdir)
 
 
 if __name__ == "__main__":

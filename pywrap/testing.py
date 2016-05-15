@@ -2,9 +2,7 @@ import os
 import sys
 import warnings
 from contextlib import contextmanager
-
 import numpy as np
-
 from pywrap import cython
 
 PREFIX = os.sep.join(__file__.split(os.sep)[:-2]) + os.sep + "test"
@@ -58,21 +56,23 @@ def hidden_stdout():
 
 def _write_cython_wrapper(filenames, modulename, custom_config, incdirs,
                           assert_warn, warn_msg, verbose=0):
+    kwargs = {
+        "sources": [],
+        "modulename": modulename,
+        "custom_config": custom_config,
+        "target": ".",
+        "incdirs": incdirs,
+        "verbose": verbose
+    }
     if assert_warn is None:
-        results, cython_files = cython.make_cython_wrapper(
-            filenames, sources=[], modulename=modulename,
-            custom_config=custom_config, target=".", incdirs=incdirs,
-            verbose=verbose)
+        results, cython_files = cython.make_cython_wrapper(filenames, **kwargs)
     else:
         results, cython_files = assert_warns_message(
             assert_warn, warn_msg, cython.make_cython_wrapper,
-            filenames, sources=[], modulename=modulename,
-            custom_config=custom_config, target=".", incdirs=incdirs,
-            verbose=verbose)
+            filenames, **kwargs)
     results[SETUPPY_NAME] = results["setup.py"]
     del results["setup.py"]
     cython.write_files(results)
-    cython.cython(cython_files)
 
     filenames = []
     filenames.extend(results.keys())

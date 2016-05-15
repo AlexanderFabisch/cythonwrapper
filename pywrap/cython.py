@@ -25,24 +25,6 @@ def write_files(files, target="."):
             f.write(content)
 
 
-def cython(cython_files, target="."):
-    """Cythonize Cython implementation files.
-
-    Parameters
-    ----------
-    cython_files : list
-        List of files that will be cythonized
-
-    target : string, optional (default: '.')
-        Target directory
-    """
-    for cython_file in cython_files:
-        inputfile = os.path.join(target, cython_file)
-        #from Cython.Build import cythonize
-        #cythonize(inputfile, cplus=True)
-        os.system("cython --cplus %s" % inputfile)
-
-
 def make_cython_wrapper(filenames, sources, modulename=None, target=".",
                         custom_config=None, incdirs=[], verbose=0):
     """Make Cython wrapper for C++ files.

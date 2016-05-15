@@ -13,4 +13,4 @@ public:
     }
 };
 
-#endif TEST_HPP
+#endif
