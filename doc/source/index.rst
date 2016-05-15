@@ -66,6 +66,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   architecture
    function
    template_class
    complex_example
