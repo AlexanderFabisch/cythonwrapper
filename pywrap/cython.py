@@ -26,7 +26,8 @@ def write_files(files, target="."):
 
 
 def make_cython_wrapper(filenames, sources, modulename=None, target=".",
-                        custom_config=None, incdirs=[], verbose=0):
+                        custom_config=None, incdirs=[], compiler_flags=["-O3"],
+                        verbose=0):
     """Make Cython wrapper for C++ files.
 
     Parameters
@@ -45,6 +46,10 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
 
     incdirs : list, optional (default: [])
         Include directories
+
+    compiler_flags : list, optional (default: ["-O3"])
+        Flags that will be passed directly to the compiler when building the
+        extension
 
     verbose : int, optional (default: 0)
         Verbosity level
@@ -89,7 +94,8 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
     results = {}
     results.update(ext_results)
     results.update(decl_results)
-    results["setup.py"] = _make_setup(sources, modulename, target, incdirs)
+    results["setup.py"] = _make_setup(sources, modulename, target, incdirs,
+                                      compiler_flags)
 
     return results, files_to_cythonize
 
@@ -219,10 +225,10 @@ def _generate_declarations(asts, includes, config, verbose):
     return results
 
 
-def _make_setup(sources, modulename, target, incdirs):
+def _make_setup(sources, modulename, target, incdirs, compiler_flags):
     sourcedir = os.path.relpath(".", start=target)
     source_relpaths = [os.path.relpath(filename, start=target)
                        for filename in sources]
     return render("setup", filenames=source_relpaths,
                   module=modulename, sourcedir=sourcedir,
-                  incdirs=incdirs)
+                  incdirs=incdirs, compiler_flags=compiler_flags)

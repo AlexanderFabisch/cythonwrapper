@@ -62,7 +62,8 @@ def _write_cython_wrapper(filenames, modulename, custom_config, incdirs,
         "custom_config": custom_config,
         "target": ".",
         "incdirs": incdirs,
-        "verbose": verbose
+        "verbose": verbose,
+        "compiler_flags": ["-O0"]
     }
     if assert_warn is None:
         results, cython_files = cython.make_cython_wrapper(filenames, **kwargs)

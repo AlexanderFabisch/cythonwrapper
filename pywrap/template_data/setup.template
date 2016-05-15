@@ -37,7 +37,10 @@ if __name__ == '__main__':
                 ("NDEBUG",),
              ],
             extra_compile_args = [
-                "-O3", "-std=c++11",
+                "-std=c++11",
+{%- for compiler_flag in compiler_flags %}
+                "{{ compiler_flag }}",
+{%- endfor %}
                 # disable warnings caused by Cython using the deprecated
                 # NumPy C-API
                 "-Wno-cpp", "-Wno-unused-function"
