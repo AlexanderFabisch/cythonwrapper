@@ -6,6 +6,7 @@ from .ast import (AST, Enum, Typedef, Clazz, Function, TemplateClass,
                   TemplateFunction, Constructor, Method, TemplateMethod,
                   Param, Field)
 from .utils import make_header
+from .ast import Includes
 
 
 IGNORED_NODES = [
@@ -31,15 +32,48 @@ IGNORED_NODES.extend(TEMPORARILY_IGNORED_NODES)
 
 
 class Parser(object):
-    def __init__(self, include_file, parsable_file, includes, incdirs=[],
-                 verbose=0):
+    """The parser builds the abstract syntax tree (AST).
+
+    Parameters
+    ----------
+    include_file : str
+        Name of the file that contains the declarations.
+
+    parsable_file : str, optional
+        File that will be parsed by clang. Clang does not really parse header
+        files. In that case, we will copy the content to a .cc file and parse
+        this file with clang.
+
+    includes : Includes, optional
+        Will be filled with information about required import and cimport
+        statements.
+
+    incdirs : list, optional
+        Include directories that will be required to parse the file with clang.
+
+    verbose : int, optional (default: 0)
+        Verbosity level
+    """
+    def __init__(self, include_file, parsable_file=None, includes=Includes(),
+                 incdirs=[], verbose=0):
         self.include_file = include_file
-        self.parsable_file = parsable_file
+        if parsable_file is None:
+            self.parsable_file = include_file
+        else:
+            self.parsable_file = parsable_file
         self.includes = includes
         self.incdirs = incdirs
         self.verbose = verbose
 
     def parse(self):
+        """Parse the given file.
+
+        Returns
+        -------
+        ast : AST
+            Abstract syntax tree that can be used to generate the Cython
+            wrapper code
+        """
         index = cindex.Index.create()
         incdirs = ["-I" + incdir for incdir in self.incdirs]
         translation_unit = index.parse(self.parsable_file, incdirs)

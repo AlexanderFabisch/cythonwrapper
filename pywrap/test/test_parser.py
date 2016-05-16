@@ -19,14 +19,14 @@ def test_include_map():
 
 
 def test_add_typedef():
-    parser = Parser("test.hpp", None, Includes())
+    parser = Parser("test.hpp")
     parser.init_ast()
     parser.add_typedef("double", "tdef")
     assert_equal(len(parser.ast.typedefs), 1)
 
 
 def test_distributed_struct():
-    parser = Parser("test.hpp", None, Includes())
+    parser = Parser("test.hpp")
     parser.init_ast()
     parser.add_struct_decl("")
     assert_is_not_none(parser.ast.unnamed_struct)
@@ -36,21 +36,21 @@ def test_distributed_struct():
 
 
 def test_struct():
-    parser = Parser("test.hpp", None, Includes())
+    parser = Parser("test.hpp")
     parser.init_ast()
     parser.add_struct_decl("MyStruct")
     assert_equal(len(parser.ast.classes), 1)
 
 
 def test_add_function():
-    parser = Parser("test.hpp", None, Includes())
+    parser = Parser("test.hpp")
     parser.init_ast()
     parser.add_function("myFun", "void", "")
     assert_equal(len(parser.ast.functions), 1)
 
 
 def test_add_class_with_field_ctor_and_method():
-    parser = Parser("test.hpp", None, Includes())
+    parser = Parser("test.hpp")
     parser.init_ast()
     parser.add_class("MyClass")
     assert_equal(len(parser.ast.classes), 1)
@@ -65,14 +65,14 @@ def test_add_class_with_field_ctor_and_method():
 
 
 def test_add_argument_without_method():
-    parser = Parser("test.hpp", None, Includes())
+    parser = Parser("test.hpp")
     parser.init_ast()
     assert_warns_message(UserWarning, "Ignored function parameter",
                          parser.add_param, "a", "void")
 
 
 def test_add_template_function():
-    parser = Parser("test.hpp", None, Includes())
+    parser = Parser("test.hpp")
     parser.init_ast()
     parser.add_template_function("myFun", "void")
     assert_equal(len(parser.ast.functions), 1)
@@ -81,7 +81,7 @@ def test_add_template_function():
 
 
 def test_add_template_class():
-    parser = Parser("test.hpp", None, Includes())
+    parser = Parser("test.hpp")
     parser.init_ast()
     parser.add_template_class("MyTemplateClass")
     assert_equal(len(parser.ast.classes), 1)
@@ -98,7 +98,7 @@ def test_add_template_class():
 
 
 def test_add_template_method():
-    parser = Parser("test.hpp", None, Includes())
+    parser = Parser("test.hpp")
     parser.init_ast()
     parser.add_class("MyClass")
     assert_equal(len(parser.ast.classes), 1)
