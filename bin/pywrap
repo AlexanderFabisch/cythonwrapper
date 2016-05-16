@@ -2,7 +2,7 @@
 import os
 import argparse
 import pywrap
-from pywrap.cython import make_cython_wrapper, write_files, cython
+from pywrap.cython import make_cython_wrapper, write_files
 
 
 def parse_args():
@@ -32,7 +32,7 @@ def main(args):
 
     results, cython_files = make_cython_wrapper(
         args.header, args.sources, args.modulename, args.outdir, args.config,
-        args.incdirs, args.verbose)
+        args.incdirs, verbose=args.verbose)
     write_files(results, args.outdir)
 
 
