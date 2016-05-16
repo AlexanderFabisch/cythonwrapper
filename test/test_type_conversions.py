@@ -1,6 +1,6 @@
 import numpy as np
 from pywrap.testing import cython_extension_from
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_raises
 
 
 def test_bool_in_bool_out():
@@ -87,3 +87,11 @@ def test_cstring():
         from cstring import length, helloworld
         assert_equal(length("test"), 4)
         assert_equal(helloworld(), "hello world")
+
+
+def test_fixed_length_array():
+    with cython_extension_from("fixedarray.hpp"):
+        from fixedarray import to_string
+        assert_equal(to_string([1, 2, 3, 4, 5]), "[1, 2, 3, 4, 5]")
+        assert_raises(ValueError, to_string, [1, 2, 3, 4])
+        assert_raises(TypeError, to_string, [1, 2, 3, 4, "a"])

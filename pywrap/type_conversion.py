@@ -282,6 +282,46 @@ class AutomaticPointerTypeConverter(AbstractTypeConverter):
         raise NotImplementedError()
 
 
+class FixedSizeArrayTypeConverter(AbstractTypeConverter):
+    def matches(self):
+        if type(self.tname) is not str:
+            return False
+        match = re.match(".* \[(\d+)\]", self.tname)
+        if match is None:
+            return False
+        self.size = int(match.group(1))
+        self.element_type = self.tname.split(" ")[0]
+        return is_basic_type_with_automatic_conversion(self.element_type)
+
+    def n_cpp_args(self):
+        return 1
+
+    def add_includes(self, includes):
+        pass
+
+    def python_to_cpp(self):
+        return lines(
+            "if len(%(python_argname)s) != %(size)s:",
+            "    raise ValueError(\"Expected list of length %(size)s, got \" + str(len(%(python_argname)s)))",
+            "cdef %(element_type)s cpp_%(python_argname)s[%(size)s]",
+            "cpp_%(python_argname)s[:] = %(python_argname)s[:]"
+        ) % {"python_argname": self.python_argname,
+             "size": self.size,
+             "element_type": self.element_type}
+
+    def cpp_call_args(self):
+        return ["cpp_" + self.python_argname]
+
+    def return_output(self, copy=True):
+        raise NotImplementedError("Cannot return fixed size array")
+
+    def python_type_decl(self):
+        return "list " + self.python_argname
+
+    def cpp_type_decl(self):
+        return ""
+
+
 class DoubleArrayTypeConverter(AbstractTypeConverter):
     def matches(self):
         if self.context is None:
@@ -490,6 +530,7 @@ class StlTypeConverter(AbstractTypeConverter):
 
 
 default_converters = [
-    DoubleArrayTypeConverter, CStringTypeConverter, VoidTypeConverter,
-    AutomaticTypeConverter, AutomaticPointerTypeConverter, EnumConverter,
-    CythonTypeConverter, CppPointerTypeConverter, StlTypeConverter]
+    FixedSizeArrayTypeConverter, DoubleArrayTypeConverter, CStringTypeConverter,
+    VoidTypeConverter, AutomaticTypeConverter, AutomaticPointerTypeConverter,
+    EnumConverter, CythonTypeConverter, CppPointerTypeConverter,
+    StlTypeConverter]
