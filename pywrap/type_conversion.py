@@ -304,7 +304,9 @@ class FixedSizeArrayTypeConverter(AbstractTypeConverter):
             "if len(%(python_argname)s) != %(size)s:",
             "    raise ValueError(\"Expected list of length %(size)s, got \" + str(len(%(python_argname)s)))",
             "cdef %(element_type)s cpp_%(python_argname)s[%(size)s]",
-            "cpp_%(python_argname)s[:] = %(python_argname)s[:]"
+            "cdef unsigned int %(python_argname)s_idx",
+            "for %(python_argname)s_idx in range(%(size)s):",
+            "    cpp_%(python_argname)s[%(python_argname)s_idx] = %(python_argname)s[%(python_argname)s_idx]"
         ) % {"python_argname": self.python_argname,
              "size": self.size,
              "element_type": self.element_type}
