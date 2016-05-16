@@ -21,6 +21,8 @@ IGNORED_NODES = [
     cindex.CursorKind.UNEXPOSED_EXPR,
     cindex.CursorKind.CXX_BASE_SPECIFIER,
     cindex.CursorKind.DESTRUCTOR,
+    cindex.CursorKind.VAR_DECL,
+    cindex.CursorKind.UNEXPOSED_DECL,
 ]
 TEMPORARILY_IGNORED_NODES = [
     cindex.CursorKind.INTEGER_LITERAL,  # use this one for default values
