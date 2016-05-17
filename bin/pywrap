@@ -30,7 +30,7 @@ def main(args):
     if not os.path.exists(args.outdir):
         os.makedirs(args.outdir)
 
-    results, cython_files = make_cython_wrapper(
+    results = make_cython_wrapper(
         args.header, args.sources, args.modulename, args.outdir, args.config,
         args.incdirs, verbose=args.verbose)
     write_files(results, args.outdir)

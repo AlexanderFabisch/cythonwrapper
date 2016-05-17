@@ -58,9 +58,6 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
     -------
     results : dict
         Mapping from filename to generated file content
-
-    files_to_cythonize : list
-        Files that we have to convert with Cython
     """
     if isinstance(filenames, str):
         filenames = [filenames]
@@ -87,17 +84,17 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
     asts = _parse_files(filenames, includes, incdirs, verbose)
     type_info = TypeInfo(asts, config)
 
-    ext_results, files_to_cythonize = _generate_extension(
+    ext_file, ext = _generate_extension(
         modulename, asts, includes, type_info, config, verbose)
-    decl_results = _generate_declarations(asts, includes, config, verbose)
+    decl_file, decl = _generate_declarations(asts, includes, config, verbose)
 
     results = {}
-    results.update(ext_results)
-    results.update(decl_results)
+    results[ext_file] = ext
+    results[decl_file] = decl
     results["setup.py"] = _make_setup(sources, modulename, target, incdirs,
                                       compiler_flags)
 
-    return results, files_to_cythonize
+    return results
 
 
 def _derive_module_name_from(filename):
@@ -190,39 +187,31 @@ def file_ending(filename):
 
 
 def _generate_extension(modulename, asts, includes, type_info, config, verbose):
-    results = {}
-    files_to_cythonize = []
-    extension = ""
+    cie = CythonImplementationExporter(includes, type_info, config)
     for ast in asts:
-        cie = CythonImplementationExporter(includes, type_info, config)
         ast.accept(cie)
-        extension += cie.export()
     pyx_filename = modulename + "." + config.pyx_file_ending
-    results[pyx_filename] = includes.implementations_import() + extension
-    files_to_cythonize.append(pyx_filename)
+    extension = includes.implementations_import() + cie.export()
     if verbose >= 2:
         print(make_header("Extension '%s':" % pyx_filename))
         print(extension)
         print("=" * 80)
-    return results, files_to_cythonize
+    return pyx_filename, extension
 
 
 def _generate_declarations(asts, includes, config, verbose):
-    results = {}
-    declarations = ""
+    cde = CythonDeclarationExporter(includes, config)
     for ast in asts:
-        cde = CythonDeclarationExporter(includes, config)
         ast.accept(cde)
-        declarations += cde.export()
+    pxd_filename = "_declarations." + config.pxd_file_ending
+    declarations = includes.declarations_import() + cde.export()
     for decl in config.additional_declerations:
         declarations += decl
-    pxd_filename = "_declarations." + config.pxd_file_ending
-    results[pxd_filename] = includes.declarations_import() + declarations
     if verbose >= 2:
         print(make_header("Declaration '%s':" % pxd_filename))
         print(declarations)
         print("=" * 80)
-    return results
+    return pxd_filename, declarations
 
 
 def _make_setup(sources, modulename, target, incdirs, compiler_flags):

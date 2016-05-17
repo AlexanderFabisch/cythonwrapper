@@ -66,9 +66,9 @@ def _write_cython_wrapper(filenames, modulename, custom_config, incdirs,
         "compiler_flags": ["-O0"]
     }
     if assert_warn is None:
-        results, cython_files = cython.make_cython_wrapper(filenames, **kwargs)
+        results = cython.make_cython_wrapper(filenames, **kwargs)
     else:
-        results, cython_files = assert_warns_message(
+        results = assert_warns_message(
             assert_warn, warn_msg, cython.make_cython_wrapper,
             filenames, **kwargs)
     results[SETUPPY_NAME] = results["setup.py"]
@@ -77,9 +77,16 @@ def _write_cython_wrapper(filenames, modulename, custom_config, incdirs,
 
     filenames = []
     filenames.extend(results.keys())
-    for filename in cython_files:
-        filenames.append(filename.replace(cython.file_ending(filename), "cpp"))
-        filenames.append(filename.replace(cython.file_ending(filename), "so"))
+
+    temporary_files = []
+    for filename in filenames:
+        if filename.endswith(".pyx"):
+            temporary_files.append(filename.replace(
+                cython.file_ending(filename), "cpp"))
+            temporary_files.append(filename.replace(
+                cython.file_ending(filename), "so"))
+    filenames.extend(temporary_files)
+
     return filenames
 
 
