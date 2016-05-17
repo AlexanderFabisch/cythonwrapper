@@ -84,15 +84,16 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
     asts = _parse_files(filenames, includes, incdirs, verbose)
     type_info = TypeInfo(asts, config)
 
-    ext_file, ext = _generate_extension(
-        modulename, asts, includes, type_info, config, verbose)
-    decl_file, decl = _generate_declarations(asts, includes, config, verbose)
+    results = dict(
+        [_make_extension(modulename, asts, includes, type_info, config),
+         _make_declarations(asts, includes, config),
+         _make_setup(sources, modulename, target, incdirs, compiler_flags)]
+    )
 
-    results = {}
-    results[ext_file] = ext
-    results[decl_file] = decl
-    results["setup.py"] = _make_setup(sources, modulename, target, incdirs,
-                                      compiler_flags)
+    if verbose >= 2:
+        for filename in sorted(results.keys()):
+            print(make_header("Exporting file '%s':" % filename))
+            print(results[filename])
 
     return results
 
@@ -186,31 +187,23 @@ def file_ending(filename):
     return filename.split(".")[-1]
 
 
-def _generate_extension(modulename, asts, includes, type_info, config, verbose):
+def _make_extension(modulename, asts, includes, type_info, config):
     cie = CythonImplementationExporter(includes, type_info, config)
     for ast in asts:
         ast.accept(cie)
     pyx_filename = modulename + "." + config.pyx_file_ending
     extension = includes.implementations_import() + cie.export()
-    if verbose >= 2:
-        print(make_header("Extension '%s':" % pyx_filename))
-        print(extension)
-        print("=" * 80)
     return pyx_filename, extension
 
 
-def _generate_declarations(asts, includes, config, verbose):
+def _make_declarations(asts, includes, config):
     cde = CythonDeclarationExporter(includes, config)
     for ast in asts:
         ast.accept(cde)
-    pxd_filename = "_declarations." + config.pxd_file_ending
     declarations = includes.declarations_import() + cde.export()
     for decl in config.additional_declerations:
         declarations += decl
-    if verbose >= 2:
-        print(make_header("Declaration '%s':" % pxd_filename))
-        print(declarations)
-        print("=" * 80)
+    pxd_filename = "_declarations." + config.pxd_file_ending
     return pxd_filename, declarations
 
 
@@ -218,6 +211,6 @@ def _make_setup(sources, modulename, target, incdirs, compiler_flags):
     sourcedir = os.path.relpath(".", start=target)
     source_relpaths = [os.path.relpath(filename, start=target)
                        for filename in sources]
-    return render("setup", filenames=source_relpaths,
-                  module=modulename, sourcedir=sourcedir,
-                  incdirs=incdirs, compiler_flags=compiler_flags)
+    return "setup.py", render("setup", filenames=source_relpaths,
+                              module=modulename, sourcedir=sourcedir,
+                              incdirs=incdirs, compiler_flags=compiler_flags)
