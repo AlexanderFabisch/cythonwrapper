@@ -3,7 +3,6 @@ class MyClassA
     void operator=(const MyClassA& other) {}
 public:
     MyClassA() {}
-    MyClassA(int a) {}
 };
 
 
