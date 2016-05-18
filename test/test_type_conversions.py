@@ -95,3 +95,14 @@ def test_fixed_length_array():
         assert_equal(to_string([1, 2, 3, 4, 5]), "[1, 2, 3, 4, 5]")
         assert_raises(ValueError, to_string, [1, 2, 3, 4])
         assert_raises(TypeError, to_string, [1, 2, 3, 4, "a"])
+
+
+def test_missing_default_ctor():
+    with cython_extension_from("missingdefaultctor.hpp", hide_errors=True):
+        assert_raises(ImportError, __import__, "missingdefaultctor")
+
+
+def test_missing_default_ctor():
+    with cython_extension_from("missingassignmentop.hpp", hide_errors=True):
+        assert_raises(ImportError, __import__, "missingassignmentop")
+

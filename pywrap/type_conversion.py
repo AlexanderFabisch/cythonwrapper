@@ -423,7 +423,7 @@ class CythonTypeConverter(AbstractTypeConverter):
         return ["deref(cpp_%s)" % self.python_argname]
 
     def return_output(self, copy=True):
-        # TODO only works with copy constructor
+        # TODO only works with default and assignment operator
         return lines("ret = %s()" % self.tname,
                      "ret.thisptr[0] = result",
                      "return ret")

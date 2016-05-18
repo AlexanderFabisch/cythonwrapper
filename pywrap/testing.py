@@ -24,14 +24,14 @@ def full_paths(filenames):
 @contextmanager
 def cython_extension_from(headers, modulename=None, custom_config=None,
                           assert_warn=None, warn_msg=None, incdirs=[],
-                          cleanup=True):
+                          hide_errors=False, cleanup=True):
     if custom_config is not None:
         custom_config = full_paths(custom_config)[0]
     incdirs = full_paths(incdirs)
     filenames = _write_cython_wrapper(full_paths(headers), modulename,
                                       custom_config, incdirs, assert_warn,
                                       warn_msg)
-    _run_setup()
+    _run_setup(hide_errors)
     try:
         yield
     finally:
@@ -52,6 +52,21 @@ def hidden_stdout():
         yield
     finally:
         os.dup2(oldstdout_fno, 1)
+
+
+@contextmanager
+def hidden_stderr():
+    sys.stderr.flush()
+    oldstderr_fno = os.dup(2)
+    devnull = os.open(os.devnull, os.O_WRONLY)
+    newstderr = os.dup(2)
+    os.dup2(devnull, 2)
+    os.close(devnull)
+    sys.stderr = os.fdopen(newstderr, 'w')
+    try:
+        yield
+    finally:
+        os.dup2(oldstderr_fno, 2)
 
 
 def _write_cython_wrapper(filenames, modulename, custom_config, incdirs,
@@ -90,9 +105,14 @@ def _write_cython_wrapper(filenames, modulename, custom_config, incdirs,
     return filenames
 
 
-def _run_setup():
+def _run_setup(hide_errors):
+    cmd = "python %s build_ext -i" % SETUPPY_NAME
     with hidden_stdout():
-        os.system("python %s build_ext -i" % SETUPPY_NAME)
+        if hide_errors:
+            with hidden_stderr():
+                os.system(cmd)
+        else:
+            os.system(cmd)
 
 
 def _remove_files(filenames):

@@ -64,11 +64,12 @@ Contents
 --------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-   architecture
    function
    template_class
    complex_example
+   architecture
+   memory_management
 
 :ref:`search`
