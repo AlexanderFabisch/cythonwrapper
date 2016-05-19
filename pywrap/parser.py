@@ -113,6 +113,7 @@ class Parser(object):
             print("  " * depth + "Node: %s, %s" % (node.kind, node.displayname))
 
         parse_children = True
+        class_added = False
         try:
             if node.location.file is None:
                 pass
@@ -133,6 +134,7 @@ class Parser(object):
             elif node.kind == cindex.CursorKind.CLASS_TEMPLATE:
                 name = node.displayname.split("<")[0]
                 self.add_template_class(name)
+                class_added = True
             elif node.kind == cindex.CursorKind.FUNCTION_TEMPLATE:
                 if self.last_type is None:
                     self.add_template_function(
@@ -164,6 +166,7 @@ class Parser(object):
                     parse_children = False
             elif node.kind == cindex.CursorKind.CLASS_DECL:
                 parse_children = self.add_class(node.displayname)
+                class_added = True
             elif node.kind == cindex.CursorKind.STRUCT_DECL:
                 parse_children = self.add_struct_decl(node.displayname)
             elif node.kind == cindex.CursorKind.FIELD_DECL:
@@ -198,6 +201,8 @@ class Parser(object):
         if parse_children:
             for child in node.get_children():
                 self.convert_ast(child, depth + 1)
+        if class_added:
+            self.last_type = None
 
         self.namespace = namespace
 
@@ -214,8 +219,12 @@ class Parser(object):
         else:
             underlying_tname = cythontype_from_cpptype(underlying_tname)
             self.includes.add_include_for(underlying_tname)
+            if self.last_type is None:
+                namespace = self.namespace
+            else:
+                namespace = self.namespace + "::" + self.last_type.name
             self.ast.typedefs.append(Typedef(
-                self.include_file, self.namespace, tname, underlying_tname))
+                self.include_file, namespace, tname, underlying_tname))
             return True
 
     def add_struct_decl(self, name):
