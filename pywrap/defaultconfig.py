@@ -77,3 +77,9 @@ class Config(object):
 
     def is_ignored(self, *args):
         return ":".join(args) in self.ignored
+
+    def abstract_class(self, class_name):
+        self.ignore(class_name, "__init__")
+
+    def is_abstract_class(self, class_name):
+        return self.is_ignored(class_name, "__init__")

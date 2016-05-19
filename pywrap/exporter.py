@@ -235,6 +235,12 @@ class CythonImplementationExporter:
         self.ctors.append(ctor)
 
     def _process_constructor(self, ctor, selftype, cpptype):
+        if self.config.is_abstract_class(ctor.class_name):
+            warnings.warn("Class '%s' is abstract and will have no constructor."
+                          % ctor.class_name)
+            ctor.ignored = True
+            return ""
+
         try:
             constructor_def = ConstructorDefinition(
                 selftype, ctor.arguments, self.includes,
