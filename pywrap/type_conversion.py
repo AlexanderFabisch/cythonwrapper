@@ -500,12 +500,13 @@ class StlTypeConverter(AbstractTypeConverter):
 
     def python_to_cpp(self):
         # TODO does not work for complex template type hierarchies
-        subtypes = find_all_subtypes(self.tname)
+        tname = self.type_info.underlying_type(self.tname)
+        subtypes = find_all_subtypes(tname)
         subtypes = [self.type_info.underlying_type(s)
                     for s in subtypes]
         cython_argname = "cpp_" + self.python_argname
 
-        if (self.tname.startswith("vector") and
+        if (tname.startswith("vector") and
                     subtypes[1] in self.type_info.classes):
             conversion = render(
                 "convert_vector", python_argname=self.python_argname,
@@ -528,7 +529,7 @@ class StlTypeConverter(AbstractTypeConverter):
                         prefixed_subtype in self.type_info.classes):
                 prefixed_subtype = "cpp." + prefixed_subtype
             tname = tname.replace(subtype, prefixed_subtype)
-        return "cdef " + tname
+        return "cdef " + typedef_prefix(tname, self.type_info.typedefs)
 
 
 default_converters = [
