@@ -212,10 +212,10 @@ class Parser(object):
             self.last_type = None
             return False
         else:
+            underlying_tname = cythontype_from_cpptype(underlying_tname)
             self.includes.add_include_for(underlying_tname)
             self.ast.typedefs.append(Typedef(
-                self.include_file, self.namespace, tname,
-                cythontype_from_cpptype(underlying_tname)))
+                self.include_file, self.namespace, tname, underlying_tname))
             return True
 
     def add_struct_decl(self, name):

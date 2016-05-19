@@ -149,9 +149,7 @@ class CythonImplementationExporter:
         self.enums = []
         self.functions = []
         self.classes = []
-        self.fields = []
-        self.ctors = []
-        self.methods = []
+        self._clear_class()
         self.output = None
 
     def visit_ast(self, ast):
@@ -165,6 +163,13 @@ class CythonImplementationExporter:
         pass
 
     def visit_class(self, clazz, cppname=None):
+        if self.config.is_ignored_class(clazz.filename, clazz.name):
+            warnings.warn("Class '%s' from file '%s' is on the blacklist and "
+                          "will be ignored." % (clazz.name, clazz.filename))
+            clazz.ignored = True
+            self._clear_class()
+            return
+
         if len(self.ctors) > 1:
             msg = ("Class '%s' has more than one constructor. This is not "
                    "compatible to Python. The last constructor will overwrite "
@@ -191,9 +196,11 @@ class CythonImplementationExporter:
         finally:
             self.type_info.remove_specialization()
 
-
         self.classes.append(render("class", **class_def))
 
+        self._clear_class()
+
+    def _clear_class(self):
         self.fields = []
         self.ctors = []
         self.methods = []
@@ -239,6 +246,12 @@ class CythonImplementationExporter:
             return ""
 
     def visit_method(self, method, cppname=None):
+        if self.config.is_ignored_class(method.class_name, method.name):
+            warnings.warn("Method '%s::%s' is on the blacklist and will be "
+                          "ignored." % (method.class_name, method.name))
+            method.ignored = True
+            return
+
         self.methods.append((method, cppname))
 
     def _process_method(self, arg, selftype):

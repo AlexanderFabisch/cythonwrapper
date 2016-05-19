@@ -28,6 +28,7 @@ class Config(object):
         self.registered_converters = []
         self.registered_template_specializations = {}
         self.additional_declerations = []
+        self.ignored = []
 
     def cpp_to_py_operator(self, name):
         if name.startswith("operator") and name not in self.operators:
@@ -58,3 +59,21 @@ class Config(object):
             self.registered_template_specializations[key] = []
         self.registered_template_specializations[key].append(
             (name, template_to_type))
+
+    def ignore_class(self, filename, class_name):
+        self.ignore(filename, class_name)
+
+    def is_ignored_class(self, filename, class_name):
+        return self.is_ignored(filename, class_name)
+
+    def ignore_method(self, class_name, method_name):
+        self.ignore(class_name, method_name)
+
+    def is_ignored_method(self, class_name, method_name):
+        return self.is_ignored(class_name, method_name)
+
+    def ignore(self, *args):
+        self.ignored.append(":".join(args))
+
+    def is_ignored(self, *args):
+        return ":".join(args) in self.ignored
