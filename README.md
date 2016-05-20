@@ -76,7 +76,7 @@ will have to add that to the `setup.py` that has been generated.
 Note that you can use this as a Pyhon library that you can use in your
 `setup.py` as well. For now, take a look at the code to understand how
 you can do that. You can take a look at the
-[main function](https://github.com/AlexanderFabisch/cythonwrapper/blob/master/bin/pywrap#L26)
+[main function](https://github.com/AlexanderFabisch/cythonwrapper/blob/master/bin/pywrap#L29)
 or at the
 [test code](https://github.com/AlexanderFabisch/cythonwrapper/blob/master/pywrap/testing.py)
 which should give you a good impression of how to use the library.
