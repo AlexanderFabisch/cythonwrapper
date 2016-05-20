@@ -28,3 +28,7 @@ def test_underlying_type():
     assert_equal(TypeInfo(typedefs={"tdef": "float"}).underlying_type("tdef"),
                  "float")
 
+
+def test_missing_incdir():
+    assert_raises_regexp(ValueError, "Include directory", make_cython_wrapper,
+                         "test.hpp", [], incdirs=["/doesnotexist"])
