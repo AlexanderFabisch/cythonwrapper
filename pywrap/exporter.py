@@ -252,7 +252,7 @@ class CythonImplementationExporter:
             return ""
 
     def visit_method(self, method, cppname=None):
-        if self.config.is_ignored_class(method.class_name, method.name):
+        if self.config.is_ignored_method(method.class_name, method.name):
             warnings.warn("Method '%s::%s' is on the blacklist and will be "
                           "ignored." % (method.class_name, method.name))
             method.ignored = True
