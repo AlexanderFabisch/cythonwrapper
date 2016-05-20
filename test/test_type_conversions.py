@@ -102,7 +102,7 @@ def test_missing_default_ctor():
         assert_raises(ImportError, __import__, "missingdefaultctor")
 
 
-def test_missing_default_ctor():
+def test_missing_assignment():
     with cython_extension_from("missingassignmentop.hpp", hide_errors=True):
         assert_raises(ImportError, __import__, "missingassignmentop")
 
