@@ -91,6 +91,7 @@ class CythonDeclarationExporter:
             method_dict["name"] = replace_operator_decl(method_dict["name"],
                                                         self.config)
             method_str = templates.method_decl % method_dict
+            method_str += self._exception_suffix(method.result_type)
             self.methods.append(method_str)
         self.arguments = []
 
@@ -102,6 +103,7 @@ class CythonDeclarationExporter:
             method_dict["name"] = replace_operator_decl(method_dict["name"],
                                                         self.config)
             method_str = templates.template_method_decl % method_dict
+            method_str += self._exception_suffix(template_method.result_type)
             self.methods.append(method_str)
         self.arguments = []
 
@@ -110,6 +112,7 @@ class CythonDeclarationExporter:
             function_dict = {"args": ", ".join(self.arguments)}
             function_dict.update(function.__dict__)
             function_str = templates.function_decl % function_dict
+            function_str += self._exception_suffix(function.result_type)
             self.functions.append(function_str)
         self.arguments = []
 
@@ -120,6 +123,8 @@ class CythonDeclarationExporter:
                 "types": ", ".join(template_function.template_types)}
             function_dict.update(template_function.__dict__)
             function_str = templates.template_function_decl % function_dict
+            function_str += self._exception_suffix(
+                template_function.result_type)
             self.functions.append(function_str)
         self.arguments = []
 
@@ -128,6 +133,13 @@ class CythonDeclarationExporter:
 
     def export(self):
         return self.output
+
+    def _exception_suffix(self, result_type):
+        """Workaround for bug in Cython when returning C arrays."""
+        if result_type == "char *":
+            return ""
+        else:
+            return " except +"
 
 
 def replace_operator_decl(method_name, config):

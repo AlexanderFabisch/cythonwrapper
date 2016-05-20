@@ -108,7 +108,7 @@ def test_function_decl():
         decl.strip(),
         lines(
             "cdef extern from \"test.hpp\" namespace \"\":",
-            "    void myFun()"
+            "    void myFun() except +"
         )
     )
 
@@ -167,7 +167,7 @@ def test_method_decl():
         lines(
             "cdef extern from \"test.hpp\" namespace \"\":",
             "    cdef cppclass MyClass:",
-            "        void myMethod(double myParam)"
+            "        void myMethod(double myParam) except +"
         )
     )
 

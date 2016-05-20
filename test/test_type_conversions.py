@@ -106,3 +106,24 @@ def test_missing_assignment():
     with cython_extension_from("missingassignmentop.hpp", hide_errors=True):
         assert_raises(ImportError, __import__, "missingassignmentop")
 
+
+def test_exceptions():
+    # A list of convertible exceptions can be found in the Cython docs:
+    # http://docs.cython.org/src/userguide/wrapping_CPlusPlus.html#exceptions
+    with cython_extension_from("throwexception.hpp"):
+        from throwexception import (throw_bad_alloc, throw_bad_cast,
+                                    throw_domain_error, throw_invalid_argument,
+                                    throw_ios_base_failure,
+                                    throw_out_of_range, throw_overflow_error,
+                                    throw_range_error, throw_underflow_error,
+                                    throw_other)
+        assert_raises(MemoryError, throw_bad_alloc)
+        assert_raises(TypeError, throw_bad_cast)
+        assert_raises(ValueError, throw_domain_error)
+        assert_raises(ValueError, throw_invalid_argument)
+        assert_raises(IOError, throw_ios_base_failure)
+        assert_raises(IndexError, throw_out_of_range)
+        assert_raises(OverflowError, throw_overflow_error)
+        assert_raises(ArithmeticError, throw_range_error)
+        assert_raises(ArithmeticError, throw_underflow_error)
+        assert_raises(RuntimeError, throw_other)
