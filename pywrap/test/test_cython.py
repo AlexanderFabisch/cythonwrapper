@@ -1,6 +1,7 @@
 import os
 from pywrap.cython import make_cython_wrapper, TypeInfo, load_config
-from nose.tools import assert_raises_regexp, assert_false, assert_equal
+from nose.tools import (assert_raises_regexp, assert_false, assert_equal,
+                        assert_is_not_none)
 
 
 def test_missing_file():
@@ -12,6 +13,27 @@ def test_missing_file():
 def test_missing_modulename():
     assert_raises_regexp(ValueError, "give a module name", make_cython_wrapper,
                          ["test1.hpp", "test2.hpp"], [], None)
+
+
+def test_load_config():
+    configfile = "customconfigasd.py"
+    with open(configfile, "w") as f:
+        f.write("""
+from pywrap.defaultconfig import Config
+
+config = Config()
+config.add_decleration("asd")
+""")
+    try:
+        config = load_config(configfile)
+        assert_equal(config.additional_declerations[0], "asd")
+    finally:
+        os.remove(configfile)
+
+
+def test_load_default_config():
+    config = load_config(None)
+    assert_is_not_none(config)
 
 
 def test_missing_config():
