@@ -1,5 +1,5 @@
 import os
-from pywrap.cython import make_cython_wrapper, TypeInfo
+from pywrap.cython import make_cython_wrapper, TypeInfo, load_config
 from nose.tools import assert_raises_regexp, assert_false, assert_equal
 
 
@@ -15,8 +15,8 @@ def test_missing_modulename():
 
 
 def test_missing_config():
-    assert_raises_regexp(ValueError, "Configuration file", make_cython_wrapper,
-                         "test.hpp", [], custom_config="doesnotexist.py")
+    assert_raises_regexp(ValueError, "Configuration file", load_config,
+                         "doesnotexist.py")
 
 
 def test_no_header():

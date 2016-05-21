@@ -4,6 +4,7 @@ import warnings
 from contextlib import contextmanager
 import numpy as np
 from pywrap import cython
+from pywrap.defaultconfig import Config
 
 PREFIX = os.sep.join(__file__.split(os.sep)[:-2]) + os.sep + "test"
 SETUPPY_NAME = "setup_test.py"
@@ -22,15 +23,12 @@ def full_paths(filenames):
 
 
 @contextmanager
-def cython_extension_from(headers, modulename=None, custom_config=None,
+def cython_extension_from(headers, modulename=None, config=Config(),
                           assert_warn=None, warn_msg=None, incdirs=[],
                           hide_errors=False, cleanup=True):
-    if custom_config is not None:
-        custom_config = full_paths(custom_config)[0]
     incdirs = full_paths(incdirs)
     filenames = _write_cython_wrapper(full_paths(headers), modulename,
-                                      custom_config, incdirs, assert_warn,
-                                      warn_msg)
+                                      config, incdirs, assert_warn, warn_msg)
     _run_setup(hide_errors)
     try:
         yield
@@ -69,23 +67,23 @@ def hidden_stderr():
         os.dup2(oldstderr_fno, 2)
 
 
-def _write_cython_wrapper(filenames, modulename, custom_config, incdirs,
-                          assert_warn, warn_msg, verbose=0):
+def _write_cython_wrapper(filenames, modulename, config, incdirs, assert_warn,
+                          warn_msg, verbose=0):
     kwargs = {
+        "filenames": filenames,
         "sources": [],
         "modulename": modulename,
-        "custom_config": custom_config,
+        "config": config,
         "target": ".",
         "incdirs": incdirs,
         "verbose": verbose,
         "compiler_flags": ["-O0"]
     }
     if assert_warn is None:
-        results = cython.make_cython_wrapper(filenames, **kwargs)
+        results = cython.make_cython_wrapper(**kwargs)
     else:
         results = assert_warns_message(
-            assert_warn, warn_msg, cython.make_cython_wrapper,
-            filenames, **kwargs)
+            assert_warn, warn_msg, cython.make_cython_wrapper, **kwargs)
     results[SETUPPY_NAME] = results["setup.py"]
     del results["setup.py"]
     cython.write_files(results)

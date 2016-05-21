@@ -1,24 +1,29 @@
 from pywrap.testing import cython_extension_from
 from nose.tools import assert_equal
+from pywrap.defaultconfig import Config
+from pywrap.testing import full_paths
 
 
 def test_blacklisted_class():
-    with cython_extension_from(
-            "ignoreclass.hpp", custom_config="ignoreconfig.py",
-            assert_warn=UserWarning, warn_msg="blacklist"):
+    config = Config()
+    config.ignore_class(full_paths("ignoreclass.hpp")[0], class_name="MyClassA")
+    with cython_extension_from("ignoreclass.hpp", config=config,
+                               assert_warn=UserWarning, warn_msg="blacklist"):
         pass
 
 
 def test_blacklisted_method():
-    with cython_extension_from(
-            "ignoremethod.hpp", custom_config="ignoreconfig.py",
-            assert_warn=UserWarning, warn_msg="blacklist"):
+    config = Config()
+    config.ignore_method(class_name="MyClassB", method_name="myMethod")
+    with cython_extension_from("ignoremethod.hpp", config=config,
+                               assert_warn=UserWarning, warn_msg="blacklist"):
         pass
 
 
 def test_abstract_class():
-    with cython_extension_from("abstractclass.hpp",
-                               custom_config="abstractclassconfig.py",
+    config = Config()
+    config.abstract_class("AbstractClass")
+    with cython_extension_from("abstractclass.hpp", config=config,
                                assert_warn=UserWarning, warn_msg="abstract"):
         from abstractclass import AbstractClass, DerivedClass
         d = DerivedClass(5.0)

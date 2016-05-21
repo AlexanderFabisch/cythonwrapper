@@ -8,6 +8,32 @@ from .exporter import CythonDeclarationExporter, CythonImplementationExporter
 from .utils import make_header
 
 
+def load_config(custom_config):
+    """Load configuration.
+
+    Parameters
+    ----------
+    custom_config : str
+        Name of the configuration file, must have the file ending ".py"
+    """
+    if custom_config is None:
+        return Config()
+
+    if not os.path.exists(custom_config):
+        raise ValueError("Configuration file '%s' does not exist."
+                         % custom_config)
+
+    parts = custom_config.split(os.sep)
+    path = os.sep.join(parts[:-1])
+    filename = parts[-1]
+    module = _derive_module_name_from(filename)
+
+    sys.path.insert(0, path)
+    m = __import__(module)
+    sys.path.pop(0)
+    return m.config
+
+
 def write_files(files, target="."):
     """Write files.
 
@@ -26,7 +52,7 @@ def write_files(files, target="."):
 
 
 def make_cython_wrapper(filenames, sources, modulename=None, target=".",
-                        custom_config=None, incdirs=[], compiler_flags=["-O3"],
+                        config=Config(), incdirs=[], compiler_flags=["-O3"],
                         verbose=0):
     """Make Cython wrapper for C++ files.
 
@@ -43,6 +69,9 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
 
     target : string, optional (default: ".")
         Target directory
+
+    config : Config, optional (default: defaultconfig.Config())
+        Configuration
 
     incdirs : list, optional (default: [])
         Include directories
@@ -70,8 +99,6 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
     for incdir in incdirs:
         if not os.path.exists(incdir):
             raise ValueError("Include directory '%s' does not exist." % incdir)
-
-    config = _load_config(custom_config)
 
     for filename in filenames:
         if file_ending(filename) not in config.cpp_header_endings:
@@ -101,25 +128,6 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
 def _derive_module_name_from(filename):
     filename = filename.split(os.sep)[-1]
     return filename.split(".")[0]
-
-
-def _load_config(custom_config):
-    if custom_config is None:
-        return Config()
-
-    if not os.path.exists(custom_config):
-        raise ValueError("Configuration file '%s' does not exist."
-                         % custom_config)
-
-    parts = custom_config.split(os.sep)
-    path = os.sep.join(parts[:-1])
-    filename = parts[-1]
-    module = _derive_module_name_from(filename)
-
-    sys.path.insert(0, path)
-    m = __import__(module)
-    sys.path.pop(0)
-    return m.config
 
 
 class TypeInfo:
