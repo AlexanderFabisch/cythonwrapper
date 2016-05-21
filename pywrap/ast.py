@@ -310,12 +310,16 @@ class Param:
     def __init__(self, name, tipe):
         self.name = name
         self.tipe = tipe
+        self.default_value = None
 
     def accept(self, exporter):
         exporter.visit_param(self)
 
     def __str__(self):
-        return "Parameter (%s) %s" % (self.tipe, self.name)
+        result = "Parameter (%s) %s" % (self.tipe, self.name)
+        if self.default_value is not None:
+            result += " = " + str(self.default_value)
+        return result
 
 
 class Field:

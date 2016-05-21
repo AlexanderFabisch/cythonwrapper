@@ -25,10 +25,24 @@ IGNORED_NODES = [
     cindex.CursorKind.VAR_DECL,
     cindex.CursorKind.UNEXPOSED_DECL,
 ]
-TEMPORARILY_IGNORED_NODES = [
-    cindex.CursorKind.INTEGER_LITERAL,  # use this one for default values
-]
-IGNORED_NODES.extend(TEMPORARILY_IGNORED_NODES)
+
+LITERAL_NODES = {
+    cindex.CursorKind.INTEGER_LITERAL:
+        {
+            "conversion": int,
+            "typenames": ["short", "int", "long"]
+        },
+    cindex.CursorKind.FLOATING_LITERAL:
+        {
+            "conversion": float,
+            "typenames": ["float", "double"]
+        },
+    cindex.CursorKind.CXX_BOOL_LITERAL_EXPR:
+        {
+            "conversion": lambda literal: literal == "true",
+            "typenames": ["bool"]
+        }
+}
 
 
 class Parser(object):
@@ -95,6 +109,7 @@ class Parser(object):
         self.unnamed_struct = None
         self.last_function = None
         self.last_template = None
+        self.last_param = None
         self.namespace = ""
 
     def convert_ast(self, node, depth):
@@ -114,6 +129,7 @@ class Parser(object):
 
         parse_children = True
         class_added = False
+        param_added = False
         try:
             if node.location.file is None:
                 pass
@@ -127,6 +143,7 @@ class Parser(object):
             elif node.kind == cindex.CursorKind.PARM_DECL:
                 parse_children = self.add_param(
                     node.displayname, node.type.spelling)
+                param_added = True
             elif node.kind == cindex.CursorKind.FUNCTION_DECL:
                 parse_children = self.add_function(
                     node.spelling, node.result_type.spelling,
@@ -187,6 +204,18 @@ class Parser(object):
                 self.last_enum.constants.append(node.displayname)
             elif node.kind == cindex.CursorKind.COMPOUND_STMT:
                 parse_children = False
+            elif node.kind in LITERAL_NODES:
+                literal_info = LITERAL_NODES[node.kind]
+                if (self.last_param is not None and
+                            self.last_param.tipe in literal_info["typenames"]):
+                    tokens = list(node.get_tokens())
+                    assert len(tokens) >= 1
+                    value = literal_info["conversion"](tokens[0].spelling)
+                    self.last_param.default_value = value
+            elif node.kind == cindex.CursorKind.STRING_LITERAL:
+                if (self.last_param is not None and
+                            self.last_param.tipe == "string"):
+                    self.last_param.default_value = node.displayname
             elif node.kind in IGNORED_NODES:
                 if self.verbose >= 3:
                     print("  " * depth + "Ignored node: %s, %s"
@@ -203,6 +232,8 @@ class Parser(object):
                 self.convert_ast(child, depth + 1)
         if class_added:
             self.last_type = None
+        if param_added:
+            self.last_param = None
 
         self.namespace = namespace
 
@@ -298,6 +329,7 @@ class Parser(object):
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
         param = Param(name, tname)
+        self.last_param = param
         if self.last_function is not None:
             self.last_function.arguments.append(param)
         else:
