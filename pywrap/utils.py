@@ -1,4 +1,6 @@
 import os
+import sys
+from contextlib import contextmanager
 from functools import partial
 
 
@@ -39,3 +41,39 @@ def make_header(header):
 
 def file_ending(filename):
     return filename.split(".")[-1]
+
+
+@contextmanager
+def hidden_stdout():
+    sys.stdout.flush()
+    oldstdout_fno = os.dup(1)
+    devnull = os.open(os.devnull, os.O_WRONLY)
+    newstdout = os.dup(1)
+    os.dup2(devnull, 1)
+    os.close(devnull)
+    sys.stdout = os.fdopen(newstdout, 'w')
+    try:
+        yield
+    finally:
+        os.dup2(oldstdout_fno, 1)
+
+
+@contextmanager
+def hidden_stderr():
+    sys.stderr.flush()
+    oldstderr_fno = os.dup(2)
+    devnull = os.open(os.devnull, os.O_WRONLY)
+    newstderr = os.dup(2)
+    os.dup2(devnull, 2)
+    os.close(devnull)
+    sys.stderr = os.fdopen(newstderr, 'w')
+    try:
+        yield
+    finally:
+        os.dup2(oldstderr_fno, 2)
+
+
+def remove_files(filenames):
+    for f in filenames:
+        if os.path.exists(f):
+            os.remove(f)

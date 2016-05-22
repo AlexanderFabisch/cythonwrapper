@@ -1,11 +1,11 @@
 import os
 import sys
 import warnings
-from contextlib import contextmanager
 import numpy as np
-from .utils import file_ending
-from .cython import make_cython_wrapper, write_files
+from contextlib import contextmanager
+from .cython import make_cython_wrapper, write_files, run_setup
 from .defaultconfig import Config
+from .utils import file_ending, remove_files
 
 PREFIX = os.sep.join(__file__.split(os.sep)[:-2]) + os.sep + "test"
 SETUPPY_NAME = "setup_test.py"
@@ -30,42 +30,12 @@ def cython_extension_from(headers, modulename=None, config=Config(),
     incdirs = full_paths(incdirs)
     filenames = _write_cython_wrapper(full_paths(headers), modulename,
                                       config, incdirs, assert_warn, warn_msg)
-    _run_setup(hide_errors)
+    run_setup(SETUPPY_NAME, hide_errors)
     try:
         yield
     finally:
         if cleanup:
-            _remove_files(filenames)
-
-
-@contextmanager
-def hidden_stdout():
-    sys.stdout.flush()
-    oldstdout_fno = os.dup(1)
-    devnull = os.open(os.devnull, os.O_WRONLY)
-    newstdout = os.dup(1)
-    os.dup2(devnull, 1)
-    os.close(devnull)
-    sys.stdout = os.fdopen(newstdout, 'w')
-    try:
-        yield
-    finally:
-        os.dup2(oldstdout_fno, 1)
-
-
-@contextmanager
-def hidden_stderr():
-    sys.stderr.flush()
-    oldstderr_fno = os.dup(2)
-    devnull = os.open(os.devnull, os.O_WRONLY)
-    newstderr = os.dup(2)
-    os.dup2(devnull, 2)
-    os.close(devnull)
-    sys.stderr = os.fdopen(newstderr, 'w')
-    try:
-        yield
-    finally:
-        os.dup2(oldstderr_fno, 2)
+            remove_files(filenames)
 
 
 def _write_cython_wrapper(filenames, modulename, config, incdirs, assert_warn,
@@ -102,22 +72,6 @@ def _write_cython_wrapper(filenames, modulename, config, incdirs, assert_warn,
     filenames.extend(temporary_files)
 
     return filenames
-
-
-def _run_setup(hide_errors):
-    cmd = "python %s build_ext -i" % SETUPPY_NAME
-    with hidden_stdout():
-        if hide_errors:
-            with hidden_stderr():
-                os.system(cmd)
-        else:
-            os.system(cmd)
-
-
-def _remove_files(filenames):
-    for f in filenames:
-        if os.path.exists(f):
-            os.remove(f)
 
 
 # from scikit-klearn

@@ -1,12 +1,11 @@
 import os
 import sys
-
 from .ast import TypeInfo, Includes
 from .defaultconfig import Config
 from .exporter import CythonDeclarationExporter, CythonImplementationExporter
 from .parser import Parser
 from .templates import render
-from .utils import make_header, file_ending
+from .utils import make_header, file_ending, hidden_stdout, hidden_stderr
 
 
 def load_config(custom_config):
@@ -166,3 +165,13 @@ def _make_setup(sources, modulename, target, incdirs, compiler_flags):
     return "setup.py", render("setup", filenames=source_relpaths,
                               module=modulename, sourcedir=sourcedir,
                               incdirs=incdirs, compiler_flags=compiler_flags)
+
+
+def run_setup(setuppy_name="setup.py", hide_errors=False):
+    cmd = "python %s build_ext -i" % setuppy_name
+    with hidden_stdout():
+        if hide_errors:
+            with hidden_stderr():
+                os.system(cmd)
+        else:
+            os.system(cmd)
