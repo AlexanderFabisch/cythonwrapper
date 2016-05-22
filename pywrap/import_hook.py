@@ -13,13 +13,14 @@ class CppFinder(object):
     def find_module(self, fullname, path):
         header_ending = None
         for ending in self.config.cpp_header_endings:
-            if os.path.exists(fullname + "." + ending):
+            if os.path.exists(self.import_path + os.sep + fullname + "." +
+                              ending):
                 header_ending = ending
                 break
         if header_ending is None:
             return None
 
-        header = fullname + "." + header_ending
+        header = self.import_path + os.sep + fullname + "." + header_ending
         lib = fullname + ".so"
         if not os.path.exists(lib):
             files = make_cython_wrapper(header, [], config=self.config)
