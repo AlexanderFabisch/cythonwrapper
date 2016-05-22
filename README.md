@@ -54,6 +54,8 @@ Install the package with:
 
 ## Usage
 
+### Command Line Tool
+
 We can generate a Python extension that wraps a library defined in C++ header
 with:
 
@@ -73,6 +75,8 @@ from <name> import *
 If we must link against a library or we have to compile C++ source files, we
 will have to add that to the `setup.py` that has been generated.
 
+### Python Library
+
 Note that you can use this as a Pyhon library that you can use in your
 `setup.py` as well. For now, take a look at the code to understand how
 you can do that. You can take a look at the
@@ -80,6 +84,22 @@ you can do that. You can take a look at the
 or at the
 [test code](https://github.com/AlexanderFabisch/cythonwrapper/blob/master/pywrap/testing.py)
 which should give you a good impression of how to use the library.
+
+### Import Hook
+
+A third option to generate a Python wrapper is to use the import hook:
+
+```python
+import pywrap.import_hook
+import myheader
+a = A()
+b = 3.213
+c = a.plus2(b)
+```
+
+The first import statement will add a module finder that searches for a
+C++ header file that corresponds to the name of modules in import statements,
+e.g., `myheader.hpp`, and compiles them before they are actually imported.
 
 ## Documentation
 
