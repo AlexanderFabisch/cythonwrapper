@@ -133,18 +133,8 @@ def _derive_module_name_from(filename):
 def _parse_files(filenames, includes, incdirs, verbose):
     asts = []
     for filename in filenames:
-        # Clang does not really parse headers
-        parsable_file = filename + ".cc"
-        with open(parsable_file, "w") as outfile:
-            with open(filename, "r") as infile:
-                outfile.write(infile.read())
-
-        try:
-            asts.append(Parser(filename, parsable_file, includes, incdirs,
-                               verbose).parse())
-        finally:
-            os.remove(parsable_file)
-
+        parser = Parser(filename, includes, incdirs, verbose)
+        asts.append(parser.parse())
     return asts
 
 

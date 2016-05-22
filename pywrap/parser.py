@@ -1,6 +1,7 @@
 from clang import cindex
 cindex.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
 import warnings
+import os
 from .type_conversion import cythontype_from_cpptype
 from .ast import (AST, Enum, Typedef, Clazz, Function, TemplateClass,
                   TemplateFunction, Constructor, Method, TemplateMethod,
@@ -68,13 +69,9 @@ class Parser(object):
     verbose : int, optional (default: 0)
         Verbosity level
     """
-    def __init__(self, include_file, parsable_file=None, includes=Includes(),
-                 incdirs=[], verbose=0):
+    def __init__(self, include_file, includes=Includes(), incdirs=[],
+                 verbose=0):
         self.include_file = include_file
-        if parsable_file is None:
-            self.parsable_file = include_file
-        else:
-            self.parsable_file = parsable_file
         self.includes = includes
         self.incdirs = incdirs
         self.verbose = verbose
@@ -88,19 +85,32 @@ class Parser(object):
             Abstract syntax tree that can be used to generate the Cython
             wrapper code
         """
-        index = cindex.Index.create()
-        incdirs = ["-I" + incdir for incdir in self.incdirs]
-        translation_unit = index.parse(self.parsable_file, incdirs)
-        cursor = translation_unit.cursor
+        self._make_parsable_file()
 
-        self.init_ast()
-        if self.verbose >= 1:
-            print(make_header("Parsing"))
-        self.convert_ast(cursor, 0)
-        if self.verbose >= 2:
-            print(make_header("AST"))
-            print(self.ast)
+        try:
+            index = cindex.Index.create()
+            incdirs = ["-I" + incdir for incdir in self.incdirs]
+            translation_unit = index.parse(self.parsable_file, incdirs)
+            cursor = translation_unit.cursor
+
+            self.init_ast()
+            if self.verbose >= 1:
+                print(make_header("Parsing"))
+            self.convert_ast(cursor, 0)
+            if self.verbose >= 2:
+                print(make_header("AST"))
+                print(self.ast)
+        finally:
+            os.remove(self.parsable_file)
+
         return self.ast
+
+    def _make_parsable_file(self):
+        # Clang does not really parse headers
+        self.parsable_file = self.include_file + ".cc"
+        with open(self.parsable_file, "w") as outfile:
+            with open(self.include_file, "r") as infile:
+                outfile.write(infile.read())
 
     def init_ast(self):
         self.ast = AST()
