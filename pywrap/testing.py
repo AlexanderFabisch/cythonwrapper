@@ -3,8 +3,9 @@ import sys
 import warnings
 from contextlib import contextmanager
 import numpy as np
-from pywrap import cython
-from pywrap.defaultconfig import Config
+from .utils import file_ending
+from .cython import make_cython_wrapper, write_files
+from .defaultconfig import Config
 
 PREFIX = os.sep.join(__file__.split(os.sep)[:-2]) + os.sep + "test"
 SETUPPY_NAME = "setup_test.py"
@@ -80,13 +81,13 @@ def _write_cython_wrapper(filenames, modulename, config, incdirs, assert_warn,
         "compiler_flags": ["-O0"]
     }
     if assert_warn is None:
-        results = cython.make_cython_wrapper(**kwargs)
+        results = make_cython_wrapper(**kwargs)
     else:
         results = assert_warns_message(
-            assert_warn, warn_msg, cython.make_cython_wrapper, **kwargs)
+            assert_warn, warn_msg, make_cython_wrapper, **kwargs)
     results[SETUPPY_NAME] = results["setup.py"]
     del results["setup.py"]
-    cython.write_files(results)
+    write_files(results)
 
     filenames = []
     filenames.extend(results.keys())
@@ -95,9 +96,9 @@ def _write_cython_wrapper(filenames, modulename, config, incdirs, assert_warn,
     for filename in filenames:
         if filename.endswith(".pyx"):
             temporary_files.append(filename.replace(
-                cython.file_ending(filename), "cpp"))
+                file_ending(filename), "cpp"))
             temporary_files.append(filename.replace(
-                cython.file_ending(filename), "so"))
+                file_ending(filename), "so"))
     filenames.extend(temporary_files)
 
     return filenames

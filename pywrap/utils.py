@@ -35,3 +35,7 @@ def make_header(header):
     return lines("+" + "=" * 78 + "+",
                  ("| " + header).ljust(79) + "|",
                  "+" + "=" * 78 + "+")
+
+
+def file_ending(filename):
+    return filename.split(".")[-1]

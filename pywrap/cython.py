@@ -1,11 +1,12 @@
 import os
 import sys
+
 from .ast import TypeInfo, Includes
 from .defaultconfig import Config
 from .exporter import CythonDeclarationExporter, CythonImplementationExporter
 from .parser import Parser
 from .templates import render
-from .utils import make_header
+from .utils import make_header, file_ending
 
 
 def load_config(custom_config):
@@ -136,10 +137,6 @@ def _parse_files(filenames, includes, incdirs, verbose):
         parser = Parser(filename, includes, incdirs, verbose)
         asts.append(parser.parse())
     return asts
-
-
-def file_ending(filename):
-    return filename.split(".")[-1]
 
 
 def _make_extension(modulename, asts, includes, type_info, config):
