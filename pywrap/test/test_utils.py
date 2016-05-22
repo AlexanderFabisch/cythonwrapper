@@ -1,4 +1,5 @@
-from pywrap.utils import lines, indent_block, from_camel_case, make_header
+from pywrap.utils import (lines, indent_block, from_camel_case, make_header,
+                          file_ending)
 from nose.tools import assert_equal, assert_multi_line_equal
 
 
@@ -22,3 +23,8 @@ def test_make_header():
             "+" + "=" * 78 + "+"
         )
     )
+
+
+def test_file_ending():
+    assert_equal(file_ending("test.py"), "py")
+    assert_equal(file_ending("/path.with/more.dots/test.pxd"), "pxd")
