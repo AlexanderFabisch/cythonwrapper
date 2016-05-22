@@ -1,10 +1,10 @@
 import os
 import sys
-from .templates import render
+from .ast import TypeInfo, Includes
 from .defaultconfig import Config
-from .parser import Parser
-from .ast import Includes
 from .exporter import CythonDeclarationExporter, CythonImplementationExporter
+from .parser import Parser
+from .templates import render
 from .utils import make_header
 
 
@@ -128,49 +128,6 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
 def _derive_module_name_from(filename):
     filename = filename.split(os.sep)[-1]
     return filename.split(".")[0]
-
-
-class TypeInfo:
-    def __init__(self, asts=[], config=Config(), typedefs={}):
-        self.classes = self._collect_classes(asts, config)
-        self.typedefs = {typedef.tipe: typedef.underlying_type for ast in asts
-                         for typedef in ast.typedefs}
-        self.typedefs.update(typedefs)
-        self.enums = [enum.tipe for ast in asts for enum in ast.enums]
-        self.spec = {}
-
-    def _collect_classes(self, asts, config):
-        specializations = config.registered_template_specializations
-        classes = []
-        for ast in asts:
-            for clazz in ast.classes:
-                template = False
-                for key in specializations:
-                    if clazz.name == key:
-                        template = True
-                        for name, _ in specializations[key]:
-                            classes.append(name)
-                        break
-                if not template:
-                    classes.append(clazz.name)
-        return classes
-
-    def attach_specialization(self, spec):
-        self.spec = spec
-
-    def remove_specialization(self):
-        self.spec = {}
-
-    def underlying_type(self, tname):
-        while tname in self.typedefs or tname in self.spec:
-            if tname in self.typedefs:
-                tname = self.typedefs[tname]
-            else:
-                tname = self.spec[tname]
-        return tname
-
-    def get_specialization(self, tname):
-        return self.spec.get(tname, tname)
 
 
 def _parse_files(filenames, includes, incdirs, verbose):

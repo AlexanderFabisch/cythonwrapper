@@ -1,4 +1,5 @@
 import os
+from .defaultconfig import Config
 from .utils import indent_block
 
 
@@ -334,3 +335,46 @@ class Field:
 
     def __str__(self):
         return "Field (%s) %s" % (self.tipe, self.name)
+
+
+class TypeInfo:
+    def __init__(self, asts=[], config=Config(), typedefs={}):
+        self.classes = self._collect_classes(asts, config)
+        self.typedefs = {typedef.tipe: typedef.underlying_type for ast in asts
+                         for typedef in ast.typedefs}
+        self.typedefs.update(typedefs)
+        self.enums = [enum.tipe for ast in asts for enum in ast.enums]
+        self.spec = {}
+
+    def _collect_classes(self, asts, config):
+        specializations = config.registered_template_specializations
+        classes = []
+        for ast in asts:
+            for clazz in ast.classes:
+                template = False
+                for key in specializations:
+                    if clazz.name == key:
+                        template = True
+                        for name, _ in specializations[key]:
+                            classes.append(name)
+                        break
+                if not template:
+                    classes.append(clazz.name)
+        return classes
+
+    def attach_specialization(self, spec):
+        self.spec = spec
+
+    def remove_specialization(self):
+        self.spec = {}
+
+    def underlying_type(self, tname):
+        while tname in self.typedefs or tname in self.spec:
+            if tname in self.typedefs:
+                tname = self.typedefs[tname]
+            else:
+                tname = self.spec[tname]
+        return tname
+
+    def get_specialization(self, tname):
+        return self.spec.get(tname, tname)

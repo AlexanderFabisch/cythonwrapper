@@ -1,12 +1,12 @@
 import warnings
 from functools import partial
-
 from .template_specialization import (ClassSpecializer, FunctionSpecializer,
                                       MethodSpecializer)
 from . import templates
-from .ast import Constructor
+from .ast import TypeInfo, Includes, Constructor
 from .templates import render
 from .type_conversion import create_type_converter
+from .defaultconfig import Config
 from .utils import indent_block, from_camel_case
 
 
@@ -15,7 +15,7 @@ class CythonDeclarationExporter:
 
     This class implements the visitor pattern.
     """
-    def __init__(self, includes, config):
+    def __init__(self, includes=Includes(), config=Config()):
         self.includes = includes
         self.config = config
         self.typedefs = []
@@ -154,7 +154,8 @@ class CythonImplementationExporter:
 
     This class implements the visitor pattern.
     """
-    def __init__(self, includes, type_info, config):
+    def __init__(self, includes=Includes(), type_info=TypeInfo(),
+                 config=Config()):
         self.includes = includes
         self.type_info = type_info
         self.config = config
