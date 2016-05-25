@@ -15,7 +15,9 @@ from .utils import indent_block, from_camel_case
 class AstExporter(object):
     """Base class of AST exporters.
 
-    An AST exporter converts elements of an AST to a single string.
+    An AST exporter converts elements of an AST to a single string. This
+    is an implementation of the visitor pattern to avoid duplication in the
+    code that walks through the AST.
     """
     __metaclass__ = ABCMeta
     def __init__(self):
@@ -166,9 +168,15 @@ class AstExporter(object):
 
 
 class CythonDeclarationExporter(AstExporter):
-    """Export AST to Cython declaration file (.pxd).
+    """Export to Cython declaration file (.pxd).
 
-    This class implements the visitor pattern.
+    Parameters
+    ----------
+    includes : Includes, optional
+        Collects information about required import statements from the exporter
+
+    config : Config, optional
+        Configuration that controls e.g. template specializations
     """
     def __init__(self, includes=Includes(), config=Config()):
         super(CythonDeclarationExporter, self).__init__()
@@ -288,9 +296,18 @@ def replace_operator_decl(method_name, config):
 
 
 class CythonImplementationExporter(AstExporter):
-    """Export AST to Cython implementation file (.pyx).
+    """Export to Cython implementation file (.pyx).
 
-    This class implements the visitor pattern.
+    Parameters
+    ----------
+    includes : Includes, optional
+        Collects information about required import statements from the exporter
+
+    type_info : TypeInfo, optional
+        Contains names of custom C++ types that have been defined in the code
+
+    config : Config, optional
+        Configuration that controls e.g. template specializations
     """
     def __init__(self, includes=Includes(), type_info=TypeInfo(),
                  config=Config()):
