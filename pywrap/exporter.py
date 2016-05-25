@@ -1,32 +1,179 @@
 import warnings
 from functools import partial
-from .template_specialization import (ClassSpecializer, FunctionSpecializer,
-                                      MethodSpecializer)
+from abc import ABCMeta, abstractmethod
+
 from . import templates
 from .ast import TypeInfo, Includes, Constructor
+from .defaultconfig import Config
+from .template_specialization import (ClassSpecializer, FunctionSpecializer,
+                                      MethodSpecializer)
 from .templates import render
 from .type_conversion import create_type_converter
-from .defaultconfig import Config
 from .utils import indent_block, from_camel_case
 
 
-class CythonDeclarationExporter:
+class AstExporter(object):
+    """Base class of AST exporters.
+
+    An AST exporter converts elements of an AST to a single string.
+    """
+    __metaclass__ = ABCMeta
+    def __init__(self):
+        self.typedefs = []
+        self.enums = []
+        self.functions = []
+        self.classes = []
+        self.arguments = []
+        self._clear_class()
+
+        self.output = None
+
+    def _clear_class(self):
+        """Set collected class members to empty list."""
+        self.fields = []
+        self.ctors = []
+        self.methods = []
+
+    def export(self):
+        """Export generated string.
+
+        Returns
+        -------
+        output : str
+            Generated output
+        """
+        return self.output
+
+    @abstractmethod
+    def visit_ast(self, ast):
+        """Visit AST.
+
+        Parameters
+        ----------
+        ast : AST
+            Abstract syntax tree
+        """
+
+    @abstractmethod
+    def visit_enum(self, enum):
+        """Visit enum.
+
+        Parameters
+        ----------
+        enum : Enum
+            Enumeration
+        """
+
+    @abstractmethod
+    def visit_typedef(self, typedef):
+        """Visit typedef.
+
+        Parameters
+        ----------
+        typedef : Typedef
+            Type definition
+        """
+
+    @abstractmethod
+    def visit_class(self, clazz):
+        """Visit class.
+
+        Parameters
+        ----------
+        clazz : Clazz
+            Custom class
+        """
+
+    @abstractmethod
+    def visit_field(self, field):
+        """Visit field.
+
+        Parameters
+        ----------
+        field : Field
+            Field, data member of a class
+        """
+
+    @abstractmethod
+    def visit_constructor(self, ctor):
+        """Visit constructor.
+
+        Parameters
+        ----------
+        ctor : Constructor
+            Class constructor
+        """
+
+    @abstractmethod
+    def visit_template_class(self, template_class):
+        """Visit template class.
+
+        Parameters
+        ----------
+        template_class : TemplateClass
+            Template class
+        """
+
+    @abstractmethod
+    def visit_method(self, method):
+        """Visit method.
+
+        Parameters
+        ----------
+        method : Method
+            Visit class method
+        """
+
+    @abstractmethod
+    def visit_template_method(self, template_method):
+        """Visit template method.
+
+        Parameters
+        ----------
+        template_method : TemplateMethod
+            Template method that defines its own template type(s)
+        """
+
+    @abstractmethod
+    def visit_function(self, function):
+        """Visit function.
+
+        Parameters
+        ----------
+        function : Function
+            Function that does not belong to a class
+        """
+
+    @abstractmethod
+    def visit_template_function(self, template_function):
+        """Visit template function.
+
+        Parameters
+        ----------
+        template_function : TemplateFunction
+            Template function
+        """
+
+    @abstractmethod
+    def visit_param(self, param):
+        """Visit function parameter.
+
+        Parameters
+        ----------
+        param : Param
+            A parameter of a constructor, method, or function
+        """
+
+
+class CythonDeclarationExporter(AstExporter):
     """Export AST to Cython declaration file (.pxd).
 
     This class implements the visitor pattern.
     """
     def __init__(self, includes=Includes(), config=Config()):
+        super(CythonDeclarationExporter, self).__init__()
         self.includes = includes
         self.config = config
-        self.typedefs = []
-        self.enums = []
-        self.functions = []
-        self.classes = []
-        self.fields = []
-        self.ctors = []
-        self.methods = []
-        self.arguments = []
-        self.output = None
 
     def visit_ast(self, ast):
         self.output = render("declarations", typedefs=self.typedefs,
@@ -49,10 +196,7 @@ class CythonDeclarationExporter:
                                     len(self.ctors) == 0)
 
         self.classes.append(render("class_decl", **class_decl))
-
-        self.fields = []
-        self.ctors = []
-        self.methods = []
+        self._clear_class()
 
     def visit_field(self, field):
         if not field.ignored:
@@ -79,10 +223,7 @@ class CythonDeclarationExporter:
                                         len(self.ctors) == 0)
 
             self.classes.append(render("class_decl", **class_decl))
-
-        self.fields = []
-        self.ctors = []
-        self.methods = []
+        self._clear_class()
 
     def visit_method(self, method):
         if not method.ignored:
@@ -131,9 +272,6 @@ class CythonDeclarationExporter:
     def visit_param(self, param):
         self.arguments.append(templates.arg_decl % param.__dict__)
 
-    def export(self):
-        return self.output
-
     def _exception_suffix(self, result_type):
         """Workaround for bug in Cython when returning C arrays."""
         if result_type == "char *":
@@ -149,21 +287,17 @@ def replace_operator_decl(method_name, config):
         return method_name
 
 
-class CythonImplementationExporter:
+class CythonImplementationExporter(AstExporter):
     """Export AST to Cython implementation file (.pyx).
 
     This class implements the visitor pattern.
     """
     def __init__(self, includes=Includes(), type_info=TypeInfo(),
                  config=Config()):
+        super(CythonImplementationExporter, self).__init__()
         self.includes = includes
         self.type_info = type_info
         self.config = config
-        self.enums = []
-        self.functions = []
-        self.classes = []
-        self._clear_class()
-        self.output = None
 
     def visit_ast(self, ast):
         self.output = render("definitions", enums=self.enums,
@@ -212,11 +346,6 @@ class CythonImplementationExporter:
         self.classes.append(render("class", **class_def))
 
         self._clear_class()
-
-    def _clear_class(self):
-        self.fields = []
-        self.ctors = []
-        self.methods = []
 
     def visit_template_class(self, template_class):
         specializer = ClassSpecializer(self.config)
@@ -308,9 +437,6 @@ class CythonImplementationExporter:
 
     def visit_param(self, param):
         pass
-
-    def export(self):
-        return self.output
 
 
 class FunctionDefinition(object):
