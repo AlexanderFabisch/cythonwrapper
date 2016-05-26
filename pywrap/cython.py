@@ -34,23 +34,6 @@ def load_config(custom_config):
     return m.config
 
 
-def write_files(files, target="."):
-    """Write files.
-
-    Parameters
-    ----------
-    files : dict
-        Mapping from file name to content
-
-    target : string, optional (default: '.')
-        Target directory
-    """
-    for filename, content in files.items():
-        outputfile = os.path.join(target, filename)
-        with open(outputfile, "w") as f:
-            f.write(content)
-
-
 def make_cython_wrapper(filenames, sources, modulename=None, target=".",
                         config=Config(), incdirs=[], compiler_flags=["-O3"],
                         verbose=0):
@@ -165,6 +148,23 @@ def _make_setup(sources, modulename, target, incdirs, compiler_flags):
     return "setup.py", render("setup", filenames=source_relpaths,
                               module=modulename, sourcedir=sourcedir,
                               incdirs=incdirs, compiler_flags=compiler_flags)
+
+
+def write_files(files, target="."):
+    """Write files.
+
+    Parameters
+    ----------
+    files : dict
+        Mapping from file name to content
+
+    target : string, optional (default: '.')
+        Target directory
+    """
+    for filename, content in files.items():
+        outputfile = os.path.join(target, filename)
+        with open(outputfile, "w") as f:
+            f.write(content)
 
 
 def run_setup(setuppy_name="setup.py", hide_errors=False):
