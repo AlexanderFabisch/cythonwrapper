@@ -1,3 +1,5 @@
+import os
+import tempfile
 from pywrap.parser import Parser
 from pywrap.ast import Includes
 from nose.tools import (assert_true, assert_equal, assert_is_not_none,
@@ -112,3 +114,67 @@ def test_add_template_method():
     assert_equal(len(parser.ast.classes[0].methods[0].template_types[0]), 1)
     parser.add_field("b", "T")
     assert_equal(len(parser.ast.classes[0].fields), 1)
+
+
+def test_parse_file():
+    testcode = """
+typedef double myfloat;
+enum E
+{
+    E1, E2
+};
+
+class A
+{
+public:
+    int i;
+    myfloat d;
+    bool b;
+    A(int i=1, double d=1.0, bool b=false) {}
+    void method1(int i) {}
+    double method2(bool b) {}
+};
+
+struct B
+{
+    int i;
+};
+
+template<typename T1>
+class C
+{
+public:
+    C(T t) {}
+    template<typename T2>
+    void method(T2 t) {}
+};
+
+void function1() {}
+
+namespace N1
+{
+namespace N2
+{
+template<typename T>
+void function2() {}
+}
+}
+"""
+
+    _, filename = tempfile.mkstemp(".hpp")
+    with open(filename, "w") as f:
+        f.write(testcode)
+
+    try:
+        parser = Parser(filename)
+        ast = parser.parse()
+    finally:
+        if os.path.exists(filename):
+            os.remove(filename)
+        if os.path.exists(filename + ".cc"):
+            os.remove(filename + ".cc")
+
+    assert_equal(len(ast.classes), 3)
+    assert_equal(len(ast.functions), 2)
+    assert_equal(len(ast.enums), 1)
+    assert_equal(len(ast.typedefs), 1)
