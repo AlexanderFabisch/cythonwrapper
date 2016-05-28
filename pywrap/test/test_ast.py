@@ -107,3 +107,54 @@ def test_template_class_string():
             "    Template type 'T'"
         )
     )
+
+
+def test_walk_through_ast():
+    ast = AST()
+
+    c = Clazz("test.hpp", "", "MyClass")
+    ctor = Constructor("MyClass")
+    ctor.arguments.append(Param("a", "double"))
+    c.constructors.append(ctor)
+    method = Method("my_method", "int", "MyClass")
+    method.arguments.append(Param("b", "int"))
+    c.methods.append(method)
+    field = Field("my_field", "bool", "MyClass")
+    c.fields.append(field)
+    ast.classes.append(c)
+
+    function = Function("test.hpp", "", "fun", "void")
+    param = Param("a", "double")
+    function.arguments.append(param)
+    ast.functions.append(function)
+
+    typedef = Typedef("test.hpp", "", "myfloat", "double")
+    ast.typedefs.append(typedef)
+
+    enum = Enum("test.hpp", "", "MyEnum")
+    ast.enums.append(enum)
+
+    class CountingExporter:
+        def __getattr__(self, name):
+            parts = name.split("_")
+            if parts[0] != "visit":
+                raise AttributeError(name)
+            element = "_".join(parts[1:])
+            counter_name = element + "_count"
+            if not hasattr(self, counter_name):
+                setattr(self, counter_name, 0)
+            def count_element(_):
+                previous_value = getattr(self, counter_name)
+                setattr(self, counter_name, previous_value + 1)
+            return count_element
+
+    exporter = CountingExporter()
+    ast.accept(exporter)
+    assert_equal(exporter.ast_count, 1)
+    assert_equal(exporter.class_count, 1)
+    assert_equal(exporter.constructor_count, 1)
+    assert_equal(exporter.method_count, 1)
+    assert_equal(exporter.field_count, 1)
+    assert_equal(exporter.function_count, 1)
+    assert_equal(exporter.typedef_count, 1)
+    assert_equal(exporter.enum_count, 1)
