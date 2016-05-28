@@ -90,8 +90,8 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
             raise ValueError("File '%s' does not exist" % filename)
 
     includes = Includes()
-    asts = _parse_files(filenames, includes, incdirs, verbose)
-    type_info = TypeInfo(asts, config)
+    type_info = TypeInfo(config)
+    asts = _parse_files(filenames, includes, type_info, incdirs, verbose)
 
     results = dict(
         [_make_extension(modulename, asts, includes, type_info, config),
@@ -112,10 +112,10 @@ def _derive_module_name_from(filename):
     return filename.split(".")[0]
 
 
-def _parse_files(filenames, includes, incdirs, verbose):
+def _parse_files(filenames, includes, type_info, incdirs, verbose):
     asts = []
     for filename in filenames:
-        parser = Parser(filename, includes, incdirs, verbose)
+        parser = Parser(filename, includes, type_info, incdirs, verbose)
         asts.append(parser.parse())
     return asts
 

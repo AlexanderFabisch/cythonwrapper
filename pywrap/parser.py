@@ -72,31 +72,13 @@ class Includes:
 
 
 class TypeInfo:
-    def __init__(self, asts=[], config=Config(), typedefs={}):
-        self.classes = self._collect_classes(asts, config)
-        self.typedefs = {typedef.tipe: typedef.underlying_type for ast in asts
-                         for typedef in ast.nodes
-                         if hasattr(typedef, "underlying_type")}
+    def __init__(self, config=Config(), typedefs={}):
+        self.config = config
+        self.classes = []
+        self.typedefs = {}
         self.typedefs.update(typedefs)
-        self.enums = [enum.tipe for ast in asts
-                      for enum in ast.nodes if hasattr(enum, "tipe")]
+        self.enums = []
         self.spec = {}
-
-    def _collect_classes(self, asts, config):
-        specializations = config.registered_template_specializations
-        classes = []
-        for ast in asts:
-            for clazz in ast.nodes:
-                template = False
-                for key in specializations:
-                    if clazz.name == key:
-                        template = True
-                        for name, _ in specializations[key]:
-                            classes.append(name)
-                        break
-                if not template and isinstance(clazz, Clazz):
-                    classes.append(clazz.name)
-        return classes
 
     def attach_specialization(self, spec):
         self.spec = spec
@@ -169,16 +151,20 @@ class Parser(object):
         Will be filled with information about required import and cimport
         statements.
 
+    type_info : TypeInfo, optional
+        Collects information about custom types.
+
     incdirs : list, optional
         Include directories that will be required to parse the file with clang.
 
     verbose : int, optional (default: 0)
         Verbosity level
     """
-    def __init__(self, include_file, includes=Includes(), incdirs=[],
-                 verbose=0):
+    def __init__(self, include_file, includes=Includes(), type_info=TypeInfo(),
+                 incdirs=[], verbose=0):
         self.include_file = include_file
         self.includes = includes
+        self.type_info = type_info
         self.incdirs = incdirs
         self.verbose = verbose
 
@@ -313,9 +299,7 @@ class Parser(object):
                 parse_children = self.add_typedef(
                     node.underlying_typedef_type.spelling, tname)
             elif node.kind == cindex.CursorKind.ENUM_DECL:
-                enum = Enum(self.include_file, self.namespace, node.displayname)
-                self.last_enum = enum
-                self.ast.nodes.append(enum)
+                parse_children = self.add_enum(node.displayname)
             elif node.kind == cindex.CursorKind.ENUM_CONSTANT_DECL:
                 self.last_enum.constants.append(node.displayname)
             elif node.kind == cindex.CursorKind.COMPOUND_STMT:
@@ -360,6 +344,7 @@ class Parser(object):
                                   "unnamed struct")
             self.ast.unnamed_struct.name = tname
             self.ast.nodes.append(self.ast.unnamed_struct)
+            self.type_info.classes.append(tname)
             self.ast.unnamed_struct = None
             self.last_type = None
             return False
@@ -370,8 +355,10 @@ class Parser(object):
                 namespace = self.namespace
             else:
                 namespace = self.namespace + "::" + self.last_type.name
-            self.ast.nodes.append(Typedef(
-                self.include_file, namespace, tname, underlying_tname))
+            typedef = Typedef(self.include_file, namespace, tname,
+                              underlying_tname)
+            self.ast.nodes.append(typedef)
+            self.type_info.typedefs[tname] = underlying_tname
             return True
 
     def add_struct_decl(self, name):
@@ -381,6 +368,13 @@ class Parser(object):
             self.last_type = self.ast.unnamed_struct
         else:
             self.add_class(name)
+        return True
+
+    def add_enum(self, name):
+        enum = Enum(self.include_file, self.namespace, name)
+        self.type_info.enums.append(name)
+        self.last_enum = enum
+        self.ast.nodes.append(enum)
         return True
 
     def add_template_type(self, template_type):
@@ -409,6 +403,7 @@ class Parser(object):
         clazz = Clazz(self.include_file, self.namespace, name)
         self.ast.nodes.append(clazz)
         self.last_type = clazz
+        self.type_info.classes.append(name)
         return True
 
     def add_template_class(self, name):
@@ -416,6 +411,14 @@ class Parser(object):
         self.ast.nodes.append(clazz)
         self.last_type = clazz
         self.last_template = clazz
+
+        registered_specs = self.type_info.config.registered_template_specializations
+        for key in registered_specs:
+            if name == key:
+                for spec_name, _ in registered_specs[key]:
+                    self.type_info.classes.append(spec_name)
+                break
+
         return True
 
     def add_ctor(self):
