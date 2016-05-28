@@ -71,9 +71,9 @@ class FunctionSpecializer(Specializer):
             specialized = Function(general.filename, general.namespace, name,
                                    result_type)
 
-            for arg in general.arguments:
+            for arg in general.nodes:
                 tipe = self._replace_specification(arg.tipe, spec)
-                specialized.arguments.append(Param(arg.name, tipe))
+                specialized.nodes.append(Param(arg.name, tipe))
 
             specialized_functions.append(specialized)
         return specialized_functions
@@ -94,9 +94,9 @@ class MethodSpecializer(Specializer):
 
             specialized = Method(name, result_type, general.class_name)
 
-            for arg in general.arguments:
+            for arg in general.nodes:
                 tipe = self._replace_specification(arg.tipe, spec)
-                specialized.arguments.append(Param(arg.name, tipe))
+                specialized.nodes.append(Param(arg.name, tipe))
 
             specialized_methods.append(specialized)
         return specialized_methods

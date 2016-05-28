@@ -57,13 +57,13 @@ def test_add_class_with_field_ctor_and_method():
     parser.add_class("MyClass")
     assert_equal(len(parser.ast.nodes), 1)
     parser.add_ctor()
-    assert_equal(len(parser.ast.nodes[0].constructors), 1)
+    assert_equal(len(parser.ast.nodes[0].nodes), 1)
     parser.add_param("a", "int")
-    assert_equal(len(parser.ast.nodes[0].constructors[0].arguments), 1)
+    assert_equal(len(parser.ast.nodes[0].nodes[0].nodes), 1)
     parser.add_method("myMethod", "int")
-    assert_equal(len(parser.ast.nodes[0].methods), 1)
+    assert_equal(len(parser.ast.nodes[0].nodes), 2)
     parser.add_field("b", "bool")
-    assert_equal(len(parser.ast.nodes[0].fields), 1)
+    assert_equal(len(parser.ast.nodes[0].nodes), 3)
 
 
 def test_add_argument_without_method():
@@ -90,13 +90,13 @@ def test_add_template_class():
     parser.add_template_type("T")
     assert_equal(len(parser.ast.nodes[0].template_types), 1)
     parser.add_ctor()
-    assert_equal(len(parser.ast.nodes[0].constructors), 1)
+    assert_equal(len(parser.ast.nodes[0].nodes), 1)
     parser.add_param("a", "T")
-    assert_equal(len(parser.ast.nodes[0].constructors[0].arguments), 1)
+    assert_equal(len(parser.ast.nodes[0].nodes[0].nodes), 1)
     parser.add_method("myMethod", "int")
-    assert_equal(len(parser.ast.nodes[0].methods), 1)
+    assert_equal(len(parser.ast.nodes[0].nodes), 2)
     parser.add_field("b", "bool")
-    assert_equal(len(parser.ast.nodes[0].fields), 1)
+    assert_equal(len(parser.ast.nodes[0].nodes), 3)
 
 
 def test_add_template_method():
@@ -105,15 +105,15 @@ def test_add_template_method():
     parser.add_class("MyClass")
     assert_equal(len(parser.ast.nodes), 1)
     parser.add_ctor()
-    assert_equal(len(parser.ast.nodes[0].constructors), 1)
+    assert_equal(len(parser.ast.nodes[0].nodes), 1)
     parser.add_param("a", "int")
-    assert_equal(len(parser.ast.nodes[0].constructors[0].arguments), 1)
+    assert_equal(len(parser.ast.nodes[0].nodes[0].nodes), 1)
     parser.add_template_method("myMethod", "T")
-    assert_equal(len(parser.ast.nodes[0].methods), 1)
+    assert_equal(len(parser.ast.nodes[0].nodes), 2)
     parser.add_template_type("T")
-    assert_equal(len(parser.ast.nodes[0].methods[0].template_types[0]), 1)
+    assert_equal(len(parser.ast.nodes[0].nodes[1].template_types[0]), 1)
     parser.add_field("b", "T")
-    assert_equal(len(parser.ast.nodes[0].fields), 1)
+    assert_equal(len(parser.ast.nodes[0].nodes), 3)
 
 
 def test_parse_file():

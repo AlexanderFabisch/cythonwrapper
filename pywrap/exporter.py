@@ -402,7 +402,7 @@ class CythonImplementationExporter(AstExporter):
 
         try:
             constructor_def = ConstructorDefinition(
-                selftype, ctor.arguments, self.includes,
+                selftype, ctor.nodes, self.includes,
                 self.type_info, self.config, cpptype).make()
             return indent_block(constructor_def, 1)
         except NotImplementedError as e:
@@ -423,7 +423,7 @@ class CythonImplementationExporter(AstExporter):
         method, cppname = arg
         try:
             method_def = MethodDefinition(
-                selftype, method.name, method.arguments, self.includes,
+                selftype, method.name, method.nodes, self.includes,
                 method.result_type, self.type_info, self.config,
                 cppname=cppname).make()
             return indent_block(method_def, 1)
@@ -440,7 +440,7 @@ class CythonImplementationExporter(AstExporter):
     def visit_function(self, function, cppname=None):
         try:
             self.functions.append(FunctionDefinition(
-                function.name, function.arguments, self.includes,
+                function.name, function.nodes, self.includes,
                 function.result_type, self.type_info,
                 self.config, cppname=cppname).make())
         except NotImplementedError as e:

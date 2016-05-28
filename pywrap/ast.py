@@ -115,21 +115,12 @@ class Clazz(object):
         self.filename = filename
         self.namespace = namespace
         self.name = name
-        self.constructors = []
-        self.methods = []
-        self.fields = []
+        self.nodes = []
 
     def accept(self, exporter):
-        self._accept_class_members(exporter)
+        for node in self.nodes:
+            node.accept(exporter)
         exporter.visit_class(self)
-
-    def _accept_class_members(self, exporter):
-        for field in self.fields:
-            field.accept(exporter)
-        for ctor in self.constructors:
-            ctor.accept(exporter)
-        for method in self.methods:
-            method.accept(exporter)
 
     def __str__(self):
         result = "%s '%s' ('%s')" % (
@@ -137,15 +128,9 @@ class Clazz(object):
             self.name, self.get_cppname())
         if self.namespace != "":
             result += " (namespace: '%s')" % self.namespace
-        if len(self.fields) > 0:
+        if len(self.nodes) > 0:
             result += os.linesep + indent_block(os.linesep.join(
-                [str(field) for field in self.fields]), 1)
-        if len(self.constructors) > 0:
-            result += os.linesep + indent_block(os.linesep.join(
-                [str(ctor) for ctor in self.constructors]), 1)
-        if len(self.methods) > 0:
-            result += os.linesep + indent_block(os.linesep.join(
-                [str(method) for method in self.methods]), 1)
+                [str(node) for node in self.nodes]), 1)
         return result
 
     def get_cppname(self):
@@ -172,18 +157,14 @@ class TemplateClazzSpecialization(Clazz):
 class FunctionBase(object):
     def __init__(self, name):
         self.name = name
-        self.arguments = []
+        self.nodes = []
         self.ignored = False
-
-    def accept(self, exporter):
-        for arg in self.arguments:
-            arg.accept(exporter)
 
     def __str__(self):
         result = "%s '%s'" % (self.__class__.__name__, self.name)
-        if len(self.arguments) > 0:
+        if len(self.nodes) > 0:
             result += os.linesep + indent_block(os.linesep.join(
-                [str(arg) for arg in self.arguments]), 1)
+                [str(arg) for arg in self.nodes]), 1)
         return result
 
 
@@ -195,7 +176,8 @@ class Function(FunctionBase):
         self.result_type = result_type
 
     def accept(self, exporter):
-        super(Function, self).accept(exporter)
+        for node in self.nodes:
+            node.accept(exporter)
         exporter.visit_function(self)
 
     def __str__(self):
@@ -212,7 +194,8 @@ class Constructor(FunctionBase):
         self.class_name = class_name
 
     def accept(self, exporter):
-        super(Constructor, self).accept(exporter)
+        for node in self.nodes:
+            node.accept(exporter)
         exporter.visit_constructor(self)
 
 
@@ -223,7 +206,8 @@ class Method(FunctionBase):
         self.class_name = class_name
 
     def accept(self, exporter):
-        super(Method, self).accept(exporter)
+        for node in self.nodes:
+            node.accept(exporter)
         exporter.visit_method(self)
 
     def __str__(self):
@@ -250,7 +234,8 @@ class TemplateClass(Clazz, Template):
         self.ignored = False
 
     def accept(self, exporter):
-        self._accept_class_members(exporter)
+        for node in self.nodes:
+            node.accept(exporter)
         exporter.visit_template_class(self)
 
     def __str__(self):
@@ -265,7 +250,8 @@ class TemplateFunction(Function, Template):
         Template.__init__(self)
 
     def accept(self, exporter):
-        super(Function, self).accept(exporter)
+        for node in self.nodes:
+            node.accept(exporter)
         exporter.visit_template_function(self)
 
     def __str__(self):
@@ -280,7 +266,8 @@ class TemplateMethod(Method, Template):
         Template.__init__(self)
 
     def accept(self, exporter):
-        super(Method, self).accept(exporter)
+        for node in self.nodes:
+            node.accept(exporter)
         exporter.visit_template_method(self)
 
     def __str__(self):

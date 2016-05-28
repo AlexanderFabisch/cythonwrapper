@@ -40,25 +40,25 @@ def test_class_string_with_members():
     c = Clazz("test.hpp", "", "MyClass")
 
     ctor = Constructor("MyClass")
-    ctor.arguments.append(Param("a", "double"))
-    c.constructors.append(ctor)
+    ctor.nodes.append(Param("a", "double"))
+    c.nodes.append(ctor)
 
     method = Method("my_method", "int", "MyClass")
-    method.arguments.append(Param("b", "int"))
-    c.methods.append(method)
+    method.nodes.append(Param("b", "int"))
+    c.nodes.append(method)
 
     field = Field("my_field", "bool", "MyClass")
-    c.fields.append(field)
+    c.nodes.append(field)
 
     assert_multi_line_equal(
         str(c), lines(
             "Class 'MyClass' ('MyClass')",
-            "    Field (bool) my_field",
             "    Constructor '__init__'",
             "        Parameter (double) a",
             "    Method 'my_method'",
             "        Parameter (int) b",
-            "        Returns (int)"
+            "        Returns (int)",
+            "    Field (bool) my_field"
         ))
 
 
@@ -74,7 +74,7 @@ def test_function_string_with_return():
 
 def test_template_function_string():
     m = TemplateFunction("test.hpp", "", "my_template_fun", "void")
-    m.arguments.append(Param("t", "T"))
+    m.nodes.append(Param("t", "T"))
     m.template_types.append("T")
     assert_multi_line_equal(
         str(m), lines(
@@ -87,7 +87,7 @@ def test_template_function_string():
 
 def test_template_method_string():
     m = TemplateMethod("my_template_method", "void", "MyClass")
-    m.arguments.append(Param("t", "T"))
+    m.nodes.append(Param("t", "T"))
     m.template_types.append("T")
     assert_multi_line_equal(
         str(m), lines(
@@ -114,18 +114,18 @@ def test_walk_through_ast():
 
     c = Clazz("test.hpp", "", "MyClass")
     ctor = Constructor("MyClass")
-    ctor.arguments.append(Param("a", "double"))
-    c.constructors.append(ctor)
+    ctor.nodes.append(Param("a", "double"))
+    c.nodes.append(ctor)
     method = Method("my_method", "int", "MyClass")
-    method.arguments.append(Param("b", "int"))
-    c.methods.append(method)
+    method.nodes.append(Param("b", "int"))
+    c.nodes.append(method)
     field = Field("my_field", "bool", "MyClass")
-    c.fields.append(field)
+    c.nodes.append(field)
     ast.nodes.append(c)
 
     function = Function("test.hpp", "", "fun", "void")
     param = Param("a", "double")
-    function.arguments.append(param)
+    function.nodes.append(param)
     ast.nodes.append(function)
 
     typedef = Typedef("test.hpp", "", "myfloat", "double")

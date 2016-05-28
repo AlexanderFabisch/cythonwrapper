@@ -314,7 +314,7 @@ class Parser(object):
 
     def add_ctor(self):
         constructor = Constructor(self.last_type.name)
-        self.last_type.constructors.append(constructor)
+        self.last_type.nodes.append(constructor)
         self.last_function = constructor
         return True
 
@@ -322,7 +322,7 @@ class Parser(object):
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
         method = Method(name, tname, self.last_type.name)
-        self.last_type.methods.append(method)
+        self.last_type.nodes.append(method)
         self.last_function = method
         return True
 
@@ -330,7 +330,7 @@ class Parser(object):
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
         method = TemplateMethod(name, tname, self.last_type.name)
-        self.last_type.methods.append(method)
+        self.last_type.nodes.append(method)
         self.last_function = method
         self.last_template = method
         return True
@@ -341,7 +341,7 @@ class Parser(object):
         param = Param(name, tname)
         self.last_param = param
         if self.last_function is not None:
-            self.last_function.arguments.append(param)
+            self.last_function.nodes.append(param)
         else:
             warnings.warn("Ignored function parameter '%s' (type: '%s'), no "
                           "function in current context." % (name, tname))
@@ -351,5 +351,5 @@ class Parser(object):
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
         field = Field(name, tname, self.last_type.name)
-        self.last_type.fields.append(field)
+        self.last_type.nodes.append(field)
         return False

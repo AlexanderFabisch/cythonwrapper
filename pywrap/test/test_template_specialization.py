@@ -26,19 +26,19 @@ def test_function_specializer():
     specializer = FunctionSpecializer(config)
 
     template = TemplateFunction("test.hpp", "MyNamespace", "myFun", "T")
-    template.arguments.append(Param("a", "T"))
+    template.nodes.append(Param("a", "T"))
     template.template_types.append("T")
 
     functions = specializer.specialize(template)
     assert_equal(len(functions), 2)
     assert_equal(functions[0].name, "myFunInt")
     assert_equal(functions[0].result_type, "int")
-    assert_equal(len(functions[0].arguments), 1)
-    assert_equal(functions[0].arguments[0].tipe, "int")
+    assert_equal(len(functions[0].nodes), 1)
+    assert_equal(functions[0].nodes[0].tipe, "int")
     assert_equal(functions[1].name, "myFunDouble")
     assert_equal(functions[1].result_type, "double")
-    assert_equal(len(functions[1].arguments), 1)
-    assert_equal(functions[1].arguments[0].tipe, "double")
+    assert_equal(len(functions[1].nodes), 1)
+    assert_equal(functions[1].nodes[0].tipe, "double")
 
 
 def test_class_specializer():
@@ -65,7 +65,7 @@ def test_method_specialization():
     specializer = MethodSpecializer(config)
 
     template = TemplateMethod("myMethod", "T", "MyClass")
-    template.arguments.append(Param("a", "T"))
+    template.nodes.append(Param("a", "T"))
     template.template_types.append("T")
 
     methods = specializer.specialize(template)
@@ -73,5 +73,5 @@ def test_method_specialization():
     method = methods[0]
     assert_equal(method.name, "my_method_b")
     assert_equal(method.result_type, "bool")
-    assert_equal(len(method.arguments), 1)
-    assert_equal(method.arguments[0].tipe, "bool")
+    assert_equal(len(method.nodes), 1)
+    assert_equal(method.nodes[0].tipe, "bool")
