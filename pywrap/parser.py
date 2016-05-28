@@ -209,7 +209,7 @@ class Parser(object):
             elif node.kind == cindex.CursorKind.ENUM_DECL:
                 enum = Enum(self.include_file, self.namespace, node.displayname)
                 self.last_enum = enum
-                self.ast.enums.append(enum)
+                self.ast.nodes.append(enum)
             elif node.kind == cindex.CursorKind.ENUM_CONSTANT_DECL:
                 self.last_enum.constants.append(node.displayname)
             elif node.kind == cindex.CursorKind.COMPOUND_STMT:
@@ -253,7 +253,7 @@ class Parser(object):
                 raise LookupError("Struct typedef does not match any "
                                   "unnamed struct")
             self.ast.unnamed_struct.name = tname
-            self.ast.classes.append(self.ast.unnamed_struct)
+            self.ast.nodes.append(self.ast.unnamed_struct)
             self.ast.unnamed_struct = None
             self.last_type = None
             return False
@@ -264,7 +264,7 @@ class Parser(object):
                 namespace = self.namespace
             else:
                 namespace = self.namespace + "::" + self.last_type.name
-            self.ast.typedefs.append(Typedef(
+            self.ast.nodes.append(Typedef(
                 self.include_file, namespace, tname, underlying_tname))
             return True
 
@@ -285,7 +285,7 @@ class Parser(object):
         self.includes.add_include_for(tname)
         function = Function(
             self.include_file, namespace, name, tname)
-        self.ast.functions.append(function)
+        self.ast.nodes.append(function)
         self.last_function = function
         return True
 
@@ -294,20 +294,20 @@ class Parser(object):
         self.includes.add_include_for(tname)
         function = TemplateFunction(self.include_file, self.namespace, name,
                                     tname)
-        self.ast.functions.append(function)
+        self.ast.nodes.append(function)
         self.last_function = function
         self.last_template = function
         return True
 
     def add_class(self, name):
         clazz = Clazz(self.include_file, self.namespace, name)
-        self.ast.classes.append(clazz)
+        self.ast.nodes.append(clazz)
         self.last_type = clazz
         return True
 
     def add_template_class(self, name):
         clazz = TemplateClass(self.include_file, self.namespace, name)
-        self.ast.classes.append(clazz)
+        self.ast.nodes.append(clazz)
         self.last_type = clazz
         self.last_template = clazz
         return True

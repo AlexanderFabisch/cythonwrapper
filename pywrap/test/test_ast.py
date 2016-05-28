@@ -11,26 +11,26 @@ def test_empty_ast_string():
 
 def test_ast_string_with_enum():
     ast = AST()
-    ast.enums.append(Enum("test.hpp", "", "MyEnum"))
+    ast.nodes.append(Enum("test.hpp", "", "MyEnum"))
     assert_multi_line_equal(str(ast), lines("AST", "    Enum 'MyEnum'"))
 
 
 def test_ast_string_with_typedef():
     ast = AST()
-    ast.typedefs.append(Typedef("test.hpp", "", "MyTypedef", "double"))
+    ast.nodes.append(Typedef("test.hpp", "", "MyTypedef", "double"))
     assert_multi_line_equal(
         str(ast), lines("AST", "    Typedef (double) MyTypedef"))
 
 
 def test_ast_string_with_function():
     ast = AST()
-    ast.functions.append(Function("test.hpp", "", "fun", "void"))
+    ast.nodes.append(Function("test.hpp", "", "fun", "void"))
     assert_multi_line_equal(str(ast), lines("AST", "    Function 'fun'"))
 
 
 def test_ast_string_with_class():
     ast = AST()
-    ast.classes.append(Clazz("test.hpp", "bla", "MyClass"))
+    ast.nodes.append(Clazz("test.hpp", "bla", "MyClass"))
     assert_multi_line_equal(
         str(ast), lines(
             "AST", "    Class 'MyClass' ('MyClass') (namespace: 'bla')"))
@@ -121,18 +121,18 @@ def test_walk_through_ast():
     c.methods.append(method)
     field = Field("my_field", "bool", "MyClass")
     c.fields.append(field)
-    ast.classes.append(c)
+    ast.nodes.append(c)
 
     function = Function("test.hpp", "", "fun", "void")
     param = Param("a", "double")
     function.arguments.append(param)
-    ast.functions.append(function)
+    ast.nodes.append(function)
 
     typedef = Typedef("test.hpp", "", "myfloat", "double")
-    ast.typedefs.append(typedef)
+    ast.nodes.append(typedef)
 
     enum = Enum("test.hpp", "", "MyEnum")
-    ast.enums.append(enum)
+    ast.nodes.append(enum)
 
     class CountingExporter:
         def __getattr__(self, name):

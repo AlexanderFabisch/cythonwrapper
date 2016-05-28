@@ -6,36 +6,18 @@ from .utils import indent_block
 class AST:
     """Abstract Syntax Tree."""
     def __init__(self):
-        self.functions = []
-        self.classes = []
-        self.typedefs = []
-        self.enums = []
+        self.nodes = []
 
     def accept(self, exporter):
-        for enum in self.enums:
-            enum.accept(exporter)
-        for typedef in self.typedefs:
-            typedef.accept(exporter)
-        for clazz in self.classes:
-            clazz.accept(exporter)
-        for fun in self.functions:
-            fun.accept(exporter)
+        for node in self.nodes:
+            node.accept(exporter)
         exporter.visit_ast(self)
 
     def __str__(self):
         result = "AST"
-        if len(self.enums) > 0:
+        if len(self.nodes) > 0:
             result += os.linesep + indent_block(os.linesep.join(
-                [str(enum) for enum in self.enums]), 1)
-        if len(self.typedefs) > 0:
-            result += os.linesep + indent_block(os.linesep.join(
-                [str(typedef) for typedef in self.typedefs]), 1)
-        if len(self.classes) > 0:
-            result += os.linesep + indent_block(os.linesep.join(
-                [str(clazz) for clazz in self.classes]), 1)
-        if len(self.functions) > 0:
-            result += os.linesep + indent_block(os.linesep.join(
-                [str(fun) for fun in self.functions]), 1)
+                [str(node) for node in self.nodes]), 1)
         return result
 
 
@@ -341,16 +323,18 @@ class TypeInfo:
     def __init__(self, asts=[], config=Config(), typedefs={}):
         self.classes = self._collect_classes(asts, config)
         self.typedefs = {typedef.tipe: typedef.underlying_type for ast in asts
-                         for typedef in ast.typedefs}
+                         for typedef in ast.nodes
+                         if hasattr(typedef, "underlying_type")}
         self.typedefs.update(typedefs)
-        self.enums = [enum.tipe for ast in asts for enum in ast.enums]
+        self.enums = [enum.tipe for ast in asts
+                      for enum in ast.nodes if hasattr(enum, "tipe")]
         self.spec = {}
 
     def _collect_classes(self, asts, config):
         specializations = config.registered_template_specializations
         classes = []
         for ast in asts:
-            for clazz in ast.classes:
+            for clazz in ast.nodes:
                 template = False
                 for key in specializations:
                     if clazz.name == key:
@@ -358,7 +342,7 @@ class TypeInfo:
                         for name, _ in specializations[key]:
                             classes.append(name)
                         break
-                if not template:
+                if not template and isinstance(clazz, Clazz):
                     classes.append(clazz.name)
         return classes
 
