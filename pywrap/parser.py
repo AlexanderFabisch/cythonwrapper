@@ -3,7 +3,7 @@ cindex.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
 import warnings
 import os
 from .type_conversion import cythontype_from_cpptype
-from .ast import (AST, Enum, Typedef, Clazz, Function, TemplateClass,
+from .ast import (Ast, Enum, Typedef, Clazz, Function, TemplateClass,
                   TemplateFunction, Constructor, Method, TemplateMethod,
                   Param, Field)
 from .utils import make_header
@@ -81,7 +81,7 @@ class Parser(object):
 
         Returns
         -------
-        ast : AST
+        ast : Ast
             Abstract syntax tree that can be used to generate the Cython
             wrapper code
         """
@@ -113,7 +113,7 @@ class Parser(object):
                 outfile.write(infile.read())
 
     def init_ast(self):
-        self.ast = AST()
+        self.ast = Ast()
         self.last_type = None
         self.last_enum = None
         self.unnamed_struct = None

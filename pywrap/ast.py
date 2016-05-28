@@ -1,17 +1,24 @@
 import os
 from .defaultconfig import Config
-from .utils import indent_block
+from .utils import indent_block, from_camel_case
 
 
-class AST:
-    """Abstract Syntax Tree."""
+class AstNode(object):
     def __init__(self):
         self.nodes = []
 
     def accept(self, exporter):
         for node in self.nodes:
             node.accept(exporter)
-        exporter.visit_ast(self)
+        method_name = "visit_" + from_camel_case(self.__class__.__name__)
+        visit_method = getattr(exporter, method_name)
+        visit_method(self)
+
+
+class Ast(AstNode):
+    """Abstract Syntax Tree."""
+    def __init__(self):
+        super(Ast, self).__init__()
 
     def __str__(self):
         result = "AST"
@@ -19,6 +26,187 @@ class AST:
             result += os.linesep + indent_block(os.linesep.join(
                 [str(node) for node in self.nodes]), 1)
         return result
+
+
+class Enum(AstNode):
+    def __init__(self, filename, namespace, tipe):
+        super(Enum, self).__init__()
+        self.filename = filename
+        self.namespace = namespace
+        self.tipe = tipe
+        self.constants = []
+
+    def __str__(self):
+        return "Enum '%s'" % self.tipe
+
+
+class Typedef(AstNode):
+    def __init__(self, filename, namespace, tipe, underlying_type):
+        super(Typedef, self).__init__()
+        self.filename = filename
+        self.namespace = namespace
+        self.tipe = tipe
+        self.underlying_type = underlying_type
+
+    def __str__(self):
+        return "Typedef (%s) %s" % (self.underlying_type, self.tipe)
+
+
+class Clazz(AstNode):
+    def __init__(self, filename, namespace, name):
+        super(Clazz, self).__init__()
+        self.filename = filename
+        self.namespace = namespace
+        self.name = name
+
+    def __str__(self):
+        result = "%s '%s' ('%s')" % (
+            self.__class__.__name__.replace("zz", "ss"),
+            self.name, self.get_cppname())
+        if self.namespace != "":
+            result += " (namespace: '%s')" % self.namespace
+        if len(self.nodes) > 0:
+            result += os.linesep + indent_block(os.linesep.join(
+                [str(node) for node in self.nodes]), 1)
+        return result
+
+    def get_cppname(self):
+        return self.name
+
+    def get_attached_typeinfo(self):
+        return {}
+
+
+class TemplateClazzSpecialization(Clazz):
+    def __init__(self, filename, namespace, name, cppname, specialization):
+        super(TemplateClazzSpecialization, self).__init__(
+            filename, namespace, name)
+        self.cppname = cppname
+        self.specialization = specialization
+
+    def get_cppname(self):
+        return self.cppname
+
+    def get_attached_typeinfo(self):
+        return self.specialization
+
+
+class FunctionBase(AstNode):
+    def __init__(self, name):
+        super(FunctionBase, self).__init__()
+        self.name = name
+        self.ignored = False
+
+    def __str__(self):
+        result = "%s '%s'" % (self.__class__.__name__, self.name)
+        if len(self.nodes) > 0:
+            result += os.linesep + indent_block(os.linesep.join(
+                [str(arg) for arg in self.nodes]), 1)
+        return result
+
+
+class Function(FunctionBase):
+    def __init__(self, filename, namespace, name, result_type):
+        super(Function, self).__init__(name)
+        self.filename = filename
+        self.namespace = namespace
+        self.result_type = result_type
+
+    def __str__(self):
+        result = super(Function, self).__str__()
+        if self.result_type != "void":
+            result += os.linesep + indent_block(
+                "Returns (%s)" % self.result_type, 1)
+        return result
+
+
+class Constructor(FunctionBase):
+    def __init__(self, class_name):
+        super(Constructor, self).__init__("__init__")
+        self.class_name = class_name
+
+
+class Method(FunctionBase):
+    def __init__(self, name, result_type, class_name):
+        super(Method, self).__init__(name)
+        self.result_type = result_type
+        self.class_name = class_name
+
+    def __str__(self):
+        result = super(Method, self).__str__()
+        if self.result_type != "void":
+            result += os.linesep + indent_block(
+                "Returns (%s)" % self.result_type, 1)
+        return result
+
+
+class Template:
+    def __init__(self):
+        self.template_types = []
+
+    def __str__(self):
+        return indent_block(os.linesep.join(
+            ["Template type '%s'" % tt for tt in self.template_types]), 1)
+
+
+class TemplateClass(Clazz, Template):
+    def __init__(self, filename, namespace, name):
+        Clazz.__init__(self, filename, namespace, name)
+        Template.__init__(self)
+        self.ignored = False
+
+    def __str__(self):
+        result = Clazz.__str__(self)
+        result += os.linesep + Template.__str__(self)
+        return result
+
+
+class TemplateFunction(Function, Template):
+    def __init__(self, filename, namespace, name, result_type):
+        Function.__init__(self, filename, namespace, name, result_type)
+        Template.__init__(self)
+
+    def __str__(self):
+        result = Function.__str__(self)
+        result += os.linesep + Template.__str__(self)
+        return result
+
+
+class TemplateMethod(Method, Template):
+    def __init__(self, name, result_type, class_name):
+        Method.__init__(self, name, result_type, class_name)
+        Template.__init__(self)
+
+    def __str__(self):
+        result = Method.__str__(self)
+        result += os.linesep + Template.__str__(self)
+        return result
+
+
+class Param(AstNode):
+    def __init__(self, name, tipe):
+        super(Param, self).__init__()
+        self.name = name
+        self.tipe = tipe
+        self.default_value = None
+
+    def __str__(self):
+        result = "Parameter (%s) %s" % (self.tipe, self.name)
+        if self.default_value is not None:
+            result += " = " + str(self.default_value)
+        return result
+
+
+class Field(AstNode):
+    def __init__(self, name, tipe, class_name):
+        super(Field, self).__init__()
+        self.name = name
+        self.tipe = tipe
+        self.class_name = class_name
+        self.ignored = False
+
+    def __str__(self):
+        return "Field (%s) %s" % (self.tipe, self.name)
 
 
 class Includes:
@@ -80,230 +268,6 @@ class Includes:
                          os.linesep)
         includes += "cimport _declarations as cpp" + os.linesep
         return includes
-
-
-class Enum:
-    def __init__(self, filename, namespace, tipe):
-        self.filename = filename
-        self.namespace = namespace
-        self.tipe = tipe
-        self.constants = []
-
-    def accept(self, exporter):
-        exporter.visit_enum(self)
-
-    def __str__(self):
-        return "Enum '%s'" % self.tipe
-
-
-class Typedef:
-    def __init__(self, filename, namespace, tipe, underlying_type):
-        self.filename = filename
-        self.namespace = namespace
-        self.tipe = tipe
-        self.underlying_type = underlying_type
-
-    def accept(self, exporter):
-        exporter.visit_typedef(self)
-
-    def __str__(self):
-        return "Typedef (%s) %s" % (self.underlying_type, self.tipe)
-
-
-class Clazz(object):
-    def __init__(self, filename, namespace, name):
-        self.filename = filename
-        self.namespace = namespace
-        self.name = name
-        self.nodes = []
-
-    def accept(self, exporter):
-        for node in self.nodes:
-            node.accept(exporter)
-        exporter.visit_class(self)
-
-    def __str__(self):
-        result = "%s '%s' ('%s')" % (
-            self.__class__.__name__.replace("zz", "ss"),
-            self.name, self.get_cppname())
-        if self.namespace != "":
-            result += " (namespace: '%s')" % self.namespace
-        if len(self.nodes) > 0:
-            result += os.linesep + indent_block(os.linesep.join(
-                [str(node) for node in self.nodes]), 1)
-        return result
-
-    def get_cppname(self):
-        return self.name
-
-    def get_attached_typeinfo(self):
-        return {}
-
-
-class TemplateClazzSpecialization(Clazz):
-    def __init__(self, filename, namespace, name, cppname, specialization):
-        super(TemplateClazzSpecialization, self).__init__(
-            filename, namespace, name)
-        self.cppname = cppname
-        self.specialization = specialization
-
-    def get_cppname(self):
-        return self.cppname
-
-    def get_attached_typeinfo(self):
-        return self.specialization
-
-
-class FunctionBase(object):
-    def __init__(self, name):
-        self.name = name
-        self.nodes = []
-        self.ignored = False
-
-    def __str__(self):
-        result = "%s '%s'" % (self.__class__.__name__, self.name)
-        if len(self.nodes) > 0:
-            result += os.linesep + indent_block(os.linesep.join(
-                [str(arg) for arg in self.nodes]), 1)
-        return result
-
-
-class Function(FunctionBase):
-    def __init__(self, filename, namespace, name, result_type):
-        super(Function, self).__init__(name)
-        self.filename = filename
-        self.namespace = namespace
-        self.result_type = result_type
-
-    def accept(self, exporter):
-        for node in self.nodes:
-            node.accept(exporter)
-        exporter.visit_function(self)
-
-    def __str__(self):
-        result = super(Function, self).__str__()
-        if self.result_type != "void":
-            result += os.linesep + indent_block(
-                "Returns (%s)" % self.result_type, 1)
-        return result
-
-
-class Constructor(FunctionBase):
-    def __init__(self, class_name):
-        super(Constructor, self).__init__("__init__")
-        self.class_name = class_name
-
-    def accept(self, exporter):
-        for node in self.nodes:
-            node.accept(exporter)
-        exporter.visit_constructor(self)
-
-
-class Method(FunctionBase):
-    def __init__(self, name, result_type, class_name):
-        super(Method, self).__init__(name)
-        self.result_type = result_type
-        self.class_name = class_name
-
-    def accept(self, exporter):
-        for node in self.nodes:
-            node.accept(exporter)
-        exporter.visit_method(self)
-
-    def __str__(self):
-        result = super(Method, self).__str__()
-        if self.result_type != "void":
-            result += os.linesep + indent_block(
-                "Returns (%s)" % self.result_type, 1)
-        return result
-
-
-class Template:
-    def __init__(self):
-        self.template_types = []
-
-    def __str__(self):
-        return indent_block(os.linesep.join(
-            ["Template type '%s'" % tt for tt in self.template_types]), 1)
-
-
-class TemplateClass(Clazz, Template):
-    def __init__(self, filename, namespace, name):
-        Clazz.__init__(self, filename, namespace, name)
-        Template.__init__(self)
-        self.ignored = False
-
-    def accept(self, exporter):
-        for node in self.nodes:
-            node.accept(exporter)
-        exporter.visit_template_class(self)
-
-    def __str__(self):
-        result = Clazz.__str__(self)
-        result += os.linesep + Template.__str__(self)
-        return result
-
-
-class TemplateFunction(Function, Template):
-    def __init__(self, filename, namespace, name, result_type):
-        Function.__init__(self, filename, namespace, name, result_type)
-        Template.__init__(self)
-
-    def accept(self, exporter):
-        for node in self.nodes:
-            node.accept(exporter)
-        exporter.visit_template_function(self)
-
-    def __str__(self):
-        result = Function.__str__(self)
-        result += os.linesep + Template.__str__(self)
-        return result
-
-
-class TemplateMethod(Method, Template):
-    def __init__(self, name, result_type, class_name):
-        Method.__init__(self, name, result_type, class_name)
-        Template.__init__(self)
-
-    def accept(self, exporter):
-        for node in self.nodes:
-            node.accept(exporter)
-        exporter.visit_template_method(self)
-
-    def __str__(self):
-        result = Method.__str__(self)
-        result += os.linesep + Template.__str__(self)
-        return result
-
-
-class Param:
-    def __init__(self, name, tipe):
-        self.name = name
-        self.tipe = tipe
-        self.default_value = None
-
-    def accept(self, exporter):
-        exporter.visit_param(self)
-
-    def __str__(self):
-        result = "Parameter (%s) %s" % (self.tipe, self.name)
-        if self.default_value is not None:
-            result += " = " + str(self.default_value)
-        return result
-
-
-class Field:
-    def __init__(self, name, tipe, class_name):
-        self.name = name
-        self.tipe = tipe
-        self.class_name = class_name
-        self.ignored = False
-
-    def accept(self, exporter):
-        exporter.visit_field(self)
-
-    def __str__(self):
-        return "Field (%s) %s" % (self.tipe, self.name)
 
 
 class TypeInfo:

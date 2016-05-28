@@ -1,4 +1,4 @@
-from pywrap.ast import (AST, Enum, Typedef, Function, Clazz, Constructor,
+from pywrap.ast import (Ast, Enum, Typedef, Function, Clazz, Constructor,
                         Method, Field, Param, TemplateMethod, TemplateClass,
                         TemplateFunction)
 from pywrap.utils import lines
@@ -6,30 +6,30 @@ from nose.tools import assert_equal, assert_multi_line_equal
 
 
 def test_empty_ast_string():
-    assert_equal(str(AST()), "AST")
+    assert_equal(str(Ast()), "AST")
 
 
 def test_ast_string_with_enum():
-    ast = AST()
+    ast = Ast()
     ast.nodes.append(Enum("test.hpp", "", "MyEnum"))
     assert_multi_line_equal(str(ast), lines("AST", "    Enum 'MyEnum'"))
 
 
 def test_ast_string_with_typedef():
-    ast = AST()
+    ast = Ast()
     ast.nodes.append(Typedef("test.hpp", "", "MyTypedef", "double"))
     assert_multi_line_equal(
         str(ast), lines("AST", "    Typedef (double) MyTypedef"))
 
 
 def test_ast_string_with_function():
-    ast = AST()
+    ast = Ast()
     ast.nodes.append(Function("test.hpp", "", "fun", "void"))
     assert_multi_line_equal(str(ast), lines("AST", "    Function 'fun'"))
 
 
 def test_ast_string_with_class():
-    ast = AST()
+    ast = Ast()
     ast.nodes.append(Clazz("test.hpp", "bla", "MyClass"))
     assert_multi_line_equal(
         str(ast), lines(
@@ -110,7 +110,7 @@ def test_template_class_string():
 
 
 def test_walk_through_ast():
-    ast = AST()
+    ast = Ast()
 
     c = Clazz("test.hpp", "", "MyClass")
     ctor = Constructor("MyClass")
@@ -151,7 +151,7 @@ def test_walk_through_ast():
     exporter = CountingExporter()
     ast.accept(exporter)
     assert_equal(exporter.ast_count, 1)
-    assert_equal(exporter.class_count, 1)
+    assert_equal(exporter.clazz_count, 1)
     assert_equal(exporter.constructor_count, 1)
     assert_equal(exporter.method_count, 1)
     assert_equal(exporter.field_count, 1)

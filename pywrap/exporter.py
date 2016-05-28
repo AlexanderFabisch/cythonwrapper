@@ -77,7 +77,7 @@ class AstExporter(object):
         """
 
     @abstractmethod
-    def visit_class(self, clazz):
+    def visit_clazz(self, clazz):
         """Visit class.
 
         Parameters
@@ -194,7 +194,7 @@ class CythonDeclarationExporter(AstExporter):
     def visit_typedef(self, typedef):
         self.typedefs.append(templates.typedef_decl % typedef.__dict__)
 
-    def visit_class(self, clazz):
+    def visit_clazz(self, clazz):
         class_decl = {}
         class_decl.update(clazz.__dict__)
         class_decl["fields"] = self.fields
@@ -326,7 +326,7 @@ class CythonImplementationExporter(AstExporter):
     def visit_typedef(self, typedef):
         pass
 
-    def visit_class(self, clazz, cppname=None):
+    def visit_clazz(self, clazz, cppname=None):
         if self.config.is_ignored_class(clazz.filename, clazz.name):
             warnings.warn("Class '%s' from file '%s' is on the blacklist and "
                           "will be ignored." % (clazz.name, clazz.filename))
@@ -367,7 +367,7 @@ class CythonImplementationExporter(AstExporter):
     def visit_template_class(self, template_class):
         specializer = ClassSpecializer(self.config)
         for clazz in specializer.specialize(template_class):
-            self.visit_class(clazz, cppname=clazz.get_cppname())
+            self.visit_clazz(clazz, cppname=clazz.get_cppname())
 
     def visit_field(self, field):
         self.fields.append(field)

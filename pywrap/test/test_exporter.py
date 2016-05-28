@@ -116,7 +116,7 @@ def test_function_decl():
 def test_class_decl():
     clazz = Clazz("test.hpp", "", "MyClass")
     exporter = CythonDeclarationExporter(Includes(), Config())
-    exporter.visit_class(clazz)
+    exporter.visit_clazz(clazz)
     exporter.visit_ast(None)
     decl = exporter.export()
     assert_multi_line_equal(
@@ -137,7 +137,7 @@ def test_ctor_decl():
     exporter = CythonDeclarationExporter(Includes(), Config())
     exporter.visit_constructor(ctor)
     exporter.visit_constructor(ignored_ctor)
-    exporter.visit_class(clazz)
+    exporter.visit_clazz(clazz)
     exporter.visit_ast(None)
     decl = exporter.export()
     assert_multi_line_equal(
@@ -159,7 +159,7 @@ def test_method_decl():
     exporter.visit_param(Param("myParam", "double"))
     exporter.visit_method(method)
     exporter.visit_method(ignored_method)
-    exporter.visit_class(clazz)
+    exporter.visit_clazz(clazz)
     exporter.visit_ast(None)
     decl = exporter.export()
     assert_multi_line_equal(
@@ -180,7 +180,7 @@ def test_field_decl():
     exporter = CythonDeclarationExporter(Includes(), Config())
     exporter.visit_field(field)
     exporter.visit_field(ignored_field)
-    exporter.visit_class(clazz)
+    exporter.visit_clazz(clazz)
     exporter.visit_ast(None)
     decl = exporter.export()
     assert_multi_line_equal(
