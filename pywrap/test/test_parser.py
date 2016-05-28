@@ -1,7 +1,6 @@
 import os
 import tempfile
-from pywrap.parser import Parser
-from pywrap.ast import Includes
+from pywrap.parser import Parser, Includes
 from nose.tools import (assert_true, assert_equal, assert_is_not_none,
                         assert_is_none)
 from pywrap.testing import assert_warns_message

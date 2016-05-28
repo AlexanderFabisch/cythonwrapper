@@ -1,9 +1,8 @@
 import os
 import sys
-from .ast import TypeInfo, Includes
 from .defaultconfig import Config
 from .exporter import CythonDeclarationExporter, CythonImplementationExporter
-from .parser import Parser
+from .parser import Parser, Includes, TypeInfo
 from .templates import render
 from .utils import make_header, file_ending, hidden_stdout, hidden_stderr
 

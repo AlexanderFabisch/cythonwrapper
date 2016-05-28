@@ -1,9 +1,9 @@
 from pywrap.exporter import (MethodDefinition, SetterDefinition,
                              GetterDefinition, ConstructorDefinition,
                              FunctionDefinition, CythonDeclarationExporter)
-from pywrap.cython import TypeInfo
-from pywrap.ast import (Includes, Param, Function, Clazz, Constructor, Method,
-                        Field, Enum, Typedef, TypeInfo)
+from pywrap.ast import (Param, Function, Clazz, Constructor, Method,
+                        Field, Enum, Typedef)
+from pywrap.parser import Includes, TypeInfo
 from pywrap.utils import lines
 from pywrap.defaultconfig import Config
 from nose.tools import assert_multi_line_equal

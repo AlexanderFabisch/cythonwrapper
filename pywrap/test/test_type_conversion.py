@@ -1,4 +1,4 @@
-from pywrap.ast import TypeInfo
+from pywrap.parser import TypeInfo
 from pywrap.defaultconfig import Config
 from pywrap.type_conversion import (
     cythontype_from_cpptype, find_all_subtypes, create_type_converter,

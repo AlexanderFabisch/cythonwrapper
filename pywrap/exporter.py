@@ -3,7 +3,8 @@ from functools import partial
 from abc import ABCMeta, abstractmethod
 
 from . import templates
-from .ast import TypeInfo, Includes, Constructor
+from .ast import Constructor
+from .parser import Includes, TypeInfo
 from .defaultconfig import Config
 from .template_specialization import (ClassSpecializer, FunctionSpecializer,
                                       MethodSpecializer)

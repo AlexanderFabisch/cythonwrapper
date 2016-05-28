@@ -1,6 +1,6 @@
 import os
 from pywrap.cython import make_cython_wrapper, load_config
-from pywrap.ast import TypeInfo
+from pywrap.parser import TypeInfo
 from nose.tools import (assert_raises_regexp, assert_false, assert_equal,
                         assert_is_not_none)
 
