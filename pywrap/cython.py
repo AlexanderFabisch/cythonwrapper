@@ -34,7 +34,7 @@ def load_config(custom_config):
 
 
 def make_cython_wrapper(filenames, sources, modulename=None, target=".",
-                        config=Config(), incdirs=[], compiler_flags=["-O3"],
+                        config=Config(), incdirs=(), compiler_flags=("-O3",),
                         verbose=0):
     """Make Cython wrapper for C++ files.
 

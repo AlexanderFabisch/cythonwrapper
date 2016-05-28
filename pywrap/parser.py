@@ -72,11 +72,12 @@ class Includes:
 
 
 class TypeInfo:
-    def __init__(self, config=Config(), typedefs={}):
+    def __init__(self, config=Config(), typedefs=None):
         self.config = config
         self.classes = []
         self.typedefs = {}
-        self.typedefs.update(typedefs)
+        if typedefs is not None:
+            self.typedefs.update(typedefs)
         self.enums = []
         self.spec = {}
 
@@ -161,7 +162,7 @@ class Parser(object):
         Verbosity level
     """
     def __init__(self, include_file, includes=Includes(), type_info=TypeInfo(),
-                 incdirs=[], verbose=0):
+                 incdirs=(), verbose=0):
         self.include_file = include_file
         self.includes = includes
         self.type_info = type_info
