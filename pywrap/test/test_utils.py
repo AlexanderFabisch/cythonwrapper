@@ -1,6 +1,6 @@
 from pywrap.utils import (lines, indent_block, from_camel_case, make_header,
-                          file_ending)
-from nose.tools import assert_equal, assert_multi_line_equal
+                          file_ending, hidden_stream, remove_files)
+from nose.tools import assert_equal, assert_multi_line_equal, raises
 
 
 def test_indent_block():
@@ -28,3 +28,13 @@ def test_make_header():
 def test_file_ending():
     assert_equal(file_ending("test.py"), "py")
     assert_equal(file_ending("/path.with/more.dots/test.pxd"), "pxd")
+
+
+@raises(ValueError)
+def test_hide_invalid_stream():
+    with hidden_stream(3):
+        pass
+
+
+def test_remove_no_files():
+    remove_files(["does", "not", "exist"])

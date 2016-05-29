@@ -9,6 +9,16 @@ def lines(*args):
 
 
 def indent_block(block, level):
+    """Indent code block.
+
+    Parameters
+    ----------
+    block : str
+        Code block that might consist of multiple lines separated by os.linesep
+
+    level : int
+        Level of indentation. Each level corresponds to four spaces.
+    """
     lines = block.split(os.linesep)
     indented_lines = [_indent_line(line, level=level) for line in lines]
     indented_block = os.linesep.join(indented_lines)
@@ -16,10 +26,9 @@ def indent_block(block, level):
 
 
 def _indent_line(line, level):
-    if line == "":
-        return line
-    else:
-        return "    " * level + line
+    if line:
+        line = "    " * level + line
+    return line
 
 
 def from_camel_case(name):
