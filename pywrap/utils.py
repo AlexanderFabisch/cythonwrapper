@@ -10,7 +10,7 @@ def lines(*args):
 
 def indent_block(block, level):
     lines = block.split(os.linesep)
-    indented_lines = map(partial(_indent_line, level=level), lines)
+    indented_lines = [_indent_line(line, level=level) for line in lines]
     indented_block = os.linesep.join(indented_lines)
     return indented_block
 
