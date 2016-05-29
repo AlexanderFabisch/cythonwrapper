@@ -44,33 +44,26 @@ def file_ending(filename):
 
 
 @contextmanager
-def hidden_stdout():
-    sys.stdout.flush()
-    oldstdout_fno = os.dup(1)
+def hidden_stream(fileno):
+    """Hide output stream."""
+    if fileno not in [1, 2]:
+        raise ValueError("Expected fileno 1 or 2.")
+    stream_name = ["stdout", "stderr"][fileno - 1]
+    getattr(sys, stream_name).flush()
+    oldstream_fno = os.dup(fileno)
     devnull = os.open(os.devnull, os.O_WRONLY)
-    newstdout = os.dup(1)
-    os.dup2(devnull, 1)
+    newstream = os.dup(fileno)
+    os.dup2(devnull, fileno)
     os.close(devnull)
-    sys.stdout = os.fdopen(newstdout, 'w')
+    setattr(sys, stream_name, os.fdopen(newstream, 'w'))
     try:
         yield
     finally:
-        os.dup2(oldstdout_fno, 1)
+        os.dup2(oldstream_fno, fileno)
 
 
-@contextmanager
-def hidden_stderr():
-    sys.stderr.flush()
-    oldstderr_fno = os.dup(2)
-    devnull = os.open(os.devnull, os.O_WRONLY)
-    newstderr = os.dup(2)
-    os.dup2(devnull, 2)
-    os.close(devnull)
-    sys.stderr = os.fdopen(newstderr, 'w')
-    try:
-        yield
-    finally:
-        os.dup2(oldstderr_fno, 2)
+hidden_stdout = partial(hidden_stream, fileno=1)
+hidden_stderr = partial(hidden_stream, fileno=2)
 
 
 def remove_files(filenames):
