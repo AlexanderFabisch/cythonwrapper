@@ -59,6 +59,22 @@ def test_operators():
         assert_equal(op - 1, 4)
         assert_equal(op * 2, 10)
         assert_equal(op / 5, 1)
+        assert_equal(op % 2, 1)
+        assert_equal(op and True, True)
+        op += 3
+        assert_equal(op.v, 3)
+        op -= 1
+        assert_equal(op.v, 2)
+        op *= 2
+        assert_equal(op.v, 4)
+        op /= 4
+        assert_equal(op.v, 1)
+        op %= 2
+        assert_equal(op.v, 1)
+        op |= True
+        assert_equal(op.b, True)
+        op &= True
+        assert_equal(op.b, True)
 
 
 def test_typedef():

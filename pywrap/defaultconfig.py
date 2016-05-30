@@ -6,15 +6,30 @@ class Config(object):
         self.pyx_file_ending = "pyx"
         self.pxd_file_ending = "pxd"
 
-        # operator mapping TODO extend
+        # Operator mapping
+        # overview of Cython operators:
         # http://docs.cython.org/src/reference/special_methods_table.html
+        # overview of C++ operators:
+        # http://en.cppreference.com/w/cpp/language/operators
         self.operators = {
             "operator()": "__call__",
             "operator[]": "__getitem__",
             "operator+": "__add__",
             "operator-": "__sub__",
             "operator*": "__mul__",
-            "operator/": "__div__"
+            "operator/": "__div__",
+            "operator%": "__mod__",
+            "operator&&": "__and__",
+            "operator&": "__and__",
+            "operator||": "__or__",
+            "operator|": "__or__",
+            "operator+=": "__iadd__",
+            "operator-=": "__isub__",
+            "operator*=": "__imul__",
+            "operator/=": "__idiv__",
+            "operator%=": "__imod__",
+            "operator&=": "__iand__",
+            "operator|=": "__ior__",
         }
         self.call_operators = {
             "operator()": "call",
@@ -22,7 +37,19 @@ class Config(object):
             "operator+": "add",
             "operator-": "sub",
             "operator*": "mul",
-            "operator/": "div"
+            "operator/": "div",
+            "operator%": "mod",
+            "operator&&": "opand",
+            "operator&": "opand",
+            "operator||": "opor",
+            "operator|": "opor",
+            "operator+=": "iadd",
+            "operator-=": "isub",
+            "operator*=": "imul",
+            "operator/=": "idiv",
+            "operator%=": "imod",
+            "operator&=": "iand",
+            "operator|=": "ior",
         }
 
         self.registered_converters = []
