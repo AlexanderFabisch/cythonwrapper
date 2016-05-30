@@ -168,7 +168,17 @@ def write_files(files, target="."):
 
 
 def run_setup(setuppy_name="setup.py", hide_errors=False):
-    cmd = "python %s build_ext -i" % setuppy_name
+    """Run setup script to build extension.
+
+    Parameters
+    ----------
+    setuppy_name : str, optional (default: 'setup.py')
+        Setup script name
+
+    hide_errors : bool, optional (default: False)
+        Hide output to stderr
+    """
+    cmd = "python %s build_ext --inplace" % setuppy_name
     with hidden_stdout():
         if hide_errors:
             with hidden_stderr():
