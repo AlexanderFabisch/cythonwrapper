@@ -1,4 +1,4 @@
-cdef class {{ tipe }}:
-{%- for constant in constants %}
+cdef class {{ enum.tipe }}:
+{%- for constant in enum.constants %}
     {{ constant }} = cpp.{{ constant }}
 {%- endfor %}

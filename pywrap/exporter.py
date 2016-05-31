@@ -190,7 +190,7 @@ class CythonDeclarationExporter(AstExporter):
                              classes=self.classes)
 
     def visit_enum(self, enum):
-        self.enums.append(render("enum_decl", **enum.__dict__))
+        self.enums.append(render("enum_decl", enum=enum))
 
     def visit_typedef(self, typedef):
         self.typedefs.append(templates.typedef_decl % typedef.__dict__)
@@ -322,7 +322,7 @@ class CythonImplementationExporter(AstExporter):
                              functions=self.functions, classes=self.classes)
 
     def visit_enum(self, enum):
-        self.enums.append(render("enum", **enum.__dict__))
+        self.enums.append(render("enum", enum=enum))
 
     def visit_typedef(self, typedef):
         pass
