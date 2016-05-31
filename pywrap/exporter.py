@@ -1,5 +1,6 @@
 import warnings
 from functools import partial
+from itertools import chain
 from abc import ABCMeta, abstractmethod
 
 from . import templates
@@ -493,9 +494,8 @@ class FunctionDefinition(object):
 
     def make(self):
         function = self._signature()
-        function["input_conversions"], call_args = self._input_type_conversions(
-            self.includes)
-        function["call"] = self._call_cpp_function(call_args)
+        function["input_conversions"] = self._input_type_conversions()
+        function["call"] = self._call_cpp_function(self._call_args())
         function["return_output"] = self.output_type_converter.return_output(
             self.output_is_copy)
         return render("function", **function)
@@ -516,26 +516,20 @@ class FunctionDefinition(object):
             return "cpdef"
 
     def _cython_signature_args(self):
-        cython_signature_args = []
-        cython_signature_args.extend(self.initial_args)
-        for type_converter in self.type_converters:
-            arg = type_converter.python_type_decl()
-            cython_signature_args.append(arg)
-        return cython_signature_args
+        return self.initial_args + [tc.python_type_decl()
+                                    for tc in self.type_converters]
 
-    def _input_type_conversions(self, includes):
-        conversions = []
-        call_args = []
-        for type_converter in self.type_converters:
-            conversions.append(type_converter.python_to_cpp())
-            call_args.extend(type_converter.cpp_call_args())
-        return conversions, call_args
+    def _input_type_conversions(self):
+        return [tc.python_to_cpp() for tc in self.type_converters]
+
+    def _call_args(self):
+        return list(chain.from_iterable(
+            tc.cpp_call_args() for tc in self.type_converters))
 
     def _call_cpp_function(self, call_args):
-        cpp_type_decl = self.output_type_converter.cpp_type_decl()
         call = templates.fun_call % {"name": self.cppname,
                                      "call_args": ", ".join(call_args)}
-        return catch_result(cpp_type_decl, call)
+        return catch_result(self.output_type_converter.cpp_type_decl(), call)
 
 
 class ConstructorDefinition(FunctionDefinition):
@@ -560,11 +554,10 @@ class MethodDefinition(FunctionDefinition):
         self.initial_args = ["%s self" % class_name]
 
     def _call_cpp_function(self, call_args):
-        cpp_type_decl = self.output_type_converter.cpp_type_decl()
         call = templates.method_call % {
             "name": self.config.call_operators.get(self.cppname, self.cppname),
             "call_args": ", ".join(call_args)}
-        return catch_result(cpp_type_decl, call)
+        return catch_result(self.output_type_converter.cpp_type_decl(), call)
 
 
 class SetterDefinition(MethodDefinition):
@@ -591,9 +584,8 @@ class GetterDefinition(MethodDefinition):
 
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 0
-        cpp_type_decl = self.output_type_converter.cpp_type_decl()
         call = templates.getter_call % {"name": self.field_name}
-        return catch_result(cpp_type_decl, call)
+        return catch_result(self.output_type_converter.cpp_type_decl(), call)
 
 
 def catch_result(result_type_decl, call):
