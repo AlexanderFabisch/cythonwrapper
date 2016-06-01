@@ -336,7 +336,7 @@ class DoubleArrayTypeConverter(AbstractTypeConverter):
         return 2
 
     def add_includes(self, includes):
-        includes.numpy = True
+        includes.add_include_for_numpy()
 
     def python_to_cpp(self):
         return ""

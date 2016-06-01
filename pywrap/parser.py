@@ -25,14 +25,15 @@ class Includes:
         self.deref = False
 
     def add_include_for(self, tname):
-        if self._part_of_tname(tname, "bool"):
-            self.boolean = True
         for t in self.stl.keys():
             if self._part_of_tname(tname, t):
                 self.stl[t] = True
 
     def add_include_for_deref(self):
         self.deref = True
+
+    def add_include_for_numpy(self):
+        self.numpy = True
 
     def _part_of_tname(self, tname, subtname):
         return (tname == subtname or tname.startswith(subtname) or
