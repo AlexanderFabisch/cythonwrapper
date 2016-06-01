@@ -54,16 +54,10 @@ class Includes:
         return includes
 
     def implementations_import(self):
-        includes = "from libcpp cimport bool" + os.linesep
+        includes = self.declarations_import()
         if self.numpy:
             includes += "cimport numpy as np" + os.linesep
             includes += "import numpy as np" + os.linesep
-
-        for t in self.stl.keys():
-            if self.stl[t]:
-                includes += ("from libcpp.%(type)s cimport %(type)s"
-                             % {"type": t}) + os.linesep
-
         if self.deref:
             includes += ("from cython.operator cimport dereference as deref" +
                          os.linesep)
