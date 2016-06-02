@@ -236,25 +236,23 @@ class CythonDeclarationExporter(AstExporter):
         self._clear_class()
 
     def visit_method(self, method):
+        self._visit_method(method, templates.method_decl)
+
+    def visit_template_method(self, template_method):
+        self._visit_method(
+            template_method, templates.template_method_decl,
+            {"types": ", ".join(template_method.template_types)})
+
+    def _visit_method(self, method, template, additional_args=None):
         if not method.ignored:
             method_dict = {"args": ", ".join(self.arguments)}
             method_dict.update(method.__dict__)
-            method_dict["name"] = replace_operator_decl(method_dict["name"],
-                                                        self.config)
-            method_str = templates.method_decl % method_dict
+            if additional_args is not None:
+                method_dict.update(additional_args)
+            method_dict["name"] = replace_operator_decl(
+                method_dict["name"], self.config)
+            method_str = template % method_dict
             method_str += self._exception_suffix(method.result_type)
-            self.methods.append(method_str)
-        self.arguments = []
-
-    def visit_template_method(self, template_method):
-        if not template_method.ignored:
-            method_dict = {"args": ", ".join(self.arguments),
-                           "types": ", ".join(template_method.template_types)}
-            method_dict.update(template_method.__dict__)
-            method_dict["name"] = replace_operator_decl(method_dict["name"],
-                                                        self.config)
-            method_str = templates.template_method_decl % method_dict
-            method_str += self._exception_suffix(template_method.result_type)
             self.methods.append(method_str)
         self.arguments = []
 
