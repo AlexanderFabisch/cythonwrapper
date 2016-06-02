@@ -6,6 +6,7 @@ from .utils import indent_block, from_camel_case
 class AstNode(object):
     def __init__(self):
         self.nodes = []
+        self.ignored = False
 
     def accept(self, exporter):
         for node in self.nodes:
@@ -95,7 +96,6 @@ class FunctionBase(AstNode):
     def __init__(self, name):
         super(FunctionBase, self).__init__()
         self.name = name
-        self.ignored = False
 
     def __str__(self):
         result = "%s '%s'" % (self.__class__.__name__, self.name)
@@ -153,7 +153,6 @@ class TemplateClass(Clazz, Template):
     def __init__(self, filename, namespace, name):
         Clazz.__init__(self, filename, namespace, name)
         Template.__init__(self)
-        self.ignored = False
 
     def __str__(self):
         result = Clazz.__str__(self)
@@ -203,7 +202,6 @@ class Field(AstNode):
         self.name = name
         self.tipe = tipe
         self.class_name = class_name
-        self.ignored = False
 
     def __str__(self):
         return "Field (%s) %s" % (self.tipe, self.name)

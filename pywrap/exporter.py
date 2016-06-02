@@ -197,15 +197,26 @@ class CythonDeclarationExporter(AstExporter):
         self.typedefs.append(templates.typedef_decl % typedef.__dict__)
 
     def visit_clazz(self, clazz):
-        class_decl = {}
-        class_decl.update(clazz.__dict__)
-        class_decl["fields"] = self.fields
-        class_decl["ctors"] = self.ctors
-        class_decl["methods"] = self.methods
-        class_decl["empty_body"] = (len(self.fields) + len(self.methods) +
-                                    len(self.ctors) == 0)
+        self._visit_class(clazz)
 
-        self.classes.append(render("class_decl", **class_decl))
+    def visit_template_class(self, template_class):
+        name = "%s[%s]" % (template_class.name,
+                           ", ".join(template_class.template_types))
+        self._visit_class(template_class, {"name": name})
+
+    def _visit_class(self, clazz, additional_args=None):
+        if not clazz.ignored:
+            class_decl = {}
+            class_decl.update(clazz.__dict__)
+            if additional_args is not None:
+                class_decl.update(additional_args)
+            class_decl["fields"] = self.fields
+            class_decl["ctors"] = self.ctors
+            class_decl["methods"] = self.methods
+            class_decl["empty_body"] = (len(self.fields) + len(self.methods) +
+                                        len(self.ctors) == 0)
+
+            self.classes.append(render("class_decl", **class_decl))
         self._clear_class()
 
     def visit_field(self, field):
@@ -219,21 +230,6 @@ class CythonDeclarationExporter(AstExporter):
             const_str = templates.constructor_decl % const_dict
             self.ctors.append(const_str)
         self.arguments = []
-
-    def visit_template_class(self, template_class):
-        if not template_class.ignored:
-            class_decl = {}
-            class_decl.update(template_class.__dict__)
-            class_decl["name"] = "%s[%s]" % (
-                template_class.name, ", ".join(template_class.template_types))
-            class_decl["fields"] = self.fields
-            class_decl["ctors"] = self.ctors
-            class_decl["methods"] = self.methods
-            class_decl["empty_body"] = (len(self.fields) + len(self.methods) +
-                                        len(self.ctors) == 0)
-
-            self.classes.append(render("class_decl", **class_decl))
-        self._clear_class()
 
     def visit_method(self, method):
         self._visit_method(method, templates.method_decl)
