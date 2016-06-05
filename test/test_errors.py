@@ -1,5 +1,6 @@
 from nose.tools import assert_false
 from pywrap.testing import cython_extension_from
+from nose.tools import assert_equal
 
 
 def test_fails():
@@ -20,3 +21,9 @@ def test_no_default_constructor():
         from nodefaultctor import A
         a = A()
         a.set_member(5)
+
+
+def test_python_keyword_conversion():
+    with cython_extension_from("pythonkeywords.hpp"):
+        from pythonkeywords import my_fun
+        assert_equal(my_fun(1, 2, 3), 6)

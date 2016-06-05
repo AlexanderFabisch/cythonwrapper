@@ -1,7 +1,7 @@
 import os
 import re
 from abc import ABCMeta, abstractmethod
-from .utils import lines
+from .utils import lines, replace_keyword_argnames
 from .templates import render
 
 
@@ -18,18 +18,6 @@ def is_stl_type_with_automatic_conversion(typename):
         if typename.startswith(container):
             return True
     return False
-
-
-def replace_keyword_argnames(argname):
-    if argname is None:
-        return argname
-    keyword_replacements = {
-        "lambda": "lmbda",
-        "in": "input"
-    }
-    for keyword, replacement in keyword_replacements.items():
-        argname = argname.replace(keyword, replacement)
-    return argname
 
 
 def cythontype_from_cpptype(tname):

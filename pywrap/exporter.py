@@ -11,7 +11,7 @@ from .template_specialization import (ClassSpecializer, FunctionSpecializer,
                                       MethodSpecializer)
 from .templates import render
 from .type_conversion import create_type_converter
-from .utils import indent_block, from_camel_case
+from .utils import indent_block, from_camel_case, replace_keyword_argnames
 
 
 class AstExporter(object):
@@ -274,7 +274,9 @@ class CythonDeclarationExporter(AstExporter):
         self.arguments = []
 
     def visit_param(self, param):
-        self.arguments.append(templates.arg_decl % param.__dict__)
+        param_dict = param.__dict__
+        param_dict["name"] = replace_keyword_argnames(param.name)
+        self.arguments.append(templates.arg_decl % param_dict)
 
     def _exception_suffix(self, result_type):
         """Workaround for bug in Cython when returning C arrays."""

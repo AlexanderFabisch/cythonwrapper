@@ -2,6 +2,7 @@ import os
 import sys
 from contextlib import contextmanager
 from functools import partial
+import keyword
 
 
 def lines(*args):
@@ -79,3 +80,9 @@ def remove_files(filenames):
     for f in filenames:
         if os.path.exists(f):
             os.remove(f)
+
+
+def replace_keyword_argnames(argname):
+    if keyword.iskeyword(argname):
+        argname = "_" + argname
+    return argname

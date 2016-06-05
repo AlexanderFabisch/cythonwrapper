@@ -1,5 +1,6 @@
 from pywrap.utils import (lines, indent_block, from_camel_case, make_header,
-                          file_ending, hidden_stream, remove_files)
+                          file_ending, hidden_stream, remove_files,
+                          replace_keyword_argnames)
 from nose.tools import assert_equal, assert_multi_line_equal, raises
 
 
@@ -38,3 +39,10 @@ def test_hide_invalid_stream():
 
 def test_remove_no_files():
     remove_files(["does", "not", "exist"])
+
+
+def test_keyword_replacement():
+    assert_equal(replace_keyword_argnames(None), None)
+    assert_equal(replace_keyword_argnames("a"), "a")
+    assert_equal(replace_keyword_argnames("if"), "_if")
+    assert_equal(replace_keyword_argnames("lambda"), "_lambda")
