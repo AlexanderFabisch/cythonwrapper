@@ -11,7 +11,7 @@ from .template_specialization import (ClassSpecializer, FunctionSpecializer,
                                       MethodSpecializer)
 from .templates import render
 from .type_conversion import create_type_converter
-from .utils import indent_block, from_camel_case, replace_keyword_argnames
+from .utils import from_camel_case, replace_keyword_argnames
 
 
 class AstExporter(object):
@@ -380,8 +380,8 @@ class CythonImplementationExporter(AstExporter):
                 self.config).make()
             return {
                 "name": from_camel_case(field.name),
-                "getter": indent_block(getter_def, 1),
-                "setter": indent_block(setter_def, 1)
+                "getter": getter_def,
+                "setter": setter_def
             }
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring field '%s'" % field.name)
@@ -401,8 +401,8 @@ class CythonImplementationExporter(AstExporter):
         try:
             constructor_def = ConstructorDefinition(
                 selftype, ctor.nodes, self.includes,
-                self.type_info, self.config, cpptype).make()
-            return indent_block(constructor_def, 1)
+                self.type_info, self.config, cpptype)
+            return constructor_def.make()
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % ctor.name)
             ctor.ignored = True
@@ -423,8 +423,8 @@ class CythonImplementationExporter(AstExporter):
             method_def = MethodDefinition(
                 selftype, method.name, method.nodes, self.includes,
                 method.result_type, self.type_info, self.config,
-                cppname=cppname).make()
-            return indent_block(method_def, 1)
+                cppname=cppname)
+            return method_def.make()
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % method.name)
             method.ignored = True

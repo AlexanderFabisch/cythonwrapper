@@ -12,7 +12,7 @@ cdef class {{ name }}:
 
 {%- if ctors %}
 {% for ctor in ctors %}
-{{ ctor }}
+    {{ ctor|indent(4) }}
 {% endfor %}
 {%- endif %}
 {%- if fields -%}
@@ -20,13 +20,14 @@ cdef class {{ name }}:
 {%- if "name" in field %}
     {{ field["name"] }} = property(get_{{ field["name"] }}, set_{{ field["name"] }})
 
-{{ field["getter"] }}
-{{ field["setter"] }}
+    {{ field["getter"]|indent(4) }}
+
+    {{ field["setter"]|indent(4) }}
 {%- endif %}
 {% endfor %}
 {%- endif -%}
 {%- if methods %}
 {% for method in methods %}
-{{ method }}
+    {{ method|indent(4) }}
 {% endfor %}
 {%- endif %}
