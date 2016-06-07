@@ -22,7 +22,7 @@ class Specializer(object):
         key = self._key(general)
         if key not in self.config.registered_template_specializations:
             raise LookupError(
-                "No template specialization registered for template with key"
+                "No template specialization registered for template with key "
                 "'%s' with the following template types: %s"
                 % (key, ", ".join(general.template_types)))
         return self.config.registered_template_specializations[key]

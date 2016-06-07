@@ -259,6 +259,11 @@ class Parser(object):
                         node.spelling, node.result_type.spelling)
             elif node.kind == cindex.CursorKind.TEMPLATE_TYPE_PARAMETER:
                 self.add_template_type(node.displayname)
+            elif node.kind == cindex.CursorKind.TEMPLATE_NON_TYPE_PARAMETER:
+                warnings.warn(
+                    "Template non-type parameters are not supported by "
+                    "Cython <= 0.24. The name of the parameter is '%s'."
+                    % node.displayname)
             elif node.kind == cindex.CursorKind.CXX_METHOD:
                 if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
                     if node.is_static_method():
