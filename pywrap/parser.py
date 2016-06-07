@@ -340,13 +340,13 @@ class Parser(object):
 
     def add_typedef(self, underlying_tname, tname):
         if underlying_tname == "struct " + tname:
-            if self.ast.unnamed_struct is None:
+            if self.unnamed_struct is None:
                 raise LookupError("Struct typedef does not match any "
                                   "unnamed struct")
-            self.ast.unnamed_struct.name = tname
-            self.ast.nodes.append(self.ast.unnamed_struct)
+            self.unnamed_struct.name = tname
+            self.ast.nodes.append(self.unnamed_struct)
             self.type_info.classes.append(tname)
-            self.ast.unnamed_struct = None
+            self.unnamed_struct = None
             self.last_type = None
             return False
         else:
@@ -364,9 +364,9 @@ class Parser(object):
 
     def add_struct_decl(self, name):
         if name == "" and self.unnamed_struct is None:
-            self.ast.unnamed_struct = Clazz(
+            self.unnamed_struct = Clazz(
                 self.include_file, self.namespace, name)
-            self.last_type = self.ast.unnamed_struct
+            self.last_type = self.unnamed_struct
         else:
             self.add_class(name)
         return True
