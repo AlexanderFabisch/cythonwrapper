@@ -8,10 +8,9 @@ import os
 
 def strict_prototypes_workaround():
     # Workaround to remove '-Wstrict-prototypes' from compiler invocation
-    (opt,) = get_config_vars('OPT')
-    os.environ['OPT'] = " ".join(
-        flag for flag in opt.split() if flag != '-Wstrict-prototypes'
-    )
+    opt = get_config_vars('OPT')[0]
+    os.environ['OPT'] = " ".join(flag for flag in opt.split()
+                                 if flag != '-Wstrict-prototypes')
 
 
 if __name__ == '__main__':
@@ -26,17 +25,17 @@ if __name__ == '__main__':
                 "{{ filename }}",
 {%- endfor %}
             ],
-            include_dirs = [
+            include_dirs=[
                 "{{ sourcedir }}",
                 numpy.get_include(),
 {%- for incdir in incdirs %}
                 "{{ incdir }}",
 {%- endfor %}
             ],
-            define_macros = [
+            define_macros=[
                 ("NDEBUG",),
              ],
-            extra_compile_args = [
+            extra_compile_args=[
                 "-std=c++11",
 {%- for compiler_flag in compiler_flags %}
                 "{{ compiler_flag }}",
@@ -45,7 +44,7 @@ if __name__ == '__main__':
                 # NumPy C-API
                 "-Wno-cpp", "-Wno-unused-function"
             ],
-            language = "c++"
+            language="c++"
         )
     ]
     setup(ext_modules=cythonize(extensions))
