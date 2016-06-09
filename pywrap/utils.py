@@ -6,6 +6,7 @@ import keyword
 
 
 def lines(*args):
+    """Make multi-line string."""
     return os.linesep.join(args)
 
 
@@ -33,6 +34,11 @@ def _indent_line(line, level):
 
 
 def from_camel_case(name):
+    """Convert camel case to snake case.
+
+    Function and variable names are usually written in camel case in C++ and
+    in snake case in Python.
+    """
     new_name = str(name)
     i = 0
     while i < len(new_name):
@@ -44,12 +50,14 @@ def from_camel_case(name):
 
 
 def make_header(header):
+    """Make header for shell output."""
     return lines("+" + "=" * 78 + "+",
                  ("| " + header).ljust(79) + "|",
                  "+" + "=" * 78 + "+")
 
 
 def file_ending(filename):
+    """Extract file ending."""
     return filename.split(".")[-1]
 
 
@@ -77,12 +85,17 @@ hidden_stderr = partial(hidden_stream, fileno=2)
 
 
 def remove_files(filenames):
+    """Remove files if they exist."""
     for f in filenames:
         if os.path.exists(f):
             os.remove(f)
 
 
 def replace_keyword_argnames(argname):
+    """Replace Python keywords.
+
+    We will add the prefix "_".
+    """
     if keyword.iskeyword(argname):
         argname = "_" + argname
     return argname
