@@ -30,11 +30,12 @@ class Ast(AstNode):
 
 
 class Enum(AstNode):
-    def __init__(self, filename, namespace, tipe):
+    def __init__(self, filename, namespace, tipe, comment):
         super(Enum, self).__init__()
         self.filename = filename
         self.namespace = namespace
         self.tipe = tipe
+        self.comment = comment
         self.constants = []
 
     def __str__(self):
@@ -54,11 +55,12 @@ class Typedef(AstNode):
 
 
 class Clazz(AstNode):
-    def __init__(self, filename, namespace, name):
+    def __init__(self, filename, namespace, name, comment):
         super(Clazz, self).__init__()
         self.filename = filename
         self.namespace = namespace
         self.name = name
+        self.comment = comment
 
     def __str__(self):
         result = "%s '%s' ('%s')" % (
@@ -79,9 +81,10 @@ class Clazz(AstNode):
 
 
 class TemplateClazzSpecialization(Clazz):
-    def __init__(self, filename, namespace, name, cppname, specialization):
+    def __init__(self, filename, namespace, name, cppname, specialization,
+                 comment):
         super(TemplateClazzSpecialization, self).__init__(
-            filename, namespace, name)
+            filename, namespace, name, comment)
         self.cppname = cppname
         self.specialization = specialization
 
@@ -93,9 +96,10 @@ class TemplateClazzSpecialization(Clazz):
 
 
 class FunctionBase(AstNode):
-    def __init__(self, name):
+    def __init__(self, name, comment):
         super(FunctionBase, self).__init__()
         self.name = name
+        self.comment = comment
 
     def __str__(self):
         result = "%s '%s'" % (self.__class__.__name__, self.name)
@@ -106,8 +110,8 @@ class FunctionBase(AstNode):
 
 
 class Function(FunctionBase):
-    def __init__(self, filename, namespace, name, result_type):
-        super(Function, self).__init__(name)
+    def __init__(self, filename, namespace, name, result_type, comment):
+        super(Function, self).__init__(name, comment)
         self.filename = filename
         self.namespace = namespace
         self.result_type = result_type
@@ -121,14 +125,14 @@ class Function(FunctionBase):
 
 
 class Constructor(FunctionBase):
-    def __init__(self, class_name):
-        super(Constructor, self).__init__("__init__")
+    def __init__(self, class_name, comment):
+        super(Constructor, self).__init__("__init__", comment)
         self.class_name = class_name
 
 
 class Method(FunctionBase):
-    def __init__(self, name, result_type, class_name):
-        super(Method, self).__init__(name)
+    def __init__(self, name, result_type, class_name, comment):
+        super(Method, self).__init__(name, comment)
         self.result_type = result_type
         self.class_name = class_name
 
@@ -150,8 +154,8 @@ class Template:
 
 
 class TemplateClass(Clazz, Template):
-    def __init__(self, filename, namespace, name):
-        Clazz.__init__(self, filename, namespace, name)
+    def __init__(self, filename, namespace, name, comment):
+        Clazz.__init__(self, filename, namespace, name, comment)
         Template.__init__(self)
 
     def __str__(self):
@@ -161,8 +165,8 @@ class TemplateClass(Clazz, Template):
 
 
 class TemplateFunction(Function, Template):
-    def __init__(self, filename, namespace, name, result_type):
-        Function.__init__(self, filename, namespace, name, result_type)
+    def __init__(self, filename, namespace, name, result_type, comment):
+        Function.__init__(self, filename, namespace, name, result_type, comment)
         Template.__init__(self)
 
     def __str__(self):
@@ -172,8 +176,8 @@ class TemplateFunction(Function, Template):
 
 
 class TemplateMethod(Method, Template):
-    def __init__(self, name, result_type, class_name):
-        Method.__init__(self, name, result_type, class_name)
+    def __init__(self, name, result_type, class_name, comment):
+        Method.__init__(self, name, result_type, class_name, comment)
         Template.__init__(self)
 
     def __str__(self):
@@ -197,11 +201,12 @@ class Param(AstNode):
 
 
 class Field(AstNode):
-    def __init__(self, name, tipe, class_name):
+    def __init__(self, name, tipe, class_name, comment):
         super(Field, self).__init__()
         self.name = name
         self.tipe = tipe
         self.class_name = class_name
+        self.comment = comment
 
     def __str__(self):
         return "Field (%s) %s" % (self.tipe, self.name)

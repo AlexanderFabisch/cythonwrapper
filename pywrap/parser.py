@@ -245,18 +245,20 @@ class Parser(object):
             elif node.kind == cindex.CursorKind.FUNCTION_DECL:
                 parse_children = self.add_function(
                     node.spelling, node.result_type.spelling,
-                    self.namespace)
+                    self.namespace, node.raw_comment)
             elif node.kind == cindex.CursorKind.CLASS_TEMPLATE:
                 name = node.displayname.split("<")[0]
-                self.add_template_class(name)
+                self.add_template_class(name, node.raw_comment)
                 class_added = True
             elif node.kind == cindex.CursorKind.FUNCTION_TEMPLATE:
                 if self.last_type is None:
                     self.add_template_function(
-                        node.spelling, node.result_type.spelling)
+                        node.spelling, node.result_type.spelling,
+                        node.raw_comment)
                 else:
                     self.add_template_method(
-                        node.spelling, node.result_type.spelling)
+                        node.spelling, node.result_type.spelling,
+                        node.raw_comment)
             elif node.kind == cindex.CursorKind.TEMPLATE_TYPE_PARAMETER:
                 self.add_template_type(node.displayname)
             elif node.kind == cindex.CursorKind.TEMPLATE_NON_TYPE_PARAMETER:
@@ -273,26 +275,28 @@ class Parser(object):
                         namespace += self.last_type.name
                         parse_children = self.add_function(
                             node.spelling, node.result_type.spelling,
-                            namespace)
+                            namespace, node.raw_comment)
                     else:
                         parse_children = self.add_method(
-                            node.spelling, node.result_type.spelling)
+                            node.spelling, node.result_type.spelling,
+                            node.raw_comment)
                 else:
                     parse_children = False
             elif node.kind == cindex.CursorKind.CONSTRUCTOR:
                 if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
-                    parse_children = self.add_ctor()
+                    parse_children = self.add_ctor(node.raw_comment)
                 else:
                     parse_children = False
             elif node.kind == cindex.CursorKind.CLASS_DECL:
-                parse_children = self.add_class(node.displayname)
+                parse_children = self.add_class(node.displayname,
+                                                node.raw_comment)
                 class_added = True
             elif node.kind == cindex.CursorKind.STRUCT_DECL:
                 parse_children = self.add_struct_decl(node.displayname)
             elif node.kind == cindex.CursorKind.FIELD_DECL:
                 if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
                     parse_children = self.add_field(
-                        node.displayname, node.type.spelling)
+                        node.displayname, node.type.spelling, node.raw_comment)
                 else:
                     parse_children = False
             elif node.kind == cindex.CursorKind.TYPEDEF_DECL:
@@ -300,7 +304,8 @@ class Parser(object):
                 parse_children = self.add_typedef(
                     node.underlying_typedef_type.spelling, tname)
             elif node.kind == cindex.CursorKind.ENUM_DECL:
-                parse_children = self.add_enum(node.displayname)
+                parse_children = self.add_enum(node.displayname,
+                                               node.raw_comment)
             elif node.kind == cindex.CursorKind.ENUM_CONSTANT_DECL:
                 self.last_enum.constants.append(node.displayname)
             elif node.kind == cindex.CursorKind.COMPOUND_STMT:
@@ -365,14 +370,14 @@ class Parser(object):
     def add_struct_decl(self, name):
         if name == "" and self.unnamed_struct is None:
             self.unnamed_struct = Clazz(
-                self.include_file, self.namespace, name)
+                self.include_file, self.namespace, name, "")
             self.last_type = self.unnamed_struct
         else:
             self.add_class(name)
         return True
 
-    def add_enum(self, name):
-        enum = Enum(self.include_file, self.namespace, name)
+    def add_enum(self, name, comment=""):
+        enum = Enum(self.include_file, self.namespace, name, comment)
         self.type_info.enums.append(name)
         self.last_enum = enum
         self.ast.nodes.append(enum)
@@ -381,34 +386,34 @@ class Parser(object):
     def add_template_type(self, template_type):
         self.last_template.template_types.append(template_type)
 
-    def add_function(self, name, tname, namespace):
+    def add_function(self, name, tname, namespace, comment=""):
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
         function = Function(
-            self.include_file, namespace, name, tname)
+            self.include_file, namespace, name, tname, comment)
         self.ast.nodes.append(function)
         self.last_function = function
         return True
 
-    def add_template_function(self, name, tname):
+    def add_template_function(self, name, tname, comment):
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
         function = TemplateFunction(self.include_file, self.namespace, name,
-                                    tname)
+                                    tname, comment)
         self.ast.nodes.append(function)
         self.last_function = function
         self.last_template = function
         return True
 
-    def add_class(self, name):
-        clazz = Clazz(self.include_file, self.namespace, name)
+    def add_class(self, name, comment=""):
+        clazz = Clazz(self.include_file, self.namespace, name, comment)
         self.ast.nodes.append(clazz)
         self.last_type = clazz
         self.type_info.classes.append(name)
         return True
 
-    def add_template_class(self, name):
-        clazz = TemplateClass(self.include_file, self.namespace, name)
+    def add_template_class(self, name, comment=""):
+        clazz = TemplateClass(self.include_file, self.namespace, name, comment)
         self.ast.nodes.append(clazz)
         self.last_type = clazz
         self.last_template = clazz
@@ -422,24 +427,24 @@ class Parser(object):
 
         return True
 
-    def add_ctor(self):
-        constructor = Constructor(self.last_type.name)
+    def add_ctor(self, comment=""):
+        constructor = Constructor(self.last_type.name, comment)
         self.last_type.nodes.append(constructor)
         self.last_function = constructor
         return True
 
-    def add_method(self, name, tname):
+    def add_method(self, name, tname, comment):
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
-        method = Method(name, tname, self.last_type.name)
+        method = Method(name, tname, self.last_type.name, comment)
         self.last_type.nodes.append(method)
         self.last_function = method
         return True
 
-    def add_template_method(self, name, tname):
+    def add_template_method(self, name, tname, comment=""):
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
-        method = TemplateMethod(name, tname, self.last_type.name)
+        method = TemplateMethod(name, tname, self.last_type.name, comment)
         self.last_type.nodes.append(method)
         self.last_function = method
         self.last_template = method
@@ -457,9 +462,9 @@ class Parser(object):
                           "function in current context." % (name, tname))
         return True
 
-    def add_field(self, name, tname):
+    def add_field(self, name, tname, comment=""):
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
-        field = Field(name, tname, self.last_type.name)
+        field = Field(name, tname, self.last_type.name, comment)
         self.last_type.nodes.append(field)
         return False

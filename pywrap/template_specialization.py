@@ -52,7 +52,8 @@ class ClassSpecializer(Specializer):
             types = [spec[t] for t in general.template_types]
             cppname = "%s[%s]" % (general.name, ", ".join(types))
             specialized = TemplateClazzSpecialization(
-                general.filename, general.namespace, name, cppname, spec)
+                general.filename, general.namespace, name, cppname, spec,
+                general.comment)
             specialized_classes.append(specialized)
 
         return specialized_classes
@@ -69,7 +70,7 @@ class FunctionSpecializer(Specializer):
             result_type = self._replace_specification(general.result_type, spec)
 
             specialized = Function(general.filename, general.namespace, name,
-                                   result_type)
+                                   result_type, general.comment)
 
             for arg in general.nodes:
                 tipe = self._replace_specification(arg.tipe, spec)
@@ -92,7 +93,8 @@ class MethodSpecializer(Specializer):
         for name, spec in specs:
             result_type = self._replace_specification(general.result_type, spec)
 
-            specialized = Method(name, result_type, general.class_name)
+            specialized = Method(name, result_type, general.class_name,
+                                 general.comment)
 
             for arg in general.nodes:
                 tipe = self._replace_specification(arg.tipe, spec)

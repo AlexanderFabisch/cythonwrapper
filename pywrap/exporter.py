@@ -338,7 +338,7 @@ class CythonImplementationExporter(AstExporter):
                    "all others." % clazz.name)
             warnings.warn(msg)
         elif len(self.ctors) == 0:
-            self.ctors.append(Constructor(clazz.name))
+            self.ctors.append(Constructor(clazz.name, ""))
         if cppname is None:
             cppname = clazz.name
 
