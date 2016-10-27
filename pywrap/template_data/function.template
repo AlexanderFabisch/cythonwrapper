@@ -1,4 +1,8 @@
 {{def_prefix}} {{name}}({{args}}):
+{%- if comment %}
+    """{{ comment|indent(4) }}
+    """
+{%- endif %}
 {%- if input_conversions %}
 {%- for input_conversion in input_conversions %}
     {%- if input_conversion != "" %}

@@ -11,7 +11,8 @@ from .template_specialization import (ClassSpecializer, FunctionSpecializer,
                                       MethodSpecializer)
 from .templates import render
 from .type_conversion import create_type_converter
-from .utils import from_camel_case, replace_keyword_argnames
+from .utils import (from_camel_case, replace_keyword_argnames,
+                    convert_to_docstring)
 
 
 class AstExporter(object):
@@ -347,6 +348,7 @@ class CythonImplementationExporter(AstExporter):
             class_def = {}
             class_def.update(clazz.__dict__)
             class_def["cppname"] = cppname
+            class_def["comment"] = convert_to_docstring(clazz.comment)
             class_def["fields"] = map(partial(
                 self._process_field, selftype=clazz.name), self.fields)
             class_def["ctors"] = map(partial(
@@ -400,7 +402,7 @@ class CythonImplementationExporter(AstExporter):
 
         try:
             constructor_def = ConstructorDefinition(
-                selftype, ctor.nodes, self.includes,
+                selftype, ctor.comment, ctor.nodes, self.includes,
                 self.type_info, self.config, cpptype)
             return constructor_def.make()
         except NotImplementedError as e:
@@ -421,8 +423,8 @@ class CythonImplementationExporter(AstExporter):
         method, cppname = arg
         try:
             method_def = MethodDefinition(
-                selftype, method.name, method.nodes, self.includes,
-                method.result_type, self.type_info, self.config,
+                selftype, method.comment, method.name, method.nodes,
+                self.includes, method.result_type, self.type_info, self.config,
                 cppname=cppname)
             return method_def.make()
         except NotImplementedError as e:
@@ -438,7 +440,7 @@ class CythonImplementationExporter(AstExporter):
     def visit_function(self, function, cppname=None):
         try:
             self.functions.append(FunctionDefinition(
-                function.name, function.nodes, self.includes,
+                function.name, function.comment, function.nodes, self.includes,
                 function.result_type, self.type_info,
                 self.config, cppname=cppname).make())
         except NotImplementedError as e:
@@ -455,9 +457,10 @@ class CythonImplementationExporter(AstExporter):
 
 
 class FunctionDefinition(object):
-    def __init__(self, name, arguments, includes, result_type, type_info,
-                 config, cppname=None):
+    def __init__(self, name, comment, arguments, includes, result_type,
+                 type_info, config, cppname=None):
         self.name = name
+        self.comment = comment
         self.arguments = arguments
         self.includes = includes
         self.initial_args = []
@@ -494,6 +497,7 @@ class FunctionDefinition(object):
         function["call"] = self._call_cpp_function(self._call_args())
         function["return_output"] = self.output_type_converter.return_output(
             self.output_is_copy)
+        function["comment"] = convert_to_docstring(self.comment)
         return render("function", **function)
 
     def _signature(self):
@@ -529,10 +533,10 @@ class FunctionDefinition(object):
 
 
 class ConstructorDefinition(FunctionDefinition):
-    def __init__(self, class_name, arguments, includes, type_info, config,
-                 cpp_classname):
+    def __init__(self, class_name, comment, arguments, includes, type_info,
+                 config, cpp_classname):
         super(ConstructorDefinition, self).__init__(
-            "__init__", arguments, includes, result_type=None,
+            "__init__", comment, arguments, includes, result_type=None,
             type_info=type_info, config=config)
         self.initial_args = ["%s self" % class_name]
         self.cpp_classname = cpp_classname
@@ -543,10 +547,10 @@ class ConstructorDefinition(FunctionDefinition):
 
 
 class MethodDefinition(FunctionDefinition):
-    def __init__(self, class_name, name, arguments, includes, result_type,
-                 type_info, config, cppname=None):
+    def __init__(self, class_name, comment, name, arguments, includes,
+                 result_type, type_info, config, cppname=None):
         super(MethodDefinition, self).__init__(
-            name, arguments, includes, result_type, type_info, config, cppname)
+            name, comment, arguments, includes, result_type, type_info, config, cppname)
         self.initial_args = ["%s self" % class_name]
 
     def _call_cpp_function(self, call_args):
@@ -560,7 +564,7 @@ class SetterDefinition(MethodDefinition):
     def __init__(self, python_classname, field, includes, type_info, config):
         name = "set_%s" % field.name
         super(SetterDefinition, self).__init__(
-            python_classname, name, [field], includes, "void", type_info,
+            python_classname, "", name, [field], includes, "void", type_info,
             config)
         self.field_name = field.name
 
@@ -574,7 +578,8 @@ class GetterDefinition(MethodDefinition):
     def __init__(self, python_classname, field, includes, type_info, config):
         name = "get_%s" % field.name
         super(GetterDefinition, self).__init__(
-            python_classname, name, [], includes, field.tipe, type_info, config)
+            python_classname, "", name, [], includes, field.tipe, type_info,
+            config)
         self.output_is_copy = False
         self.field_name = field.name
 
