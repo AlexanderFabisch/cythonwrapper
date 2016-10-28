@@ -1,6 +1,6 @@
 from pywrap.utils import (lines, indent_block, from_camel_case, make_header,
                           file_ending, hidden_stream, remove_files,
-                          replace_keyword_argnames)
+                          replace_keyword_argnames, convert_to_docstring)
 from nose.tools import assert_equal, assert_multi_line_equal, raises
 
 
@@ -46,3 +46,60 @@ def test_keyword_replacement():
     assert_equal(replace_keyword_argnames("a"), "a")
     assert_equal(replace_keyword_argnames("if"), "_if")
     assert_equal(replace_keyword_argnames("lambda"), "_lambda")
+
+
+def test_convert_to_docstring():
+    assert_equal(convert_to_docstring(None), "")
+
+    assert_multi_line_equal(
+        convert_to_docstring(lines(
+            "/**",
+            " * This is a brief comment.",
+            " */")),
+        "This is a brief comment."
+    )
+
+    assert_multi_line_equal(
+        convert_to_docstring(lines(
+            "/**",
+            " * This is a brief comment.",
+            " *",
+            " * This is a detailed comment.",
+            " */")
+        ),
+        lines(
+            "This is a brief comment.",
+            "",
+            "This is a detailed comment.")
+    )
+
+    assert_multi_line_equal(
+        convert_to_docstring(lines(
+            "/**",
+            " * This is a brief comment.",
+            " * This is a detailed comment.",
+            " */")
+        ),
+        lines(
+            "This is a brief comment.",
+            "",
+            "This is a detailed comment.")
+    )
+
+    assert_multi_line_equal(
+        convert_to_docstring(lines(
+            "/**",
+            " * This is a brief comment.",
+            " * ",
+            " * This is a detailed comment.",
+            " * It contains mathematical equations, like 2 * 3 + 5 = 11.",
+            " * It is important that it includes '*'. 5x * 3x*y = y*z!"
+            " */")
+        ),
+        lines(
+            "This is a brief comment.",
+            "",
+            "This is a detailed comment.",
+            "It contains mathematical equations, like 2 * 3 + 5 = 11.",
+            "It is important that it includes '*'. 5x * 3x*y = y*z!")
+    )

@@ -35,22 +35,45 @@ def _indent_line(line, level):
 
 def convert_to_docstring(comment):
     """Convert API documentation to docstring."""
-    comment = comment.replace("/**", "").replace("*/", "").strip()
+    if comment is None:
+        return ""
+    comment = _strip_comment_markers(comment)
+    return _separate_brief_comment(comment)
+
+
+def _strip_comment_markers(comment):
+    if comment.startswith("/**"):
+        comment = comment[3:]
+    if comment.endswith("*/"):
+        comment = comment[:-2]
+    comment = comment.strip()
+
     lines = comment.split(os.linesep)
-    lines = map(lambda s: strip_comment(s), lines)
-    comment = os.linesep.join(lines)
+    lines = map(lambda s: _strip_comment_line(s), lines)
+    return os.linesep.join(lines)
+
+
+def _strip_comment_line(line):
+    line = line.strip()
+    if line.startswith("*"):
+        line = line[1:].strip()
+    return line
+
+
+def _separate_brief_comment(comment):
     splitted = comment.split(".")
     if len(splitted) >= 1:
         brief = splitted[0]
-        rest = ".".join(splitted[1:])
+        detailed = ".".join(splitted[1:]).strip()
     else:
-        brief = ""
-        rest = comment
-    return brief + "." + os.linesep + rest
+        brief = comment
+        detailed = ""
 
+    docstring = brief + "."
+    if detailed != "":
+        docstring += 2 * os.linesep + detailed
 
-def strip_comment(line):
-    return line.replace("* ", "").strip()
+    return docstring
 
 
 def from_camel_case(name):
