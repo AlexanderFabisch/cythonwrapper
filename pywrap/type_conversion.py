@@ -317,7 +317,9 @@ class DoubleArrayTypeConverter(AbstractTypeConverter):
         if self.context is None:
             return False
         args, index = self.context
-        next_arg_is_int = len(args) >= index + 2 and args[index + 1]
+        next_arg_is_int = (len(args) >= index + 2
+                           and (args[index + 1].tipe == "int"
+                                or args[index + 1].tipe == "unsigned int"))
         return self.tname == "double *" and next_arg_is_int
 
     def n_cpp_args(self):
