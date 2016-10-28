@@ -1,6 +1,6 @@
 cdef class {{ enum.tipe }}:
-{%- if comment %}
-    """{{ comment|indent(4) }}
+{%- if enum.comment %}
+    """{{ enum.comment|indent(4) }}
     """
 {%- endif %}
 {%- for constant in enum.constants %}

@@ -46,6 +46,8 @@ def _strip_comment_markers(comment):
         comment = comment[3:]
     if comment.endswith("*/"):
         comment = comment[:-2]
+    if comment.startswith("///"):
+        comment = comment[3:]
     comment = comment.strip()
 
     lines = comment.split(os.linesep)

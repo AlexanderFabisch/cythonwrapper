@@ -1,4 +1,8 @@
 cdef class {{ name }}:
+{%- if comment %}
+    """{{ comment|indent(4) }}
+    """
+{%- endif %}
     cdef cpp.{{ cppname }} * thisptr
     cdef bool delete_thisptr
 

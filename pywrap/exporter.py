@@ -11,8 +11,7 @@ from .template_specialization import (ClassSpecializer, FunctionSpecializer,
                                       MethodSpecializer)
 from .templates import render
 from .type_conversion import create_type_converter
-from .utils import (from_camel_case, replace_keyword_argnames,
-                    convert_to_docstring)
+from .utils import from_camel_case, replace_keyword_argnames
 
 
 class AstExporter(object):
@@ -348,7 +347,7 @@ class CythonImplementationExporter(AstExporter):
             class_def = {}
             class_def.update(clazz.__dict__)
             class_def["cppname"] = cppname
-            class_def["comment"] = convert_to_docstring(clazz.comment)
+            class_def["comment"] = clazz.comment
             class_def["fields"] = map(partial(
                 self._process_field, selftype=clazz.name), self.fields)
             class_def["ctors"] = map(partial(
@@ -497,7 +496,7 @@ class FunctionDefinition(object):
         function["call"] = self._call_cpp_function(self._call_args())
         function["return_output"] = self.output_type_converter.return_output(
             self.output_is_copy)
-        function["comment"] = convert_to_docstring(self.comment)
+        function["comment"] = self.comment
         return render("function", **function)
 
     def _signature(self):

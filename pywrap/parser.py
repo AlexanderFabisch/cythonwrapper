@@ -7,7 +7,7 @@ from .type_conversion import cythontype_from_cpptype
 from .ast import (Ast, Enum, Typedef, Clazz, Function, TemplateClass,
                   TemplateFunction, Constructor, Method, TemplateMethod,
                   Param, Field)
-from .utils import make_header
+from .utils import make_header, convert_to_docstring
 
 
 class Includes:
@@ -245,20 +245,21 @@ class Parser(object):
             elif node.kind == cindex.CursorKind.FUNCTION_DECL:
                 parse_children = self.add_function(
                     node.spelling, node.result_type.spelling,
-                    self.namespace, node.raw_comment)
+                    self.namespace, convert_to_docstring(node.raw_comment))
             elif node.kind == cindex.CursorKind.CLASS_TEMPLATE:
                 name = node.displayname.split("<")[0]
-                self.add_template_class(name, node.raw_comment)
+                self.add_template_class(
+                    name, convert_to_docstring(node.raw_comment))
                 class_added = True
             elif node.kind == cindex.CursorKind.FUNCTION_TEMPLATE:
                 if self.last_type is None:
                     self.add_template_function(
                         node.spelling, node.result_type.spelling,
-                        node.raw_comment)
+                        convert_to_docstring(node.raw_comment))
                 else:
                     self.add_template_method(
                         node.spelling, node.result_type.spelling,
-                        node.raw_comment)
+                        convert_to_docstring(node.raw_comment))
             elif node.kind == cindex.CursorKind.TEMPLATE_TYPE_PARAMETER:
                 self.add_template_type(node.displayname)
             elif node.kind == cindex.CursorKind.TEMPLATE_NON_TYPE_PARAMETER:
@@ -275,28 +276,30 @@ class Parser(object):
                         namespace += self.last_type.name
                         parse_children = self.add_function(
                             node.spelling, node.result_type.spelling,
-                            namespace, node.raw_comment)
+                            namespace, convert_to_docstring(node.raw_comment))
                     else:
                         parse_children = self.add_method(
                             node.spelling, node.result_type.spelling,
-                            node.raw_comment)
+                            convert_to_docstring(node.raw_comment))
                 else:
                     parse_children = False
             elif node.kind == cindex.CursorKind.CONSTRUCTOR:
                 if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
-                    parse_children = self.add_ctor(node.raw_comment)
+                    parse_children = self.add_ctor(
+                        convert_to_docstring(node.raw_comment))
                 else:
                     parse_children = False
             elif node.kind == cindex.CursorKind.CLASS_DECL:
-                parse_children = self.add_class(node.displayname,
-                                                node.raw_comment)
+                parse_children = self.add_class(
+                    node.displayname, convert_to_docstring(node.raw_comment))
                 class_added = True
             elif node.kind == cindex.CursorKind.STRUCT_DECL:
                 parse_children = self.add_struct_decl(node.displayname)
             elif node.kind == cindex.CursorKind.FIELD_DECL:
                 if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
                     parse_children = self.add_field(
-                        node.displayname, node.type.spelling, node.raw_comment)
+                        node.displayname, node.type.spelling,
+                        convert_to_docstring(node.raw_comment))
                 else:
                     parse_children = False
             elif node.kind == cindex.CursorKind.TYPEDEF_DECL:
@@ -304,8 +307,8 @@ class Parser(object):
                 parse_children = self.add_typedef(
                     node.underlying_typedef_type.spelling, tname)
             elif node.kind == cindex.CursorKind.ENUM_DECL:
-                parse_children = self.add_enum(node.displayname,
-                                               node.raw_comment)
+                parse_children = self.add_enum(
+                    node.displayname, convert_to_docstring(node.raw_comment))
             elif node.kind == cindex.CursorKind.ENUM_CONSTANT_DECL:
                 self.last_enum.constants.append(node.displayname)
             elif node.kind == cindex.CursorKind.COMPOUND_STMT:
