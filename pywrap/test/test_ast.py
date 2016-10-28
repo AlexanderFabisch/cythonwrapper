@@ -158,3 +158,9 @@ def test_walk_through_ast():
     assert_equal(exporter.function_count, 1)
     assert_equal(exporter.typedef_count, 1)
     assert_equal(exporter.enum_count, 1)
+
+
+def test_param_with_default():
+    param = Param("a", "double")
+    param.default_value = "5.0"
+    assert_equal(str(param), "Parameter (double) a = 5.0")
