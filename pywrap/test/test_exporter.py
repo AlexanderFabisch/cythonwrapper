@@ -11,7 +11,7 @@ from nose.tools import assert_multi_line_equal
 
 def test_simple_function_def():
     method = MethodDefinition(
-        "Testclass", "testfun", [], Includes(),
+        "Testclass", "", "testfun", [], Includes(),
         "void", TypeInfo({}), Config()).make()
     assert_multi_line_equal(
         method,
@@ -22,7 +22,7 @@ def test_simple_function_def():
 
 def test_array_arg_function_def():
     method = MethodDefinition(
-        "Testclass", "testfun", [Param("a", "double *"),
+        "Testclass", "", "testfun", [Param("a", "double *"),
                                  Param("aSize", "unsigned int")],
         Includes(), "void", TypeInfo({}), Config()).make()
     assert_multi_line_equal(
@@ -60,7 +60,7 @@ def test_getter_definition():
     )
 
 def test_default_ctor_def():
-    ctor = ConstructorDefinition("MyClass", [], Includes(), TypeInfo(),
+    ctor = ConstructorDefinition("MyClass", "", [], Includes(), TypeInfo(),
                                  Config(), "MyClass").make()
     assert_multi_line_equal(
         ctor,
@@ -72,7 +72,7 @@ def test_default_ctor_def():
 
 
 def test_function_def():
-    fun = FunctionDefinition("myFun", [], Includes(), "void", TypeInfo(),
+    fun = FunctionDefinition("myFun", "", [], Includes(), "void", TypeInfo(),
                              Config()).make()
     assert_multi_line_equal(
         fun,
@@ -84,7 +84,7 @@ def test_function_def():
 
 
 def test_function_def_with_another_cppname():
-    fun = FunctionDefinition("myFunInt", [], Includes(), "void", TypeInfo(),
+    fun = FunctionDefinition("myFunInt", "", [], Includes(), "void", TypeInfo(),
                              Config(), cppname="myFun").make()
     assert_multi_line_equal(
         fun,

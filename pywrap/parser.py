@@ -398,7 +398,7 @@ class Parser(object):
         self.last_function = function
         return True
 
-    def add_template_function(self, name, tname, comment):
+    def add_template_function(self, name, tname, comment=""):
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
         function = TemplateFunction(self.include_file, self.namespace, name,
@@ -436,7 +436,7 @@ class Parser(object):
         self.last_function = constructor
         return True
 
-    def add_method(self, name, tname, comment):
+    def add_method(self, name, tname, comment=""):
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
         method = Method(name, tname, self.last_type.name, comment)
