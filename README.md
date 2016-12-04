@@ -57,6 +57,13 @@ Install the package with:
 
     python setup.py install
 
+The following dependencies are required (installation instructions for Ubuntu 14.04):
+* NumPy (install e.g. with `sudo pip install numpy`)
+* Cython (install e.g. with `sudo pip install cython`)
+* Jinja2 (install e.g. with `sudo pip install Jinja2`)
+* Clang (install e.g. with `sudo apt-get install libclang-dev`)
+* Clang Python API (install e.g. with `sudo apt-get install python-clang-3.5`)
+
 ## Usage
 
 ### Command Line Tool
