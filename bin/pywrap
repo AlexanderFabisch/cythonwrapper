@@ -7,7 +7,7 @@ from pywrap.cython import make_cython_wrapper, write_files, load_config
 
 def parse_args():
     argparser = argparse.ArgumentParser(description=pywrap.__description__)
-    argparser.add_argument("header", nargs="*", type=str,
+    argparser.add_argument("header", nargs="+", type=str,
                            help="C++ header file")
     argparser.add_argument("--sources", nargs="*", type=str, default=[],
                            help="C++ implementation files")
