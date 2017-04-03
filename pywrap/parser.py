@@ -109,6 +109,7 @@ IGNORED_NODES = [
     cindex.CursorKind.DESTRUCTOR,
     cindex.CursorKind.VAR_DECL,
     cindex.CursorKind.UNEXPOSED_DECL,
+    cindex.CursorKind.CXX_NEW_EXPR,
 ]
 
 LITERAL_NODES = {
