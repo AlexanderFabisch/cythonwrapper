@@ -185,32 +185,31 @@ class Parser(object):
             Abstract syntax tree that can be used to generate the Cython
             wrapper code
         """
-        self._make_parsable_file()
+        content = self._make_parsable_file()
 
-        try:
-            index = cindex.Index.create()
-            incdirs = ["-I" + incdir for incdir in self.incdirs]
-            translation_unit = index.parse(self.parsable_file, incdirs)
-            cursor = translation_unit.cursor
+        index = cindex.Index.create()
+        incdirs = ["-I" + incdir for incdir in self.incdirs]
+        translation_unit = index.parse(
+            self.parsable_file, args=incdirs,
+            unsaved_files=[(self.parsable_file, content)])
+        cursor = translation_unit.cursor
 
-            self.init_ast()
-            if self.verbose >= 1:
-                print(make_header("Parsing"))
-            self.convert_ast(cursor, 0)
-            if self.verbose >= 2:
-                print(make_header("AST"))
-                print(self.ast)
-        finally:
-            os.remove(self.parsable_file)
+        self.init_ast()
+        if self.verbose >= 1:
+            print(make_header("Parsing"))
+        self.convert_ast(cursor, 0)
+        if self.verbose >= 2:
+            print(make_header("AST"))
+            print(self.ast)
 
         return self.ast
 
     def _make_parsable_file(self):
         # Clang does not really parse headers
         self.parsable_file = self.include_file + ".cc"
-        with open(self.parsable_file, "w") as outfile:
-            with open(self.include_file, "r") as infile:
-                outfile.write(infile.read())
+        with open(self.include_file, "r") as infile:
+            content = infile.read()
+        return content
 
     def init_ast(self):
         self.ast = Ast()
