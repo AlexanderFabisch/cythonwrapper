@@ -12,12 +12,15 @@ from .utils import make_header, convert_to_docstring
 # python-clang does not know where to find libclang, so we have to do this
 # here almost manually
 def find_clang():
-    for clang_version in ["3.5", "3.6", "3.7", "3.8"]:
+    SUPPORTED_VERSIONS = ["3.5", "3.6"]
+    for clang_version in SUPPORTED_VERSIONS:
         lib_path = "/usr/lib/llvm-%s/lib/" % clang_version
         if os.path.exists(lib_path):
             cindex.Config.set_library_path(lib_path)
             return clang_version
-    raise ImportError("Could not find an installation of libclang-dev!")
+    raise ImportError("Could not find a valid installation of libclang-dev. "
+                      "Only versions %s are supported at the moment."
+                      % SUPPORTED_VERSIONS)
 clang_version = find_clang()
 
 
