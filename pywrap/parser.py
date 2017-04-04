@@ -1,5 +1,4 @@
 from clang import cindex
-cindex.Config.set_library_path("/usr/lib/llvm-3.5/lib/")
 from .defaultconfig import Config
 import warnings
 import os
@@ -8,6 +7,18 @@ from .ast import (Ast, Enum, Typedef, Clazz, Function, TemplateClass,
                   TemplateFunction, Constructor, Method, TemplateMethod,
                   Param, Field)
 from .utils import make_header, convert_to_docstring
+
+
+# python-clang does not know where to find libclang, so we have to do this
+# here almost manually
+def find_clang():
+    for clang_version in ["3.5", "3.6", "3.7", "3.8"]:
+        lib_path = "/usr/lib/llvm-%s/lib/" % clang_version
+        if os.path.exists(lib_path):
+            cindex.Config.set_library_path(lib_path)
+            return clang_version
+    raise ImportError("Could not find an installation of libclang-dev!")
+clang_version = find_clang()
 
 
 class Includes:
@@ -224,7 +235,12 @@ class Parser(object):
         """
         namespace = self.namespace
         if self.verbose >= 1:
-            print("  " * depth + "Node: %s, %s" % (node.kind, node.displayname))
+            line = "  " * depth + "Node: %s" % node.kind
+            if node.spelling:
+                line += ", '%s'" % node.spelling
+            if node.type.spelling:
+                line += " (type: '%s')" % node.type.spelling
+            print(line)
 
         parse_children = True
         class_added = False
