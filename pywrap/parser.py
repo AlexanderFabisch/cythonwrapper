@@ -189,9 +189,11 @@ class Parser(object):
 
         index = cindex.Index.create()
         incdirs = ["-I" + incdir for incdir in self.incdirs]
+        options = (cindex.TranslationUnit.PARSE_INCOMPLETE |
+                   cindex.TranslationUnit.PARSE_SKIP_FUNCTION_BODIES)
         translation_unit = index.parse(
             self.parsable_file, args=incdirs,
-            unsaved_files=[(self.parsable_file, content)])
+            unsaved_files=[(self.parsable_file, content)], options=options)
         cursor = translation_unit.cursor
 
         self.init_ast()
@@ -206,7 +208,7 @@ class Parser(object):
 
     def _make_parsable_file(self):
         # Clang does not really parse headers
-        self.parsable_file = self.include_file + ".cc"
+        self.parsable_file = self.include_file
         with open(self.include_file, "r") as infile:
             content = infile.read()
         return content
