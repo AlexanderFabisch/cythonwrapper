@@ -6,6 +6,7 @@ from .defaultconfig import Config
 
 
 class CppFinder(object):
+    """Finds C++ headers and builds Python bindings."""
     def __init__(self, import_path="."):
         self.config = Config()
         self.import_path = import_path

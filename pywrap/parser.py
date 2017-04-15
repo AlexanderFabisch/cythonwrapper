@@ -9,9 +9,12 @@ from .ast import (Ast, Enum, Typedef, Clazz, Function, TemplateClass,
 from .utils import make_header, convert_to_docstring
 
 
-# python-clang does not know where to find libclang, so we have to do this
-# here almost manually
 def find_clang():
+    """Find installation of libclang.
+
+    python-clang does not know where to find libclang, so we have to do this
+    here almost manually.
+    """
     SUPPORTED_VERSIONS = ["3.8", "3.7", "3.6", "3.5"]
     for clang_version in SUPPORTED_VERSIONS:
         lib_path = "/usr/lib/llvm-%s/lib/" % clang_version
@@ -37,8 +40,8 @@ class ClangError(Exception):
     def __init__(self, message, diagnostics):
         full_message = message
         for diagnostic in diagnostics:
-            message += os.linesep + str(diagnostic)
-        super(ClangError, self).__init__(message)
+            full_message += os.linesep + str(diagnostic)
+        super(ClangError, self).__init__(full_message)
         self.errors = diagnostics
 
 

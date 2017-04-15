@@ -149,6 +149,6 @@ def clean_warning_registry():
     """Safe way to reset warnings """
     warnings.resetwarnings()
     reg = "__warningregistry__"
-    for mod_name, mod in list(sys.modules.items()):
+    for mod in list(sys.modules.values()):
         if hasattr(mod, reg):
             getattr(mod, reg).clear()

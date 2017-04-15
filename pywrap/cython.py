@@ -28,9 +28,9 @@ def load_config(custom_config):
     module = _derive_module_name_from(filename)
 
     sys.path.insert(0, path)
-    m = __import__(module)
+    imported_module = __import__(module)
     sys.path.pop(0)
-    return m.config
+    return imported_module.config
 
 
 def make_cython_wrapper(filenames, sources, modulename=None, target=".",

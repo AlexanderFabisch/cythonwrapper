@@ -51,7 +51,7 @@ def _strip_comment_markers(comment):
     comment = comment.strip()
 
     lines = comment.split(os.linesep)
-    lines = map(lambda s: _strip_comment_line(s), lines)
+    lines = [_strip_comment_line(s) for s in lines]
     return os.linesep.join(lines)
 
 
