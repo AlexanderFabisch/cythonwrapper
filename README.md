@@ -56,15 +56,16 @@ Install the package with:
 
     python setup.py install
 
-The following dependencies are required (installation instructions for Ubuntu 14.04):
-* NumPy (install e.g. with `sudo pip install numpy`)
-* Cython (install e.g. with `sudo pip install cython`)
-* Jinja2 (install e.g. with `sudo pip install Jinja2`)
-* Clang (install e.g. with `sudo apt-get install libclang-3.5-dev`)
-* Clang Python API (install e.g. with `sudo apt-get install python-clang-3.5`)
+The following dependencies are required (installation instructions for Ubuntu
+14.04):
+* NumPy, Cython, Jinja2 (install e.g. with
+  `sudo pip install numpy cython Jinja2`)
+* libclang and libclang Python API (install e.g. with
+  `sudo apt-get install libclang-3.5-dev python-clang-3.5`)
 
-Instead of libclang 3.5 you can use version 3.6. Versions 3.7+ are not
-supported yet!
+Instead of libclang 3.5 you can use version 3.6, 3.7, and 3.8. It is important
+that you have matching versions of libclang and its Python bindings. Later
+versions of libclang are not supported yet!
 
 ## Usage
 
