@@ -202,7 +202,7 @@ class Parser(object):
             Abstract syntax tree that can be used to generate the Cython
             wrapper code
         """
-        content = self._make_parsable_file()
+        content = self._read_file()
 
         index = cindex.Index.create()
         incdirs = ["-I" + incdir for incdir in self.incdirs]
@@ -228,8 +228,7 @@ class Parser(object):
 
         return self.ast
 
-    def _make_parsable_file(self):
-        # Clang does not really parse headers
+    def _read_file(self):
         self.parsable_file = self.include_file
         with open(self.include_file, "r") as infile:
             content = infile.read()
