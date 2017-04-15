@@ -21,6 +21,10 @@ def find_clang():
             if not os.path.exists(clang_incdir):
                 raise ImportError("Could not find clang include directory. "
                                   "Checked '%s'." % clang_incdir)
+            lib_file = os.path.join(
+                lib_path, "libclang-%s.so" % clang_version)
+            if not os.path.exists(lib_file):
+                continue
             return clang_version, clang_incdir
     raise ImportError("Could not find a valid installation of libclang-dev. "
                       "Only versions %s are supported at the moment."
@@ -227,9 +231,11 @@ class Parser(object):
         index = cindex.Index.create()
         incdirs = ["-I" + incdir for incdir in self.incdirs]
         incdirs += ["-I" + clang_incdir]
-        # We parse each header separately, so the warning
-        # "#pragma once in main file" makes no sense for us.
-        args = incdirs + ["-Wno-pragma-once-outside-header"]
+        args = incdirs
+        if float(clang_version) > 3.5:
+            # We parse each header separately, so the warning
+            # "#pragma once in main file" makes no sense for us.
+            args += ["-Wno-pragma-once-outside-header"]
         options = (cindex.TranslationUnit.PARSE_INCOMPLETE |
                    cindex.TranslationUnit.PARSE_SKIP_FUNCTION_BODIES)
         translation_unit = index.parse(
