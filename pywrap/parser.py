@@ -1,39 +1,12 @@
-from clang import cindex
 from .defaultconfig import Config
 import warnings
 import os
+from .libclang import cindex, CLANG_VERSION, CLANG_INCDIR
 from .type_conversion import cythontype_from_cpptype
 from .ast import (Ast, Enum, Typedef, Clazz, Function, TemplateClass,
                   TemplateFunction, Constructor, Method, TemplateMethod,
                   Param, Field)
 from .utils import make_header, convert_to_docstring
-
-
-def find_clang():
-    """Find installation of libclang.
-
-    python-clang does not know where to find libclang, so we have to do this
-    here almost manually.
-    """
-    SUPPORTED_VERSIONS = ["3.8", "3.7", "3.6", "3.5"]
-    for clang_version in SUPPORTED_VERSIONS:
-        lib_path = "/usr/lib/llvm-%s/lib/" % clang_version
-        if os.path.exists(lib_path):
-            cindex.Config.set_library_path(lib_path)
-            clang_incdir = "/usr/lib/clang/%s.0/include/" % clang_version
-            if not os.path.exists(clang_incdir):
-                raise ImportError("Could not find clang include directory. "
-                                  "Checked '%s'." % clang_incdir)
-            lib_file = os.path.join(
-                lib_path, "libclang-%s.so" % clang_version)
-            if not os.path.exists(lib_file):
-                continue
-            return clang_version, clang_incdir
-    raise ImportError("Could not find a valid installation of libclang-dev. "
-                      "Only versions %s are supported at the moment."
-                      % SUPPORTED_VERSIONS)
-# This must be done globally and exactly once:
-clang_version, clang_incdir = find_clang()
 
 
 class ClangError(Exception):
@@ -233,9 +206,9 @@ class Parser(object):
     def _parse_with_clang(self, content):
         index = cindex.Index.create()
         incdirs = ["-I" + incdir for incdir in self.incdirs]
-        incdirs += ["-I" + clang_incdir]
+        incdirs += ["-I" + CLANG_INCDIR]
         args = incdirs
-        if float(clang_version) > 3.5:
+        if float(CLANG_VERSION) > 3.5:
             # We parse each header separately, so the warning
             # "#pragma once in main file" makes no sense for us.
             args += ["-Wno-pragma-once-outside-header"]
