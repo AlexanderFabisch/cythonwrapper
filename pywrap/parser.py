@@ -207,10 +207,13 @@ class Parser(object):
         index = cindex.Index.create()
         incdirs = ["-I" + incdir for incdir in self.incdirs]
         incdirs += ["-I" + clang_incdir]
+        # We parse each header separately, so the warning
+        # "#pragma once in main file" makes no sense for us.
+        args = incdirs + ["-Wno-pragma-once-outside-header"]
         options = (cindex.TranslationUnit.PARSE_INCOMPLETE |
                    cindex.TranslationUnit.PARSE_SKIP_FUNCTION_BODIES)
         translation_unit = index.parse(
-            self.parsable_file, args=incdirs,
+            self.parsable_file, args=args,
             unsaved_files=[(self.parsable_file, content)], options=options)
         self._check_diagnostics(translation_unit.diagnostics)
         cursor = translation_unit.cursor
