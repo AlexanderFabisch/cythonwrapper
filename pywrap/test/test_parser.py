@@ -143,7 +143,7 @@ template<typename T1>
 class C
 {
 public:
-    C(T t) {}
+    C(T1 t) {}
     template<typename T2>
     void method(T2 t) {}
 };
