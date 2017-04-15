@@ -1,8 +1,8 @@
 import os
 import tempfile
-from pywrap.parser import Parser, Includes
+from pywrap.parser import Parser, Includes, ClangError
 from nose.tools import (assert_true, assert_equal, assert_is_not_none,
-                        assert_is_none)
+                        assert_is_none, assert_raises_regexp)
 from pywrap.testing import assert_warns_message
 
 
@@ -170,7 +170,26 @@ void function2() {}
     finally:
         if os.path.exists(filename):
             os.remove(filename)
-        if os.path.exists(filename + ".cc"):
-            os.remove(filename + ".cc")
 
     assert_equal(len(ast.nodes), 3 + 2 + 1 + 1)
+
+
+def test_error():
+    testcode = """
+int function
+{
+    return 1;
+}
+"""
+
+    _, filename = tempfile.mkstemp(".hpp")
+    with open(filename, "w") as f:
+        f.write(testcode)
+
+    try:
+        parser = Parser(filename)
+        assert_raises_regexp(ClangError, "Could not parse file correctly.",
+                             parser.parse)
+    finally:
+        if os.path.exists(filename):
+            os.remove(filename)
