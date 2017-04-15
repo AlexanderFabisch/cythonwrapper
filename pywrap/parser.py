@@ -12,16 +12,30 @@ from .utils import make_header, convert_to_docstring
 # python-clang does not know where to find libclang, so we have to do this
 # here almost manually
 def find_clang():
-    SUPPORTED_VERSIONS = ["3.5", "3.6"]
+    SUPPORTED_VERSIONS = ["3.8", "3.7", "3.6", "3.5"]
     for clang_version in SUPPORTED_VERSIONS:
         lib_path = "/usr/lib/llvm-%s/lib/" % clang_version
         if os.path.exists(lib_path):
             cindex.Config.set_library_path(lib_path)
-            return clang_version
+            clang_incdir = "/usr/lib/clang/%s.0/include/" % clang_version
+            if not os.path.exists(clang_incdir):
+                raise ImportError("Could not find clang include directory. "
+                                  "Checked '%s'." % clang_incdir)
+            return clang_version, clang_incdir
     raise ImportError("Could not find a valid installation of libclang-dev. "
                       "Only versions %s are supported at the moment."
                       % SUPPORTED_VERSIONS)
-clang_version = find_clang()
+# This must be done globally and exactly once:
+clang_version, clang_incdir = find_clang()
+
+
+class ClangError(Exception):
+    def __init__(self, message, diagnostics):
+        full_message = message
+        for diagnostic in diagnostics:
+            message += os.linesep + str(diagnostic)
+        super(ClangError, self).__init__(message)
+        self.errors = diagnostics
 
 
 class Includes:
@@ -192,11 +206,13 @@ class Parser(object):
 
         index = cindex.Index.create()
         incdirs = ["-I" + incdir for incdir in self.incdirs]
+        incdirs += ["-I" + clang_incdir]
         options = (cindex.TranslationUnit.PARSE_INCOMPLETE |
                    cindex.TranslationUnit.PARSE_SKIP_FUNCTION_BODIES)
         translation_unit = index.parse(
             self.parsable_file, args=incdirs,
             unsaved_files=[(self.parsable_file, content)], options=options)
+        self._check_diagnostics(translation_unit.diagnostics)
         cursor = translation_unit.cursor
 
         self.init_ast()
@@ -215,6 +231,17 @@ class Parser(object):
         with open(self.include_file, "r") as infile:
             content = infile.read()
         return content
+
+    def _check_diagnostics(self, diagnostics):
+        non_critical = [d for d in diagnostics
+                        if d.severity <= cindex.Diagnostic.Warning]
+        for d in non_critical:
+            warnings.warn("Diagnostic: %s" % d)
+
+        critical = [d for d in diagnostics
+                    if d.severity > cindex.Diagnostic.Warning]
+        if len(critical) > 0:
+            raise ClangError("Could not parse file correctly.", critical)
 
     def init_ast(self):
         self.ast = Ast()
