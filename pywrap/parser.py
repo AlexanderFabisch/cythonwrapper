@@ -203,18 +203,7 @@ class Parser(object):
             wrapper code
         """
         content = self._read_file()
-
-        index = cindex.Index.create()
-        incdirs = ["-I" + incdir for incdir in self.incdirs]
-        incdirs += ["-I" + clang_incdir]
-        # We parse each header separately, so the warning
-        # "#pragma once in main file" makes no sense for us.
-        args = incdirs + ["-Wno-pragma-once-outside-header"]
-        options = (cindex.TranslationUnit.PARSE_INCOMPLETE |
-                   cindex.TranslationUnit.PARSE_SKIP_FUNCTION_BODIES)
-        translation_unit = index.parse(
-            self.parsable_file, args=args,
-            unsaved_files=[(self.parsable_file, content)], options=options)
+        translation_unit = self._parse_with_clang(content)
         self._check_diagnostics(translation_unit.diagnostics)
         cursor = translation_unit.cursor
 
@@ -233,6 +222,20 @@ class Parser(object):
         with open(self.include_file, "r") as infile:
             content = infile.read()
         return content
+
+    def _parse_with_clang(self, content):
+        index = cindex.Index.create()
+        incdirs = ["-I" + incdir for incdir in self.incdirs]
+        incdirs += ["-I" + clang_incdir]
+        # We parse each header separately, so the warning
+        # "#pragma once in main file" makes no sense for us.
+        args = incdirs + ["-Wno-pragma-once-outside-header"]
+        options = (cindex.TranslationUnit.PARSE_INCOMPLETE |
+                   cindex.TranslationUnit.PARSE_SKIP_FUNCTION_BODIES)
+        translation_unit = index.parse(
+            self.parsable_file, args=args,
+            unsaved_files=[(self.parsable_file, content)], options=options)
+        return translation_unit
 
     def _check_diagnostics(self, diagnostics):
         non_critical = [d for d in diagnostics
