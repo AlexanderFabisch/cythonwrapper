@@ -4,6 +4,22 @@ from pkg_resources import resource_filename
 
 
 def render(template, **kwargs):
+    """Render a Jinja2 template.
+
+    Parameters
+    ----------
+    template : str
+        Name of the template file (without '.template' suffix). It must be
+        located in the directory 'pywrap/template_data'.
+
+    kwargs : dict
+        Template arguments.
+
+    Returns
+    -------
+    text : str
+        Rendered template.
+    """
     template_file = resource_filename(
         "pywrap", os.path.join("template_data", template + ".template"))
     if not os.path.exists(template_file):

@@ -2,7 +2,7 @@ import os
 from clang import cindex
 
 
-def find_clang():
+def _find_clang():
     """Find installation of libclang.
 
     python-clang does not know where to find libclang, so we have to do this
@@ -28,4 +28,4 @@ def find_clang():
 
 
 # This must be done globally and exactly once:
-CLANG_VERSION, CLANG_INCDIR = find_clang()
+CLANG_VERSION, CLANG_INCDIR = _find_clang()

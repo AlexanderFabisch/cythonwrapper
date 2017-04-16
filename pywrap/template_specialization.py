@@ -4,6 +4,7 @@ from .ast import TemplateClazzSpecialization, Function, Param, Method
 
 
 class Specializer(object):
+    """Convert templates to specializations for specific types."""
     __metaclass__ = ABCMeta
     def __init__(self, config):
         self.config = config
@@ -42,6 +43,7 @@ class Specializer(object):
 
 
 class ClassSpecializer(Specializer):
+    """Convert a template class to a class."""
     def __init__(self, config):
         super(ClassSpecializer, self).__init__(config)
 
@@ -60,7 +62,7 @@ class ClassSpecializer(Specializer):
 
 
 class FunctionSpecializer(Specializer):
-    """Convert a template method to a method."""
+    """Convert a template function to a function."""
     def __init__(self, config):
         super(FunctionSpecializer, self).__init__(config)
 

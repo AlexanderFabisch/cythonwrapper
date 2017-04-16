@@ -7,11 +7,24 @@ from .cython import make_cython_wrapper, write_files, run_setup
 from .defaultconfig import Config
 from .utils import file_ending, remove_files
 
-PREFIX = os.sep.join(__file__.split(os.sep)[:-2]) + os.sep + "test"
+PREFIX = os.sep.join(__file__.split(os.sep)[:-2] + ["test"])
 SETUPPY_NAME = "setup_test.py"
 
 
 def full_paths(filenames):
+    """Get absolute paths of files in the test directory.
+
+    Parameters
+    ----------
+    filenames : iterable or str
+        List of filenames or one filename of files that are in the test
+        directory. These files MUST be located in the test directory.
+
+    Returns
+    -------
+    full_paths : list
+        Full paths of the files.
+    """
     if isinstance(filenames, str):
         filenames = [filenames]
 
@@ -19,8 +32,11 @@ def full_paths(filenames):
         return filenames
     else:
         attach_prefix = lambda filename: (filename if filename.startswith("/")
-                                          else PREFIX + os.sep + filename)
-        return map(attach_prefix, filenames)
+                                          else os.path.join(PREFIX, filename))
+        full_paths = map(attach_prefix, filenames)
+        for path in full_paths:
+            assert os.path.exists(path)
+        return full_paths
 
 
 @contextmanager
