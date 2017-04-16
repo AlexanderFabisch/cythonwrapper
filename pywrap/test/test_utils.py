@@ -53,6 +53,12 @@ def test_convert_to_docstring():
 
     assert_multi_line_equal(
         convert_to_docstring(lines(
+            "/** This is a brief comment */")),
+        "This is a brief comment."
+    )
+
+    assert_multi_line_equal(
+        convert_to_docstring(lines(
             "/**",
             " * This is a brief comment.",
             " */")),

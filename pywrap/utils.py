@@ -64,7 +64,7 @@ def _strip_comment_line(line):
 
 def _separate_brief_comment(comment):
     splitted = comment.split(".")
-    if len(splitted) >= 1:
+    if len(splitted) > 1:
         brief = splitted[0]
         detailed = ".".join(splitted[1:]).strip()
     else:
