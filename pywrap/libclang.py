@@ -19,10 +19,9 @@ def _find_clang(verbose=0):
               % basepath)
     for clang_version in SUPPORTED_VERSIONS:
         search_paths = [
-            # e.g. '/usr/lib' or '$HOME/anaconda3/envs/$ENV/lib'
-            basepath,
-            # e.g. '/usr/lib/llvm-3.8/lib'
-            os.path.join(basepath, "llvm-%s" % clang_version, "lib")
+            os.path.join("/usr/lib", "llvm-%s" % clang_version, "lib"),
+            os.path.join("/usr/local/lib", "llvm-%s" % clang_version, "lib"),
+            basepath  # e.g. '$HOME/anaconda3/envs/$ENV/lib'
         ]
         for lib_path in search_paths:
             if verbose >= 3:
@@ -43,7 +42,7 @@ def _find_clang(verbose=0):
             if lib_filename is None:
                 continue
 
-            clang_incdir = _find_include_directory(basepath, clang_version)
+            clang_incdir = _find_include_directory(lib_path, clang_version)
             if verbose >= 3:
                 print("Found clang include directory at '%s'."
                       % clang_incdir)
@@ -69,9 +68,9 @@ def _find_lib(lib_path, clang_version):
     return lib_filename
 
 
-def _find_include_directory(basepath, clang_version):
+def _find_include_directory(lib_path, clang_version):
     incdir_pattern = os.path.join(
-        basepath, "clang/%s.?/include/" % clang_version)
+        lib_path, "clang/%s.?/include/" % clang_version)
     clang_incdirs = list(glob.glob(incdir_pattern))
     if len(clang_incdirs) != 1:
         raise ImportError(
