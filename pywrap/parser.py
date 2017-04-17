@@ -211,6 +211,8 @@ class Parser(object):
         if float(CLANG_VERSION) > 3.5:
             # We parse each header separately, so the warning
             # "#pragma once in main file" makes no sense for us.
+            # This flag is only available in later Clang versions.
+            # We have a workaround for older versions.
             args += ["-Wno-pragma-once-outside-header"]
         options = (cindex.TranslationUnit.PARSE_INCOMPLETE |
                    cindex.TranslationUnit.PARSE_SKIP_FUNCTION_BODIES)
@@ -223,6 +225,9 @@ class Parser(object):
         non_critical = [d for d in diagnostics
                         if d.severity <= cindex.Diagnostic.Warning]
         for d in non_critical:
+            # Workaround for libclang 3.5:
+            if d.spelling == "#pragma once in main file":
+                continue
             warnings.warn("Diagnostic: %s" % d)
 
         critical = [d for d in diagnostics
