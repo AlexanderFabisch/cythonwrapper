@@ -450,7 +450,7 @@ class CppPointerTypeConverter(AbstractTypeConverter):
         cython_argname = "cpp_" + self.python_argname
         return ("%s %s = %s.%s_thisptr"
                 % (self.cpp_type_decl(), cython_argname, self.python_argname,
-                   self.tname))
+                   self.tname_wo_ptr))
 
     def cpp_call_args(self):
         return ["cpp_%s" % self.python_argname]
@@ -458,9 +458,9 @@ class CppPointerTypeConverter(AbstractTypeConverter):
     def return_output(self, copy=True):
         # TODO only works with default constructor
         l = ["ret = %s()" % self.tname_wo_ptr,
-             "ret.%s_thisptr = result" % self.tname]
+             "ret.%s_thisptr = result" % self.tname_wo_ptr]
         if not copy:
-            l.append("ret.%s_delete_thisptr = False" % self.tname)
+            l.append("ret.%s_delete_thisptr = False" % self.tname_wo_ptr)
         l.append("return ret")
         return lines(*l)
 
