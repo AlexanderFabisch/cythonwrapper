@@ -1,4 +1,4 @@
-cdef class {{ name }}:
+cdef class {{ name }}{%- if base %}({{ base }}){%- endif %}:
 {%- if comment %}
     """{{ comment|indent(4) }}
     """

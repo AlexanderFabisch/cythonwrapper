@@ -1,5 +1,5 @@
 cdef extern from "{{ filename }}" namespace "{{ namespace }}":
-    cdef cppclass {{ name }}:
+    cdef cppclass {{ name }}{%- if base %}({{ base }}){%- endif %}:
 {%- if empty_body %}
         pass
 {%- else %}

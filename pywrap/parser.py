@@ -113,7 +113,6 @@ IGNORED_NODES = [
     cindex.CursorKind.TEMPLATE_REF,
     cindex.CursorKind.TYPE_REF,
     cindex.CursorKind.UNEXPOSED_EXPR,
-    cindex.CursorKind.CXX_BASE_SPECIFIER,
     cindex.CursorKind.DESTRUCTOR,
     cindex.CursorKind.VAR_DECL,
     cindex.CursorKind.UNEXPOSED_DECL,
@@ -333,6 +332,15 @@ class Parser(object):
                 parse_children = self.add_class(
                     node.displayname, convert_to_docstring(node.raw_comment))
                 class_added = True
+            elif node.kind == cindex.CursorKind.CXX_BASE_SPECIFIER:
+                if self.last_type.base is not None:
+                    warnings.warn("Class '%s' already has a base class: '%s', "
+                                  "ignoring '%s'."
+                                  % (self.last_type.name, self.last_type.base,
+                                     node.type.spelling))
+                else:
+                    self.last_type.base = node.type.spelling
+                parse_children = False
             elif node.kind == cindex.CursorKind.STRUCT_DECL:
                 parse_children = self.add_struct_decl(node.displayname)
             elif node.kind == cindex.CursorKind.FIELD_DECL:

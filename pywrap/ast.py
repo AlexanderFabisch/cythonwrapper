@@ -61,11 +61,14 @@ class Clazz(AstNode):
         self.namespace = namespace
         self.name = name
         self.comment = comment
+        self.base = None
 
     def __str__(self):
         result = "%s '%s' ('%s')" % (
             self.__class__.__name__.replace("zz", "ss"),
             self.name, self.get_cppname())
+        if self.base is not None:
+            result += ", base class: '%s'" % self.base
         if self.namespace != "":
             result += " (namespace: '%s')" % self.namespace
         if len(self.nodes) > 0:
