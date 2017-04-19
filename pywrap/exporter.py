@@ -352,7 +352,7 @@ class CythonImplementationExporter(AstExporter):
                 self._process_field, selftype=clazz.name), self.fields)
             class_def["ctors"] = map(partial(
                 self._process_constructor, selftype=clazz.name,
-                cpptype=clazz.get_cppname()),
+                cpptype=clazz.get_cppname(), base=clazz.base),
                                      self.ctors)
             class_def["methods"] = map(partial(
                 self._process_method, selftype=clazz.name), self.methods)
@@ -392,7 +392,7 @@ class CythonImplementationExporter(AstExporter):
     def visit_constructor(self, ctor):
         self.ctors.append(ctor)
 
-    def _process_constructor(self, ctor, selftype, cpptype):
+    def _process_constructor(self, ctor, selftype, cpptype, base=None):
         if self.config.is_abstract_class(ctor.class_name):
             warnings.warn("Class '%s' is abstract and will have no constructor."
                           % ctor.class_name)
@@ -402,7 +402,7 @@ class CythonImplementationExporter(AstExporter):
         try:
             constructor_def = ConstructorDefinition(
                 selftype, ctor.comment, ctor.nodes, self.includes,
-                self.type_info, self.config, cpptype)
+                self.type_info, self.config, cpptype, base)
             return constructor_def.make()
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % ctor.name)
@@ -533,16 +533,17 @@ class FunctionDefinition(object):
 
 class ConstructorDefinition(FunctionDefinition):
     def __init__(self, class_name, comment, arguments, includes, type_info,
-                 config, cpp_classname):
+                 config, cpp_classname, base):
         super(ConstructorDefinition, self).__init__(
             "__init__", comment, arguments, includes, result_type=None,
             type_info=type_info, config=config)
         self.initial_args = ["%s self" % class_name]
         self.cpp_classname = cpp_classname
+        self.base = base
 
     def _call_cpp_function(self, call_args):
-        return templates.ctor_call % {"class_name": self.cpp_classname,
-                                      "call_args": ", ".join(call_args)}
+        return render("ctor_call", class_name=self.cpp_classname,
+                      call_args=", ".join(call_args), base=self.base)
 
 
 class MethodDefinition(FunctionDefinition):
@@ -550,10 +551,12 @@ class MethodDefinition(FunctionDefinition):
                  result_type, type_info, config, cppname=None):
         super(MethodDefinition, self).__init__(
             name, comment, arguments, includes, result_type, type_info, config, cppname)
+        self.class_name = class_name
         self.initial_args = ["%s self" % class_name]
 
     def _call_cpp_function(self, call_args):
         call = templates.method_call % {
+            "class_name": self.class_name,
             "name": self.config.call_operators.get(self.cppname, self.cppname),
             "call_args": ", ".join(call_args)}
         return catch_result(self.output_type_converter.cpp_type_decl(), call)
@@ -569,8 +572,9 @@ class SetterDefinition(MethodDefinition):
 
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 1
-        return templates.setter_call % {"name": self.field_name,
-                                        "call_args": call_args[0]}
+        return templates.setter_call % {
+            "class_name": self.class_name, "name": self.field_name,
+            "call_args": call_args[0]}
 
 
 class GetterDefinition(MethodDefinition):
@@ -584,7 +588,8 @@ class GetterDefinition(MethodDefinition):
 
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 0
-        call = templates.getter_call % {"name": self.field_name}
+        call = templates.getter_call % {
+            "class_name": self.class_name, "name": self.field_name}
         return catch_result(self.output_type_converter.cpp_type_decl(), call)
 
 

@@ -3,16 +3,16 @@ cdef class {{ name }}{%- if base %}({{ base }}){%- endif %}:
     """{{ comment|indent(4) }}
     """
 {%- endif %}
-    cdef cpp.{{ cppname }} * thisptr
-    cdef bool delete_thisptr
+    cdef cpp.{{ cppname }} * {{ name }}_thisptr
+    cdef bool {{ name }}_delete_thisptr
 
     def __cinit__(self):
-        self.thisptr = NULL
-        self.delete_thisptr = True
+        self.{{ name }}_thisptr = NULL
+        self.{{ name }}_delete_thisptr = True
 
     def __dealloc__(self):
-        if self.delete_thisptr and self.thisptr != NULL:
-            del self.thisptr
+        if self.{{ name }}_delete_thisptr and self.{{ name }}_thisptr != NULL:
+            del self.{{ name }}_thisptr
 
 {%- if ctors %}
 {% for ctor in ctors %}
