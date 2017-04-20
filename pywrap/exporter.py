@@ -542,8 +542,8 @@ class ConstructorDefinition(FunctionDefinition):
         self.base = base
 
     def _call_cpp_function(self, call_args):
-        return render("ctor_call", class_name=self.cpp_classname,
-                      call_args=", ".join(call_args), base=self.base)
+        return templates.ctor_call % {"class_name": self.cpp_classname,
+                                      "call_args": ", ".join(call_args)}
 
 
 class MethodDefinition(FunctionDefinition):
@@ -551,12 +551,10 @@ class MethodDefinition(FunctionDefinition):
                  result_type, type_info, config, cppname=None):
         super(MethodDefinition, self).__init__(
             name, comment, arguments, includes, result_type, type_info, config, cppname)
-        self.class_name = class_name
         self.initial_args = ["%s self" % class_name]
 
     def _call_cpp_function(self, call_args):
         call = templates.method_call % {
-            "class_name": self.class_name,
             "name": self.config.call_operators.get(self.cppname, self.cppname),
             "call_args": ", ".join(call_args)}
         return catch_result(self.output_type_converter.cpp_type_decl(), call)
@@ -572,9 +570,8 @@ class SetterDefinition(MethodDefinition):
 
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 1
-        return templates.setter_call % {
-            "class_name": self.class_name, "name": self.field_name,
-            "call_args": call_args[0]}
+        return templates.setter_call % {"name": self.field_name,
+                                        "call_args": call_args[0]}
 
 
 class GetterDefinition(MethodDefinition):
@@ -588,8 +585,7 @@ class GetterDefinition(MethodDefinition):
 
     def _call_cpp_function(self, call_args):
         assert len(call_args) == 0
-        call = templates.getter_call % {
-            "class_name": self.class_name, "name": self.field_name}
+        call = templates.getter_call % {"name": self.field_name}
         return catch_result(self.output_type_converter.cpp_type_decl(), call)
 
 

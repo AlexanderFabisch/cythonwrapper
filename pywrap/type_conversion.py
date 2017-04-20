@@ -126,7 +126,7 @@ class AbstractTypeConverter(object):
             cpdef my_function(cpp.MyType self, object a, double b):
                 cdef vector[double] cpp_a = a
                 cdef double cpp_b = b
-                cdef int result = self.MyClass_thisptr.myFunction(cpp_a, cpp_b)
+                cdef int result = self.thisptr.myFunction(cpp_a, cpp_b)
                 return result
 
     Parts
@@ -406,9 +406,8 @@ class CythonTypeConverter(AbstractTypeConverter):
 
     def python_to_cpp(self):
         cython_argname = "cpp_" + self.python_argname
-        return ("%s * %s = %s.%s_thisptr"
-                % (self.cpp_type_decl(), cython_argname, self.python_argname,
-                   self.tname))
+        return ("%s * %s = %s.thisptr"
+                % (self.cpp_type_decl(), cython_argname, self.python_argname))
 
     def cpp_call_args(self):
         return ["deref(cpp_%s)" % self.python_argname]
@@ -416,7 +415,7 @@ class CythonTypeConverter(AbstractTypeConverter):
     def return_output(self, copy=True):
         # TODO only works with default and assignment operator
         return lines("ret = %s()" % self.tname,
-                     "ret.%s_thisptr[0] = result" % self.tname,
+                     "ret.thisptr[0] = result",
                      "return ret")
 
     def python_type_decl(self):
@@ -448,9 +447,8 @@ class CppPointerTypeConverter(AbstractTypeConverter):
 
     def python_to_cpp(self):
         cython_argname = "cpp_" + self.python_argname
-        return ("%s %s = %s.%s_thisptr"
-                % (self.cpp_type_decl(), cython_argname, self.python_argname,
-                   self.tname_wo_ptr))
+        return ("%s %s = %s.thisptr"
+                % (self.cpp_type_decl(), cython_argname, self.python_argname))
 
     def cpp_call_args(self):
         return ["cpp_%s" % self.python_argname]
@@ -458,9 +456,9 @@ class CppPointerTypeConverter(AbstractTypeConverter):
     def return_output(self, copy=True):
         # TODO only works with default constructor
         l = ["ret = %s()" % self.tname_wo_ptr,
-             "ret.%s_thisptr = result" % self.tname_wo_ptr]
+             "ret.thisptr = result"]
         if not copy:
-            l.append("ret.%s_delete_thisptr = False" % self.tname_wo_ptr)
+            l.append("ret.delete_thisptr = False")
         l.append("return ret")
         return lines(*l)
 
