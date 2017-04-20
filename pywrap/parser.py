@@ -198,7 +198,7 @@ class Parser(object):
         return self.ast
 
     def _read_file(self):
-        self.parsable_file = self.include_file
+        self.parsable_file = self.include_file + ".hpp"
         with open(self.include_file, "r") as infile:
             content = infile.read()
         return content
