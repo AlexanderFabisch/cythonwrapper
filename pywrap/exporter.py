@@ -390,23 +390,19 @@ class CythonImplementationExporter(AstExporter):
         if cppname is None:
             cppname = clazz.name
 
-        try:
-            self.type_info.attach_specialization(clazz.get_attached_typeinfo())
-            class_def = {}
-            class_def.update(clazz.__dict__)
-            class_def["cppname"] = cppname
-            class_def["comment"] = clazz.comment
-            class_def["fields"] = self.fields
-            class_def["ctors"] = map(partial(
-                self._process_constructor, selftype=clazz.name,
-                cpptype=clazz.get_cppname(), base=clazz.base),
-                                     self.ctors)
-            class_def["methods"] = self.methods
-        finally:
-            self.type_info.remove_specialization()
+        self.type_info.attach_specialization(clazz.get_attached_typeinfo())
+        class_def = {}
+        class_def.update(clazz.__dict__)
+        class_def["cppname"] = cppname
+        class_def["comment"] = clazz.comment
+        class_def["fields"] = self.fields
+        class_def["ctors"] = map(partial(
+            self._process_constructor, selftype=clazz.name,
+            cpptype=clazz.get_cppname(), base=clazz.base),
+                                  self.ctors)
+        class_def["methods"] = self.methods
 
         self.classes.append(class_def)
-
         self._clear_class()
 
     def visit_template_class(self, template_class):
