@@ -315,8 +315,38 @@ class CythonImplementationExporter(AstExporter):
         self.config = config
 
     def visit_ast(self, ast):
+        # TODO extract method
+        classes = {}
+        for class_def in self.classes:
+            classes[class_def["name"]] = class_def
+
+        extended_classes = []
+        for class_def in classes.values():
+            fields = class_def["fields"]
+            methods = class_def["methods"]
+            if class_def["base"] is not None:
+                base_class_def = classes[class_def["base"]]
+                fields.extend(base_class_def["fields"])
+                methods.extend(base_class_def["methods"])
+            class_def["fields"] = fields
+            # TODO override methods from base class (i.e. don't add it)
+            class_def["methods"] = methods
+            extended_classes.append(class_def)
+
+        for class_def in extended_classes:
+            class_def["fields"] = map(partial(
+                self._process_field, selftype=class_def["name"]),
+                class_def["fields"])
+            class_def["methods"] = map(partial(
+                self._process_method, selftype=class_def["name"]),
+                class_def["methods"])
+
+        rendered_classes = []
+        for class_def in extended_classes:
+            rendered_classes.append(render("class", **class_def))
+
         self.output = render("definitions", enums=self.enums,
-                             functions=self.functions, classes=self.classes)
+                             functions=self.functions, classes=rendered_classes)
 
     def visit_enum(self, enum):
         self.enums.append(render("enum", enum=enum))
@@ -348,18 +378,16 @@ class CythonImplementationExporter(AstExporter):
             class_def.update(clazz.__dict__)
             class_def["cppname"] = cppname
             class_def["comment"] = clazz.comment
-            class_def["fields"] = map(partial(
-                self._process_field, selftype=clazz.name), self.fields)
+            class_def["fields"] = self.fields
             class_def["ctors"] = map(partial(
                 self._process_constructor, selftype=clazz.name,
                 cpptype=clazz.get_cppname(), base=clazz.base),
                                      self.ctors)
-            class_def["methods"] = map(partial(
-                self._process_method, selftype=clazz.name), self.methods)
+            class_def["methods"] = self.methods
         finally:
             self.type_info.remove_specialization()
 
-        self.classes.append(render("class", **class_def))
+        self.classes.append(class_def)
 
         self._clear_class()
 
