@@ -126,7 +126,8 @@ def _make_extension(modulename, asts, includes, type_info, config):
     for ast in asts:
         ast.accept(cie)
     pyx_filename = modulename + "." + config.pyx_file_ending
-    extension = includes.implementations_import() + cie.export()
+    body = cie.export()
+    extension = includes.implementations_import() + body
     return pyx_filename, extension
 
 
@@ -134,7 +135,8 @@ def _make_declarations(asts, includes, config):
     cde = CythonDeclarationExporter(includes, config)
     for ast in asts:
         ast.accept(cde)
-    declarations = includes.declarations_import() + cde.export()
+    body = cde.export()
+    declarations = includes.declarations_import() + body
     for decl in config.additional_declerations:
         declarations += decl
     pxd_filename = "_declarations." + config.pxd_file_ending

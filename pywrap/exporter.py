@@ -314,12 +314,22 @@ class CythonImplementationExporter(AstExporter):
         self.type_info = type_info
         self.config = config
 
+    def export(self):
+        classes = self._postprocess_classes()
+        self.output = render("definitions", enums=self.enums,
+                             functions=self.functions, classes=classes)
+        return super(CythonImplementationExporter, self).export()
+
     def visit_ast(self, ast):
-        # TODO extract method
+        pass
+
+    def _postprocess_classes(self):
         classes = {}
         for class_def in self.classes:
             classes[class_def["name"]] = class_def
 
+        # Extend class definitions with superclass
+        # TODO walk recursively, starting from leaves of inheritance tree
         extended_classes = []
         for class_def in classes.values():
             fields = class_def["fields"]
@@ -344,9 +354,7 @@ class CythonImplementationExporter(AstExporter):
         rendered_classes = []
         for class_def in extended_classes:
             rendered_classes.append(render("class", **class_def))
-
-        self.output = render("definitions", enums=self.enums,
-                             functions=self.functions, classes=rendered_classes)
+        return rendered_classes
 
     def visit_enum(self, enum):
         self.enums.append(render("enum", enum=enum))
