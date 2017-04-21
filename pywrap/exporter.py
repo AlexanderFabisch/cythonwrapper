@@ -340,7 +340,7 @@ class CythonImplementationExporter(AstExporter):
                 methods.extend(base_class_def["methods"])
             class_def["fields"] = fields
             # TODO override methods from base class (i.e. don't add it)
-            class_def["methods"] = methods
+            class_def["methods"] = self._remove_duplicate_methods(methods)
             extended_classes.append(class_def)
 
         for class_def in extended_classes:
@@ -355,6 +355,16 @@ class CythonImplementationExporter(AstExporter):
         for class_def in extended_classes:
             rendered_classes.append(render("class", **class_def))
         return rendered_classes
+
+    def _remove_duplicate_methods(self, methods):
+        method_dict = {}
+        for method, cppname in methods:
+            if method.name in method_dict:
+                warnings.warn("Method '%s' is already defined. Only one "
+                              "method will be exposed." % method.name)
+            else:
+                method_dict[method.name] = (method, cppname)
+        return method_dict.values()
 
     def visit_enum(self, enum):
         self.enums.append(render("enum", enum=enum))
