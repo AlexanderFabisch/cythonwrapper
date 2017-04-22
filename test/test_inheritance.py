@@ -2,7 +2,7 @@ from pywrap.testing import cython_extension_from
 from nose.tools import assert_equal
 
 
-def test_independent_parts():
+def test_ambiguous_method():
     with cython_extension_from("subclass.hpp"):
         from subclass import A, B
         a = A()

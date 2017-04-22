@@ -314,9 +314,6 @@ class CythonImplementationExporter(AstExporter):
         self.type_info = type_info
         self.config = config
 
-    def export(self):
-        return super(CythonImplementationExporter, self).export()
-
     def visit_ast(self, ast):
         self.output = render("definitions", enums=self.enums,
                              functions=self.functions, classes=self.classes)

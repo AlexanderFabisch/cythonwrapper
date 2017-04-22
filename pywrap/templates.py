@@ -43,7 +43,7 @@ field_decl = "%(tipe)s %(name)s"
 
 # member definitions
 ctor_default_def = """    def __init__(cpp.%(name)s self):
-        self.%(name)s_thisptr = new cpp.%(name)s()"""
+        self.thisptr = new cpp.%(name)s()"""
 fun_call = "cpp.%(name)s(%(call_args)s)"
 ctor_call = "self.thisptr = new cpp.%(class_name)s(%(call_args)s)"
 method_call = "self.thisptr.%(name)s(%(call_args)s)"
