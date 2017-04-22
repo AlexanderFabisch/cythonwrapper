@@ -3,6 +3,7 @@ import sys
 from .defaultconfig import Config
 from .exporter import CythonDeclarationExporter, CythonImplementationExporter
 from .parser import Parser, Includes, TypeInfo
+from .ast import handle_inheritance
 from .templates import render
 from .utils import make_header, file_ending, hidden_stdout, hidden_stderr
 
@@ -91,6 +92,8 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
 
     includes, type_info, asts = _parse_files(
         filenames, config, incdirs, verbose)
+
+    handle_inheritance(asts)
 
     results = dict(
         [_make_extension(modulename, asts, includes, type_info, config),

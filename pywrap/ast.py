@@ -213,3 +213,38 @@ class Field(AstNode):
 
     def __str__(self):
         return "Field (%s) %s" % (self.tipe, self.name)
+
+
+def handle_inheritance(asts):
+    classes = {}
+    for ast in asts:
+        for node in ast.nodes:
+            if isinstance(node, Clazz):
+                classes[node.name] = node
+
+    leaf_names = set()
+    for clazz in classes.values():
+        leaf_names.add(clazz.name)
+        if clazz.base is not None:
+            if clazz.base in leaf_names:
+                leaf_names.remove(clazz.base)
+
+    for leaf_name in leaf_names:
+        _copy_methods_recursive(classes, classes[leaf_name])
+
+
+def _copy_methods_recursive(classes, clazz):
+    if clazz.base is not None:
+        base_methods = _copy_methods_recursive(classes, classes[clazz.base])
+        clazz.nodes.extend(base_methods)
+
+        unique_methods = {}
+        remove_nodes = []
+        for node in clazz.nodes:
+            if isinstance(node, Method):
+                if node.name in unique_methods:
+                    remove_nodes.append(node)
+                else:
+                    unique_methods[node.name] = node
+        clazz.nodes = [n for n in clazz.nodes if n not in remove_nodes]
+    return [node for node in clazz.nodes if isinstance(node, Method)]
