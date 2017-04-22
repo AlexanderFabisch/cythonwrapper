@@ -61,7 +61,7 @@ def test_getter_definition():
 
 def test_default_ctor_def():
     ctor = ConstructorDefinition("MyClass", "", [], Includes(), TypeInfo(),
-                                 Config(), "MyClass", None).make()
+                                 Config(), "MyClass").make()
     assert_multi_line_equal(
         ctor,
         lines(

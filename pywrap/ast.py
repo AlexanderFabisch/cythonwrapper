@@ -1,4 +1,5 @@
 import os
+import warnings
 
 from .utils import indent_block, from_camel_case
 
@@ -244,6 +245,9 @@ def _copy_methods_recursive(classes, clazz):
             if isinstance(node, Method):
                 if node.name in unique_methods:
                     remove_nodes.append(node)
+                    warnings.warn(
+                        "Method '%s.%s' is already defined. Only one method "
+                        "will be exposed." % (clazz.name, node.name))
                 else:
                     unique_methods[node.name] = node
         clazz.nodes = [n for n in clazz.nodes if n not in remove_nodes]

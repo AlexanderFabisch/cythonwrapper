@@ -315,56 +315,11 @@ class CythonImplementationExporter(AstExporter):
         self.config = config
 
     def export(self):
-        classes = self._postprocess_classes()
-        self.output = render("definitions", enums=self.enums,
-                             functions=self.functions, classes=classes)
         return super(CythonImplementationExporter, self).export()
 
     def visit_ast(self, ast):
-        pass
-
-    def _postprocess_classes(self):
-        classes = {}
-        for class_def in self.classes:
-            classes[class_def["name"]] = class_def
-
-        # Extend class definitions with superclass
-        # TODO walk recursively, starting from leaves of inheritance tree
-        extended_classes = []
-        for class_def in classes.values():
-            fields = class_def["fields"]
-            methods = class_def["methods"]
-            if class_def["base"] is not None:
-                base_class_def = classes[class_def["base"]]
-                fields.extend(base_class_def["fields"])
-                methods.extend(base_class_def["methods"])
-            class_def["fields"] = fields
-            # TODO override methods from base class (i.e. don't add it)
-            class_def["methods"] = self._remove_duplicate_methods(methods)
-            extended_classes.append(class_def)
-
-        for class_def in extended_classes:
-            class_def["fields"] = map(partial(
-                self._process_field, selftype=class_def["name"]),
-                class_def["fields"])
-            class_def["methods"] = map(partial(
-                self._process_method, selftype=class_def["name"]),
-                class_def["methods"])
-
-        rendered_classes = []
-        for class_def in extended_classes:
-            rendered_classes.append(render("class", **class_def))
-        return rendered_classes
-
-    def _remove_duplicate_methods(self, methods):
-        method_dict = {}
-        for method, cppname in methods:
-            if method.name in method_dict:
-                warnings.warn("Method '%s' is already defined. Only one "
-                              "method will be exposed." % method.name)
-            else:
-                method_dict[method.name] = (method, cppname)
-        return method_dict.values()
+        self.output = render("definitions", enums=self.enums,
+                             functions=self.functions, classes=self.classes)
 
     def visit_enum(self, enum):
         self.enums.append(render("enum", enum=enum))
@@ -395,14 +350,15 @@ class CythonImplementationExporter(AstExporter):
         class_def.update(clazz.__dict__)
         class_def["cppname"] = cppname
         class_def["comment"] = clazz.comment
-        class_def["fields"] = self.fields
+        class_def["fields"] = map(partial(
+            self._process_field, selftype=clazz.name), self.fields)
         class_def["ctors"] = map(partial(
             self._process_constructor, selftype=clazz.name,
-            cpptype=clazz.get_cppname(), base=clazz.base),
-                                  self.ctors)
-        class_def["methods"] = self.methods
+            cpptype=clazz.get_cppname()), self.ctors)
+        class_def["methods"] = map(partial(
+            self._process_method, selftype=clazz.name), self.methods)
 
-        self.classes.append(class_def)
+        self.classes.append(render("class", **class_def))
         self._clear_class()
 
     def visit_template_class(self, template_class):
@@ -434,7 +390,7 @@ class CythonImplementationExporter(AstExporter):
     def visit_constructor(self, ctor):
         self.ctors.append(ctor)
 
-    def _process_constructor(self, ctor, selftype, cpptype, base=None):
+    def _process_constructor(self, ctor, selftype, cpptype):
         if self.config.is_abstract_class(ctor.class_name):
             warnings.warn("Class '%s' is abstract and will have no constructor."
                           % ctor.class_name)
@@ -444,7 +400,7 @@ class CythonImplementationExporter(AstExporter):
         try:
             constructor_def = ConstructorDefinition(
                 selftype, ctor.comment, ctor.nodes, self.includes,
-                self.type_info, self.config, cpptype, base)
+                self.type_info, self.config, cpptype)
             return constructor_def.make()
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % ctor.name)
@@ -575,13 +531,12 @@ class FunctionDefinition(object):
 
 class ConstructorDefinition(FunctionDefinition):
     def __init__(self, class_name, comment, arguments, includes, type_info,
-                 config, cpp_classname, base):
+                 config, cpp_classname):
         super(ConstructorDefinition, self).__init__(
             "__init__", comment, arguments, includes, result_type=None,
             type_info=type_info, config=config)
         self.initial_args = ["%s self" % class_name]
         self.cpp_classname = cpp_classname
-        self.base = base
 
     def _call_cpp_function(self, call_args):
         return templates.ctor_call % {"class_name": self.cpp_classname,
