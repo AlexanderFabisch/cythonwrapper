@@ -223,12 +223,9 @@ def postprocess_asts(asts):
     functions because we cannot handle overloading on the Cython side.
     """
     classes = _build_classdict(asts)
-
     leaf_names = _find_leaves(classes.values())
-
     for leaf_name in leaf_names:
         _copy_methods_from_base(classes, classes[leaf_name])
-
     _remove_overloaded_methods(classes.values())
     _remove_overloaded_functions(asts)
 

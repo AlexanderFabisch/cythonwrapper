@@ -342,18 +342,21 @@ class CythonImplementationExporter(AstExporter):
         if cppname is None:
             cppname = clazz.name
 
-        self.type_info.attach_specialization(clazz.get_attached_typeinfo())
-        class_def = {}
-        class_def.update(clazz.__dict__)
-        class_def["cppname"] = cppname
-        class_def["comment"] = clazz.comment
-        class_def["fields"] = map(partial(
-            self._process_field, selftype=clazz.name), self.fields)
-        class_def["ctors"] = map(partial(
-            self._process_constructor, selftype=clazz.name,
-            cpptype=clazz.get_cppname()), self.ctors)
-        class_def["methods"] = map(partial(
-            self._process_method, selftype=clazz.name), self.methods)
+        try:
+            self.type_info.attach_specialization(clazz.get_attached_typeinfo())
+            class_def = {}
+            class_def.update(clazz.__dict__)
+            class_def["cppname"] = cppname
+            class_def["comment"] = clazz.comment
+            class_def["fields"] = map(partial(
+                self._process_field, selftype=clazz.name), self.fields)
+            class_def["ctors"] = map(partial(
+                self._process_constructor, selftype=clazz.name,
+                cpptype=clazz.get_cppname()), self.ctors)
+            class_def["methods"] = map(partial(
+                self._process_method, selftype=clazz.name), self.methods)
+        except:
+            self.type_info.remove_specialization()
 
         self.classes.append(render("class", **class_def))
         self._clear_class()

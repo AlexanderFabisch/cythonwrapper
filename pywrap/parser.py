@@ -85,7 +85,10 @@ class TypeInfo:
         self.spec = {}
 
     def attach_specialization(self, spec):
-        self.spec.update(spec)
+        self.spec = spec
+
+    def remove_specialization(self):
+        self.spec = {}
 
     def underlying_type(self, tname):
         while tname in self.typedefs or tname in self.spec:
