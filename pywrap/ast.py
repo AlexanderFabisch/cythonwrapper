@@ -219,9 +219,9 @@ class Field(AstNode):
 def handle_inheritance(asts):
     classes = {}
     for ast in asts:
-        for node in ast.nodes:
-            if isinstance(node, Clazz):
-                classes[node.name] = node
+        for n in ast.nodes:
+            if isinstance(n, Clazz):
+                classes[n.name] = n
 
     leaf_names = set()
     for clazz in classes.values():
@@ -247,7 +247,21 @@ def handle_inheritance(asts):
             else:
                 method_names.append(m.name)
         clazz.nodes = [n for n in clazz.nodes if n not in removed_methods]
-    # TODO remove overloaded functions
+
+    functions = [n for ast in asts for n in ast.nodes
+                 if isinstance(n, Function)]
+    function_names = []
+    removed_functions = []
+    for f in functions:
+        if f.name in function_names:
+            warnings.warn(
+                "Function '%s' is already defined. Only one method "
+                "will be exposed." % f.name)
+            removed_functions.append(f)
+        else:
+            function_names.append(f.name)
+    for ast in asts:
+        ast.nodes = [n for n in ast.nodes if n not in removed_functions]
 
 
 def _copy_methods_recursive(classes, clazz):
