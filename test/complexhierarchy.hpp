@@ -29,8 +29,13 @@ public:
 class B : public Base2
 {
 public:
-    virtual int bMethod()
+    virtual int base1Method()
     {
         return 4;
+    }
+
+    virtual int bMethod()
+    {
+        return 5;
     }
 };

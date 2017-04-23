@@ -20,6 +20,6 @@ def test_complex_hierarchy():
         assert_equal(a.base2_method(), 2)
         assert_equal(a.a_method(), 3)
         b = B()
-        assert_equal(b.base1_method(), 1)
+        assert_equal(b.base1_method(), 4)
         assert_equal(b.base2_method(), 2)
-        assert_equal(b.b_method(), 4)
+        assert_equal(b.b_method(), 5)
