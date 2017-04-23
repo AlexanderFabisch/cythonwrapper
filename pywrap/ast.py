@@ -216,25 +216,58 @@ class Field(AstNode):
         return "Field (%s) %s" % (self.tipe, self.name)
 
 
-def handle_inheritance(asts):
+def postprocess_asts(asts):
+    """Prepare ASTs for wrapper generation.
+
+    Copies methods from base classes to subclasses and removes overloaded
+    functions because we cannot handle overloading on the Cython side.
+    """
+    classes = _build_classdict(asts)
+
+    leaf_names = _find_leaves(classes.values())
+
+    for leaf_name in leaf_names:
+        _copy_methods_from_base(classes, classes[leaf_name])
+
+    _remove_overloaded_methods(classes.values())
+    _remove_overloaded_functions(asts)
+
+
+def _build_classdict(asts):
+    """Build dictionary of all classes referenced by name."""
     classes = {}
     for ast in asts:
         for n in ast.nodes:
             if isinstance(n, Clazz):
                 classes[n.name] = n
+    return classes
 
+
+def _find_leaves(classes):
+    """Find leaves of the inheritance hierarchy (classes without subclasses)."""
     leaf_names = set()
-    for clazz in classes.values():
+    for clazz in classes:
         leaf_names.add(clazz.name)
         if clazz.base is not None:
             if clazz.base in leaf_names:
                 leaf_names.remove(clazz.base)
+    return leaf_names
 
-    for leaf_name in leaf_names:
-        _copy_methods_recursive(classes, classes[leaf_name])
 
-    # TODO extract method
-    for clazz in classes.values():
+def _copy_methods_from_base(classes, clazz):
+    """Recursively copies methods from base classes to leaves."""
+    if clazz.base is not None:
+        base_methods = _copy_methods_from_base(classes, classes[clazz.base])
+        unique_methods = set([n.name for n in clazz.nodes
+                              if isinstance(n, Method)])
+        base_methods = [m for m in base_methods if m.name not in unique_methods]
+        clazz.nodes.extend(base_methods)
+    return [node for node in clazz.nodes if isinstance(node, Method)]
+
+
+def _remove_overloaded_methods(classes):
+    """Cython cannot handle overloaded methods, we will take the first one."""
+    for clazz in classes:
         methods = [n for n in clazz.nodes if isinstance(n, Method)]
         method_names = []
         removed_methods = []
@@ -248,6 +281,9 @@ def handle_inheritance(asts):
                 method_names.append(m.name)
         clazz.nodes = [n for n in clazz.nodes if n not in removed_methods]
 
+
+def _remove_overloaded_functions(asts):
+    """Cython cannot handle overloaded functions, we will take the first one."""
     functions = [n for ast in asts for n in ast.nodes
                  if isinstance(n, Function)]
     function_names = []
@@ -262,13 +298,3 @@ def handle_inheritance(asts):
             function_names.append(f.name)
     for ast in asts:
         ast.nodes = [n for n in ast.nodes if n not in removed_functions]
-
-
-def _copy_methods_recursive(classes, clazz):
-    if clazz.base is not None:
-        base_methods = _copy_methods_recursive(classes, classes[clazz.base])
-        unique_methods = set([n.name for n in clazz.nodes
-                              if isinstance(n, Method)])
-        base_methods = [m for m in base_methods if m.name not in unique_methods]
-        clazz.nodes.extend(base_methods)
-    return [node for node in clazz.nodes if isinstance(node, Method)]
