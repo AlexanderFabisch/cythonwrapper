@@ -355,7 +355,7 @@ class CythonImplementationExporter(AstExporter):
                 cpptype=clazz.get_cppname()), self.ctors)
             class_def["methods"] = map(partial(
                 self._process_method, selftype=clazz.name), self.methods)
-        except:
+        finally:
             self.type_info.remove_specialization()
 
         self.classes.append(render("class", **class_def))
