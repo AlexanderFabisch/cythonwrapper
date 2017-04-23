@@ -233,22 +233,28 @@ def handle_inheritance(asts):
     for leaf_name in leaf_names:
         _copy_methods_recursive(classes, classes[leaf_name])
 
+    # TODO extract method
+    for clazz in classes.values():
+        methods = [n for n in clazz.nodes if isinstance(n, Method)]
+        method_names = []
+        removed_methods = []
+        for m in methods:
+            if m.name in method_names:
+                warnings.warn(
+                    "Method '%s.%s' is already defined. Only one method "
+                    "will be exposed." % (clazz.name, m.name))
+                removed_methods.append(m)
+            else:
+                method_names.append(m.name)
+        clazz.nodes = [n for n in clazz.nodes if n not in removed_methods]
+    # TODO remove overloaded functions
+
 
 def _copy_methods_recursive(classes, clazz):
     if clazz.base is not None:
         base_methods = _copy_methods_recursive(classes, classes[clazz.base])
+        unique_methods = set([n.name for n in clazz.nodes
+                              if isinstance(n, Method)])
+        base_methods = [m for m in base_methods if m.name not in unique_methods]
         clazz.nodes.extend(base_methods)
-
-        unique_methods = {}
-        remove_nodes = []
-        for node in clazz.nodes:
-            if isinstance(node, Method):
-                if node.name in unique_methods:
-                    remove_nodes.append(node)
-                    warnings.warn(
-                        "Method '%s.%s' is already defined. Only one method "
-                        "will be exposed." % (clazz.name, node.name))
-                else:
-                    unique_methods[node.name] = node
-        clazz.nodes = [n for n in clazz.nodes if n not in remove_nodes]
     return [node for node in clazz.nodes if isinstance(node, Method)]
