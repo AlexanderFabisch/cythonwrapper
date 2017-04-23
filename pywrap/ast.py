@@ -69,7 +69,7 @@ class Clazz(AstNode):
             self.__class__.__name__.replace("zz", "ss"),
             self.name, self.get_cppname())
         if self.base is not None:
-            result += ", base class: '%s'" % self.base
+            result += " extends '%s'" % self.base
         if self.namespace != "":
             result += " (namespace: '%s')" % self.namespace
         if len(self.nodes) > 0:
