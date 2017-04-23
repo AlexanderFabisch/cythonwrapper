@@ -14,6 +14,7 @@ Not released yet.
 * The first function or method of multiple overloaded versions is exposed by
   the Python wrapper because Cython cannot handle overloading.
 * Methods from base classes are copied to subclasses.
+* Avoid name clashes with getter and setter of fields.
 
 ## Version 0.1
 

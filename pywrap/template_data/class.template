@@ -22,7 +22,7 @@ cdef class {{ name }}:
 {%- if fields -%}
 {% for field in fields %}
 {%- if "name" in field %}
-    {{ field["name"] }} = property(get_{{ field["name"] }}, set_{{ field["name"] }})
+    {{ field["name"] }} = property(__get_{{ field["name"] }}, __set_{{ field["name"] }})
 
     {{ field["getter"]|indent(4) }}
 

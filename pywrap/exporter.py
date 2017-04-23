@@ -559,7 +559,7 @@ class MethodDefinition(FunctionDefinition):
 
 class SetterDefinition(MethodDefinition):
     def __init__(self, python_classname, field, includes, type_info, config):
-        name = "set_%s" % field.name
+        name = "__set_%s" % field.name
         super(SetterDefinition, self).__init__(
             python_classname, "", name, [field], includes, "void", type_info,
             config)
@@ -573,7 +573,7 @@ class SetterDefinition(MethodDefinition):
 
 class GetterDefinition(MethodDefinition):
     def __init__(self, python_classname, field, includes, type_info, config):
-        name = "get_%s" % field.name
+        name = "__get_%s" % field.name
         super(GetterDefinition, self).__init__(
             python_classname, "", name, [], includes, field.tipe, type_info,
             config)

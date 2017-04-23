@@ -39,7 +39,7 @@ def test_setter_definition():
     assert_multi_line_equal(
         setter,
         lines(
-            "cpdef set_my_field(MyClass self, double myField):",
+            "cpdef __set_my_field(MyClass self, double myField):",
             "    cdef double cpp_myField = myField",
             "    self.thisptr.myField = cpp_myField"
         )
@@ -53,7 +53,7 @@ def test_getter_definition():
     assert_multi_line_equal(
         getter,
         lines(
-            "cpdef get_my_field(MyClass self):",
+            "cpdef __get_my_field(MyClass self):",
             "    cdef double result = self.thisptr.myField",
             "    return result"
         )
