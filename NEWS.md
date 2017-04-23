@@ -11,6 +11,9 @@ Not released yet.
 ### Features
 
 * Diagnostics from clang are now printed as warning or raised as exceptions.
+* The first function or method of multiple overloaded versions is exposed by
+  the Python wrapper because Cython cannot handle overloading.
+* Methods from base classes are copied to subclasses.
 
 ## Version 0.1
 
