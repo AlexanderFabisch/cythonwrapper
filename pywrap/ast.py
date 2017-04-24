@@ -83,6 +83,12 @@ class Clazz(AstNode):
     def get_attached_typeinfo(self):
         return {}
 
+    def fullname(self):
+        name = self.name
+        if self.namespace:
+            name = "%s::%s" % (self.namespace, name)
+        return name
+
 
 class TemplateClazzSpecialization(Clazz):
     def __init__(self, filename, namespace, name, cppname, specialization,
@@ -216,6 +222,18 @@ class Field(AstNode):
         return "Field (%s) %s" % (self.tipe, self.name)
 
 
+class ClassDict(dict):
+    def __get_item__(self, class_name):
+        super(ClassDict, self).__getitem__(class_name)
+
+    def insert(self, clazz):
+        if clazz.namespace:
+            class_name = "%s::%s" % (clazz.namespace, clazz.name)
+        else:
+            class_name = clazz.name
+        self[class_name] = clazz
+
+
 def postprocess_asts(asts):
     """Prepare ASTs for wrapper generation.
 
@@ -232,11 +250,11 @@ def postprocess_asts(asts):
 
 def _build_classdict(asts):
     """Build dictionary of all classes referenced by name."""
-    classes = {}
+    classes = ClassDict()
     for ast in asts:
         for n in ast.nodes:
             if isinstance(n, Clazz):
-                classes[n.name] = n
+                classes.insert(n)
     return classes
 
 
@@ -244,7 +262,7 @@ def _find_leaves(classes):
     """Find leaves of the inheritance hierarchy (classes without subclasses)."""
     leaf_names = set()
     for clazz in classes:
-        leaf_names.add(clazz.name)
+        leaf_names.add(clazz.fullname())
         if clazz.base is not None:
             if clazz.base in leaf_names:
                 leaf_names.remove(clazz.base)

@@ -23,3 +23,13 @@ def test_complex_hierarchy():
         assert_equal(b.base1_method(), 4)
         assert_equal(b.base2_method(), 2)
         assert_equal(b.b_method(), 5)
+
+
+def test_inheritance_with_namespace():
+    with cython_extension_from("inheritancewithnamespace.hpp"):
+        from inheritancewithnamespace import ClassA, ClassB
+        a = ClassA()
+        assert_equal(a.method_a(), 1)
+        b = ClassB()
+        assert_equal(b.method_a(), 1)
+        assert_equal(b.method_b(), 2)

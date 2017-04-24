@@ -68,6 +68,11 @@ def test_class_string_with_base_class():
     assert_equal(str(c), "Class 'MyClass' ('MyClass') extends 'MyBase'")
 
 
+def test_class_fullname():
+    c = Clazz("test.hpp", "Namespace", "MyClass")
+    assert_equal(c.fullname(), "Namespace::MyClass")
+
+
 def test_function_string_with_return():
     f = Function("test.hpp", "", "my_fun", "double")
     assert_multi_line_equal(
