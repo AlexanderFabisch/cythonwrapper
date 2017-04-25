@@ -15,6 +15,7 @@ Not released yet.
   the Python wrapper because Cython cannot handle overloading.
 * Methods from base classes are copied to subclasses.
 * Avoid name clashes with getter and setter of fields.
+* Enums can be defined in classes.
 
 ## Version 0.1
 
