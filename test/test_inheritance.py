@@ -33,3 +33,10 @@ def test_inheritance_with_namespace():
         b = ClassB()
         assert_equal(b.method_a(), 1)
         assert_equal(b.method_b(), 2)
+
+
+def test_inheritance_from_external_header():
+    with cython_extension_from("inheritancefromexternal.hpp"):
+        from inheritancefromexternal import MyString
+        s = MyString()
+        assert_equal(s.myfun(), 13)

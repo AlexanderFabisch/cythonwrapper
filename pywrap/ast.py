@@ -223,9 +223,6 @@ class Field(AstNode):
 
 
 class ClassDict(dict):
-    def __get_item__(self, class_name):
-        super(ClassDict, self).__getitem__(class_name)
-
     def insert(self, clazz):
         if clazz.namespace:
             class_name = "%s::%s" % (clazz.namespace, clazz.name)
@@ -271,8 +268,11 @@ def _find_leaves(classes):
 
 def _copy_methods_from_base(classes, clazz):
     """Recursively copies methods from base classes to leaves."""
+    if clazz is None:
+        return []
+
     if clazz.base is not None:
-        base_methods = _copy_methods_from_base(classes, classes[clazz.base])
+        base_methods = _copy_methods_from_base(classes, classes.get(clazz.base))
         unique_methods = set([n.name for n in clazz.nodes
                               if isinstance(n, Method)])
         base_methods = [m for m in base_methods if m.name not in unique_methods]
