@@ -105,6 +105,16 @@ def test_enum():
         assert_equal(enum_to_string(MyEnum.THIRDOPTION), "third")
 
 
+def test_enum_in_class():
+    with cython_extension_from("enuminclass.hpp"):
+        from enuminclass import MyEnum, enum_to_string
+        assert_not_equal(MyEnum.FIRSTOPTION, MyEnum.SECONDOPTION)
+        assert_not_equal(MyEnum.SECONDOPTION, MyEnum.THIRDOPTION)
+        assert_equal(enum_to_string(MyEnum.FIRSTOPTION), "first")
+        assert_equal(enum_to_string(MyEnum.SECONDOPTION), "second")
+        assert_equal(enum_to_string(MyEnum.THIRDOPTION), "third")
+
+
 def test_static_method():
     with cython_extension_from("staticmethod.hpp"):
         from staticmethod import plus1, plus2

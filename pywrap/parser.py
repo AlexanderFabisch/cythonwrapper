@@ -428,7 +428,11 @@ class Parser(object):
         return True
 
     def add_enum(self, name, comment=""):
-        enum = Enum(self.include_file, self.namespace, name, comment)
+        if self.last_type is not None:
+            namespace = "%s::%s" % (self.namespace, self.last_type.name)
+        else:
+            namespace = self.namespace
+        enum = Enum(self.include_file, namespace, name, comment)
         self.type_info.enums.append(name)
         self.last_enum = enum
         self.ast.nodes.append(enum)
