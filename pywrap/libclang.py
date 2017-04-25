@@ -4,7 +4,7 @@ import clang
 from clang import cindex
 
 
-def _find_clang(verbose=0):
+def find_clang(set_library_path=True, verbose=0):
     """Find installation of libclang.
 
     python-clang does not know where to find libclang, so we have to do this
@@ -14,7 +14,7 @@ def _find_clang(verbose=0):
     # remove pythonX.Y/site-packages/clang/__init__.pyc from path
     basepath = os.sep.join(clang.__file__.split(os.sep)[:-4])
 
-    if verbose >= 2:
+    if verbose >= 1:
         print("Found Python bindings of libclang in '%s'."
               % basepath)
     for clang_version in SUPPORTED_VERSIONS:
@@ -24,30 +24,30 @@ def _find_clang(verbose=0):
             basepath  # e.g. '$HOME/anaconda3/envs/$ENV/lib'
         ]
         for lib_path in search_paths:
-            if verbose >= 3:
+            if verbose >= 2:
                 print("Searching for libclang %s in '%s'..."
                       % (clang_version, lib_path))
 
             if not os.path.exists(lib_path):
-                if verbose >= 3:
+                if verbose >= 2:
                     print("Directory does not exist.")
                 continue
 
             lib_filename = _find_lib(lib_path, clang_version)
-            if verbose >= 3:
-                if lib_filename is None:
-                    print("Library not found.")
-                else:
-                    print("Found libclang at '%s'." % lib_filename)
             if lib_filename is None:
+                if verbose >= 2:
+                    print("Library not found.")
                 continue
+            if verbose >= 1:
+                print("Found libclang at '%s'." % lib_filename)
 
             clang_incdir = _find_include_directory(lib_path, clang_version)
-            if verbose >= 3:
+            if verbose >= 1:
                 print("Found clang include directory at '%s'."
                       % clang_incdir)
 
-            cindex.Config.set_library_path(lib_path)
+            if set_library_path:
+                cindex.Config.set_library_path(lib_path)
 
             return clang_version, clang_incdir
 
@@ -81,4 +81,4 @@ def _find_include_directory(lib_path, clang_version):
 
 
 # This must be done globally and exactly once:
-CLANG_VERSION, CLANG_INCDIR = _find_clang()
+CLANG_VERSION, CLANG_INCDIR = find_clang()
