@@ -98,7 +98,8 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
     results = dict(
         [_make_extension(modulename, asts, includes, type_info, config),
          _make_declarations(asts, includes, config),
-         _make_setup(sources, modulename, target, incdirs, compiler_flags)]
+         _make_setup(sources, modulename, target, incdirs, compiler_flags,
+                     config)]
     )
 
     if verbose >= 2:
@@ -146,13 +147,15 @@ def _make_declarations(asts, includes, config):
     return pxd_filename, declarations
 
 
-def _make_setup(sources, modulename, target, incdirs, compiler_flags):
+def _make_setup(sources, modulename, target, incdirs, compiler_flags, config):
     sourcedir = os.path.relpath(".", start=target)
     source_relpaths = [os.path.relpath(filename, start=target)
                        for filename in sources]
     return "setup.py", render("setup", filenames=source_relpaths,
                               module=modulename, sourcedir=sourcedir,
-                              incdirs=incdirs, compiler_flags=compiler_flags)
+                              incdirs=incdirs, compiler_flags=compiler_flags,
+                              library_dirs=config.library_dirs,
+                              libraries=config.libraries)
 
 
 def write_files(files, target="."):

@@ -44,6 +44,16 @@ if __name__ == '__main__':
                 # NumPy C-API
                 "-Wno-cpp", "-Wno-unused-function"
             ],
+            library_dirs=[
+            {%- for library_dir in library_dirs %}
+                "{{ library_dir }}",
+            {%- endfor %}
+            ],
+            libraries=[
+            {%- for library in libraries %}
+                "{{ library }}",
+            {%- endfor %}
+            ],
             language="c++"
         )
     ]

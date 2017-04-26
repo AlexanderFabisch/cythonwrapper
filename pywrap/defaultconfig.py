@@ -57,6 +57,9 @@ class Config(object):
         self.additional_declerations = []
         self.ignored = []
 
+        self.library_dirs = []
+        self.libraries = []
+
     def cpp_to_py_operator(self, name):
         if name.startswith("operator") and name not in self.operators:
             raise NotImplementedError("Cannot convert C++ operator '%s' to "
@@ -110,3 +113,9 @@ class Config(object):
 
     def is_abstract_class(self, class_name):
         return self.is_ignored(class_name, "__init__")
+
+    def add_library_dir(self, library_dir):
+        self.library_dirs.append(library_dir)
+
+    def add_library(self, library):
+        self.libraries.append(library)
