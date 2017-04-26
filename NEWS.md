@@ -16,6 +16,7 @@ Not released yet.
 * Methods from base classes are copied to subclasses.
 * Avoid name clashes with getter and setter of fields.
 * Enums can be defined in classes.
+* Linking of external libraries.
 
 ## Version 0.1
 
