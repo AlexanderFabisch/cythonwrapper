@@ -309,10 +309,11 @@ class Parser(object):
             elif node.kind == cindex.CursorKind.CXX_METHOD:
                 if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
                     if node.is_static_method():
-                        namespace = self.namespace
-                        if namespace != "":
-                            namespace += "::"
-                        namespace += self.last_type.name
+                        if self.namespace != "":
+                            namespace = "%s::%s" % (self.namespace,
+                                                    self.last_type.name)
+                        else:
+                            namespace = self.last_type.name
                         parse_children = self.add_function(
                             node.spelling, node.result_type.spelling,
                             namespace, convert_to_docstring(node.raw_comment))
@@ -461,7 +462,11 @@ class Parser(object):
         return True
 
     def add_class(self, name, comment=""):
-        clazz = Clazz(self.include_file, self.namespace, name, comment)
+        if self.last_type is not None:
+            namespace = "%s::%s" % (self.namespace, self.last_type.name)
+        else:
+            namespace = self.namespace
+        clazz = Clazz(self.include_file, namespace, name, comment)
         self.ast.nodes.append(clazz)
         self.last_type = clazz
         self.type_info.classes.append(name)
