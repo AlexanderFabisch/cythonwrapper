@@ -115,6 +115,13 @@ def test_enum_in_class():
         assert_equal(enum_to_string(MyEnum.THIRDOPTION), "third")
 
 
+def test_class_in_class():
+    with cython_extension_from("classinclass.hpp"):
+        from classinclass import ClassB
+        b = ClassB()
+        assert_equal(b.myfun(), 123)
+
+
 def test_static_method():
     with cython_extension_from("staticmethod.hpp"):
         from staticmethod import plus1, plus2
