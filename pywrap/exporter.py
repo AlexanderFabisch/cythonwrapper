@@ -435,6 +435,12 @@ class CythonImplementationExporter(AstExporter):
             self.visit_method(method, cppname=template_method.name)
 
     def visit_function(self, function, cppname=None):
+        if self.config.is_ignored(function.name):
+            warnings.warn("Function '%s' is on the blacklist and will be "
+                          "ignored." % function.name)
+            function.ignored = True
+            return
+
         try:
             self.functions.append(FunctionDefinition(
                 function.name, function.comment, function.nodes, self.includes,
