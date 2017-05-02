@@ -117,9 +117,10 @@ def test_enum_in_class():
 
 def test_class_in_class():
     with cython_extension_from("classinclass.hpp"):
-        from classinclass import ClassB
+        from classinclass import ClassB, mystatfun
         b = ClassB()
         assert_equal(b.myfun(), 123)
+        assert_equal(mystatfun(), 124)
 
 
 def test_static_method():

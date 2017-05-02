@@ -11,5 +11,10 @@ public:
         {
             return 123;
         }
+
+        static int mystatfun()
+        {
+            return 124;
+        }
     };
 };

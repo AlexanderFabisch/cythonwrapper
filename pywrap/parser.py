@@ -316,7 +316,11 @@ class Parser(object):
             elif node.kind == cindex.CursorKind.CXX_METHOD:
                 if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
                     if node.is_static_method():
-                        additional_namespace = self.last_type.name
+                        if additional_namespace == "":
+                            additional_namespace = self.last_type.name
+                        else:
+                            additional_namespace = (additional_namespace +
+                                                    "::" + self.last_type.name)
                         parse_children = self.add_function(
                             node.spelling, node.result_type.spelling,
                             namespace, additional_namespace,
@@ -337,7 +341,11 @@ class Parser(object):
                 parse_children = self.add_class(
                     node.displayname, namespace, additional_namespace,
                     convert_to_docstring(node.raw_comment))
-                additional_namespace = node.displayname
+                if additional_namespace == "":
+                    additional_namespace = node.displayname
+                else:
+                    additional_namespace = (additional_namespace + "::" +
+                                            node.displayname)
                 class_added = True
             elif node.kind == cindex.CursorKind.CXX_BASE_SPECIFIER:
                 if self.last_type.base is not None:
