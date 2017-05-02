@@ -63,7 +63,7 @@ class Config(object):
     def cpp_to_py_operator(self, name):
         if name.startswith("operator") and name not in self.operators:
             raise NotImplementedError("Cannot convert C++ operator '%s' to "
-                                      "Python operator.")
+                                      "Python operator." % name)
         return self.operators.get(name, name)
 
     def add_decleration(self, decl):
