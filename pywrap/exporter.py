@@ -445,7 +445,7 @@ class CythonImplementationExporter(AstExporter):
             self.functions.append(FunctionDefinition(
                 function.name, function.comment, function.nodes, self.includes,
                 function.result_type, self.type_info,
-                self.config, cppname=cppname).make())
+                self.config, cppname=cppname, clazz=function.clazz).make())
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring function '%s'" % function.name)
             function.ignored = True
@@ -461,7 +461,7 @@ class CythonImplementationExporter(AstExporter):
 
 class FunctionDefinition(object):
     def __init__(self, name, comment, arguments, includes, result_type,
-                 type_info, config, cppname=None):
+                 type_info, config, cppname=None, clazz=None):
         self.name = name
         self.comment = comment
         self.arguments = arguments
@@ -474,6 +474,7 @@ class FunctionDefinition(object):
             self.cppname = self.name
         else:
             self.cppname = cppname
+        self.clazz = clazz
         self.output_is_copy = True
         self._create_type_converters()
 
@@ -506,6 +507,8 @@ class FunctionDefinition(object):
     def _signature(self):
         function_name = from_camel_case(
             self.config.cpp_to_py_operator(self.name))
+        if self.clazz is not None:
+            function_name = self.clazz + "_" + function_name
         return {"def_prefix": self._def_prefix(function_name),
                 "args": ", ".join(self._cython_signature_args()),
                 "name": function_name}

@@ -289,7 +289,7 @@ class Parser(object):
             elif node.kind == cindex.CursorKind.FUNCTION_DECL:
                 parse_children = self.add_function(
                     node.spelling, node.result_type.spelling,
-                    namespace, additional_namespace,
+                    namespace, additional_namespace, None,
                     convert_to_docstring(node.raw_comment))
             elif node.kind == cindex.CursorKind.CLASS_TEMPLATE:
                 name = node.displayname.split("<")[0]
@@ -325,6 +325,7 @@ class Parser(object):
                         parse_children = self.add_function(
                             node.spelling, node.result_type.spelling,
                             namespace, additional_namespace,
+                            last_type.name,
                             convert_to_docstring(node.raw_comment))
                     else:
                         parse_children = self.add_method(
@@ -471,12 +472,12 @@ class Parser(object):
         self.last_template.template_types.append(template_type)
 
     def add_function(self, name, tname, namespace, additional_namespace,
-                     comment=""):
+                     clazz=None, comment=""):
         namespace = self._full_namespace(namespace, additional_namespace)
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
         function = Function(
-            self.include_file, namespace, name, tname, comment)
+            self.include_file, namespace, name, tname, comment, clazz)
         self.ast.nodes.append(function)
         self.last_function = function
         return True

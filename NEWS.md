@@ -18,6 +18,11 @@ Not released yet.
 * Enums can be defined in classes.
 * Linking of external libraries.
 
+### Breaking Changes
+
+* Static methods of a class 'CLS' will now have the prefix 'CLS_', e.g.
+  'CLS_static_method()'.
+
 ## Version 0.1
 
 2017/04/03

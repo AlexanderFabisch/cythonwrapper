@@ -120,11 +120,13 @@ class FunctionBase(AstNode):
 
 
 class Function(FunctionBase):
-    def __init__(self, filename, namespace, name, result_type, comment=""):
+    def __init__(self, filename, namespace, name, result_type, comment="",
+                 clazz=None):
         super(Function, self).__init__(name, comment)
         self.filename = filename
         self.namespace = namespace
         self.result_type = result_type
+        self.clazz = clazz
 
     def __str__(self):
         result = super(Function, self).__str__()
