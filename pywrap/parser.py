@@ -271,6 +271,7 @@ class Parser(object):
         parse_children = True
         class_added = False
         param_added = False
+        last_type = self.last_type
         try:
             if node.location.file is None:
                 pass
@@ -297,7 +298,7 @@ class Parser(object):
                     convert_to_docstring(node.raw_comment))
                 class_added = True
             elif node.kind == cindex.CursorKind.FUNCTION_TEMPLATE:
-                if self.last_type is None:
+                if last_type is None:
                     self.add_template_function(
                         node.spelling, node.result_type.spelling,
                         namespace, additional_namespace,
@@ -317,10 +318,10 @@ class Parser(object):
                 if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
                     if node.is_static_method():
                         if additional_namespace == "":
-                            additional_namespace = self.last_type.name
+                            additional_namespace = last_type.name
                         else:
                             additional_namespace = (additional_namespace +
-                                                    "::" + self.last_type.name)
+                                                    "::" + last_type.name)
                         parse_children = self.add_function(
                             node.spelling, node.result_type.spelling,
                             namespace, additional_namespace,
@@ -348,16 +349,16 @@ class Parser(object):
                                             node.displayname)
                 class_added = True
             elif node.kind == cindex.CursorKind.CXX_BASE_SPECIFIER:
-                if self.last_type.base is not None:
+                if last_type.base is not None:
                     warnings.warn("Class '%s' already has a base class: '%s', "
                                   "ignoring '%s'."
-                                  % (self.last_type.name, self.last_type.base,
+                                  % (last_type.name, last_type.base,
                                      node.type.spelling))
                 else:
-                    self.last_type.base = node.type.spelling
+                    last_type.base = node.type.spelling
                 parse_children = False
             elif node.kind == cindex.CursorKind.STRUCT_DECL:
-                parse_children = self.add_struct_decl(
+                parse_children, additional_namespace = self.add_struct_decl(
                     node.displayname, namespace, additional_namespace)
             elif node.kind == cindex.CursorKind.FIELD_DECL:
                 if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
@@ -406,6 +407,8 @@ class Parser(object):
             for child in node.get_children():
                 self.convert_ast(child, depth + 1, namespace,
                                  additional_namespace)
+            self.last_type = last_type
+
         if class_added:
             self.last_type = None
         if param_added:
@@ -450,7 +453,11 @@ class Parser(object):
             self.last_type = self.unnamed_struct
         else:
             self.add_class(name, namespace, additional_namespace)
-        return True
+            if additional_namespace == "":
+                additional_namespace = name
+            else:
+                additional_namespace = additional_namespace + "::" + name
+        return True, additional_namespace
 
     def add_enum(self, name, namespace, additional_namespace, comment=""):
         namespace = self._full_namespace(namespace, additional_namespace)
