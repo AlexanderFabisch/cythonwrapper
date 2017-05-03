@@ -8,8 +8,8 @@ from .templates import render
 def is_basic_type_with_automatic_conversion(typename):
     # source: http://docs.cython.org/src/userguide/wrapping_CPlusPlus.html#standard-library
     return typename in ["bool", "string", "char *",
-                        "int", "unsigned int", "long", "unsigned long",
-                        "float", "double"]
+                        "int", "unsigned int", "size_t", "long",
+                        "unsigned long", "float", "double"]
 
 
 def is_stl_type_with_automatic_conversion(typename):
