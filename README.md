@@ -41,7 +41,6 @@ There are more examples in the subdirectory `examples`.
 Many things are not implemented yet, e.g.
 
 * default values
-* linking to other libraries (you can modify the `setup.py` though)
 * integrating other Cython extensions (you can modify the `setup.py` though)
 
 Feel free to work on any of these features. :)
