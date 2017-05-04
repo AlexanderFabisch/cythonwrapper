@@ -135,6 +135,12 @@ class Function(FunctionBase):
                 "Returns (%s)" % self.result_type, 1)
         return result
 
+    def exported_name(self):
+        if self.clazz is None:
+            return self.name
+        else:
+            return self.clazz + "_" + self.name
+
 
 class Constructor(FunctionBase):
     def __init__(self, class_name, comment=""):
@@ -306,9 +312,7 @@ def _remove_overloaded_functions(asts):
     function_names = []
     removed_functions = []
     for f in functions:
-        function_name = f.name
-        if f.clazz is not None:
-            function_name = function_name + "_" + f.clazz
+        function_name = f.exported_name()
         if function_name in function_names:
             warnings.warn(
                 "Function '%s' is already defined. Only one method "
