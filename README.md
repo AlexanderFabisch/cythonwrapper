@@ -47,7 +47,15 @@ Feel free to work on any of these features. :)
 
 ## Why?
 
-I think Cython is a great tool to wrap C++ code in Python. However, it requires a lot of manual work to wrap C++ code: you have to write a file that lists all the classes and functions that you want to use and you must convert custom types manually. A lot of this work can be done automatically. A pitfall is the naming of classes and functions. It is hard to have consistent names while you write a wrapper manually. With this tool you do not rely on every developer on the project to follow the same naming scheme because the names of classes and functions in the wrapper are determined automatically from their C++ decleration.
+I think Cython is a great tool to wrap C++ code in Python. However, it requires
+a lot of manual work to wrap C++ code: you have to write a file that lists all
+the classes and functions that you want to use and you must convert custom
+types manually. A lot of this work can be done automatically. A pitfall is
+the naming of classes and functions. It is hard to have consistent names while
+you write a wrapper manually. With this tool you do not rely on every developer
+on the project to follow the same naming scheme because the names of classes
+and functions in the wrapper are determined automatically from their C++
+declaration.
 
 ## Install
 

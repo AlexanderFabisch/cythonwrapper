@@ -5,7 +5,7 @@ Memory Management
 Call by Value / Reference
 -------------------------
 
-Suppose we have the following decleration in a C++ header:
+Suppose we have the following declaration in a C++ header:
 
 .. code-block:: c++
 

@@ -22,6 +22,9 @@ Not released yet.
 
 * Static methods of a class 'CLS' will now have the prefix 'CLS_', e.g.
   'CLS_static_method()'.
+* Fixed typo in interface of Config: renamed all occurences of 'decleration'
+  to 'declaration'. In particular, the method Config.add_decleration()
+  has been renamed to Config.add_declaration().
 
 ## Version 0.1
 

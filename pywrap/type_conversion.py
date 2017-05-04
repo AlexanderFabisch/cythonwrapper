@@ -144,9 +144,9 @@ class AbstractTypeConverter(object):
                        C++ function, e.g. 'cpp_a' and 'cpp_b'
     return_output    - converts and returns output, simply 'return result' if
                        no conversion is required
-    cpp_type_decl    - decleration of C++ type to declare the type of the output
+    cpp_type_decl    - declaration of C++ type to declare the type of the output
                        of the C++ function call, e.g. 'cdef int'
-    python_type_decl - decleration of the Python type to declare the types
+    python_type_decl - declaration of the Python type to declare the types
                        in the signature of the Python function
     """
     __metaclass__ = ABCMeta
@@ -182,7 +182,7 @@ class AbstractTypeConverter(object):
 
     @abstractmethod
     def python_type_decl(self):
-        """Python type decleration."""
+        """Python type declaration."""
 
     @abstractmethod
     def cpp_type_decl(self):
