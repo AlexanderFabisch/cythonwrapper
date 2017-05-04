@@ -306,12 +306,15 @@ def _remove_overloaded_functions(asts):
     function_names = []
     removed_functions = []
     for f in functions:
-        if f.name in function_names:
+        function_name = f.name
+        if f.clazz is not None:
+            function_name = function_name + "_" + f.clazz
+        if function_name in function_names:
             warnings.warn(
                 "Function '%s' is already defined. Only one method "
-                "will be exposed." % f.name)
+                "will be exposed." % function_name)
             removed_functions.append(f)
         else:
-            function_names.append(f.name)
+            function_names.append(function_name)
     for ast in asts:
         ast.nodes = [n for n in ast.nodes if n not in removed_functions]
