@@ -77,11 +77,11 @@ class Includes:
 class TypeInfo:
     def __init__(self, config=Config(), typedefs=None):
         self.config = config
-        self.classes = []
+        self.classes = {}
         self.typedefs = {}
         if typedefs is not None:
             self.typedefs.update(typedefs)
-        self.enums = []
+        self.enums = {}
         self.spec = {}
 
     def attach_specialization(self, spec):
@@ -432,7 +432,7 @@ class Parser(object):
                                   "unnamed struct")
             self.unnamed_struct.name = tname
             self.ast.nodes.append(self.unnamed_struct)
-            self.type_info.classes.append(tname)
+            self.type_info.classes[tname] = self.include_file
             self.unnamed_struct = None
             self.last_type = None
             return False
@@ -463,7 +463,7 @@ class Parser(object):
     def add_enum(self, name, namespace, additional_namespace, comment=""):
         namespace = self._full_namespace(namespace, additional_namespace)
         enum = Enum(self.include_file, namespace, name, comment)
-        self.type_info.enums.append(name)
+        self.type_info.enums[name] = self.include_file
         self.last_enum = enum
         self.ast.nodes.append(enum)
         return True
@@ -498,7 +498,7 @@ class Parser(object):
         clazz = Clazz(self.include_file, namespace, name, comment)
         self.ast.nodes.append(clazz)
         self.last_type = clazz
-        self.type_info.classes.append(name)
+        self.type_info.classes[name] = self.include_file
         return True
 
     def add_template_class(self, name, namespace, additional_namespace,
@@ -513,7 +513,7 @@ class Parser(object):
         for key in registered_specs:
             if name == key:
                 for spec_name, _ in registered_specs[key]:
-                    self.type_info.classes.append(spec_name)
+                    self.type_info.classes[spec_name] = self.include_file
                 break
 
         return True
