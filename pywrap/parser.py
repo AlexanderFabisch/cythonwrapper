@@ -93,6 +93,13 @@ class TypeInfo:
             self.typedefs.update(typedefs)
         self.enums = {}
         self.spec = {}
+        self.current_module = None
+
+    def enter_module(self, modulename):
+        self.current_module = modulename
+
+    def exit_module(self):
+        self.current_module = None
 
     def attach_specialization(self, spec):
         self.spec = spec

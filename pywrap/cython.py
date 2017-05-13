@@ -127,7 +127,9 @@ def _make_extension(asts, includes, type_info, config):
     for modulename, ast in asts.iteritems():
         cie = CythonImplementationExporter(
             modulename, includes, type_info, config)
+        type_info.enter_module(modulename)
         ast.accept(cie)
+        type_info.exit_module()
         includes.add_custom_module(modulename)
         cies[modulename] = cie
     results = []

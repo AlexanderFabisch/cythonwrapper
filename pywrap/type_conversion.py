@@ -73,7 +73,7 @@ def _type_without_pointer(tname):
 
 def typedef_prefix(tname, typedefs, type_info):
     if tname in typedefs:
-        type_prefix = lookup_type_prefix(type_info, tname)
+        type_prefix = cpp_type_prefix(type_info, tname)
         return "%s%s" % (type_prefix, tname)
     else:
         return tname
@@ -103,7 +103,15 @@ def _remove_pointer(tname):
     return tname.replace(" *", "")
 
 
-def lookup_type_prefix(type_info, tname):
+def cython_type_prefix(type_info, tname):
+    modulename = lookup_module(type_info, tname)
+    if modulename is None or modulename == type_info.current_module:
+        return ""
+    else:
+        return modulename + "."
+
+
+def cpp_type_prefix(type_info, tname):
     modulename = lookup_module(type_info, tname)
     if modulename is None:
         return ""
@@ -408,7 +416,7 @@ class EnumConverter(AbstractTypeConverter):
 
     def python_type_decl(self):
         spec = self.type_info.get_specialization(self.tname)
-        type_prefix = lookup_type_prefix(self.type_info, self.tname)
+        type_prefix = cpp_type_prefix(self.type_info, self.tname)
         return "%s%s %s" % (type_prefix, spec, self.python_argname)
 
     def cpp_type_decl(self):
@@ -437,18 +445,21 @@ class CythonTypeConverter(AbstractTypeConverter):
 
     def return_output(self, copy=True):
         # TODO only works with default and assignment operator
-        return lines("ret = %s()" % self.tname,
-                     "ret.thisptr[0] = result",
-                     "return ret")
+        return lines(
+            "ret = %s%s()" % (cython_type_prefix(self.type_info, self.tname),
+                              self.tname),
+            "ret.thisptr[0] = result",
+            "return ret")
 
     def python_type_decl(self):
         spec = self.type_info.get_specialization(self.tname)
-        return "%s %s" % (
+        return "%s%s %s" % (
+            cython_type_prefix(self.type_info, self.tname),
             typedef_prefix(spec, self.type_info.typedefs, self.type_info),
             self.python_argname)
 
     def cpp_type_decl(self):
-        type_prefix = lookup_type_prefix(self.type_info, self.tname)
+        type_prefix = cpp_type_prefix(self.type_info, self.tname)
         return "cdef %s%s" % (type_prefix, self.tname)
 
 
@@ -483,7 +494,8 @@ class CppPointerTypeConverter(AbstractTypeConverter):
 
     def return_output(self, copy=True):
         # TODO only works with default constructor
-        l = ["ret = %s()" % self.tname_wo_ptr,
+        l = ["ret = %s%s()" % (cython_type_prefix(self.type_info, self.tname),
+                               self.tname_wo_ptr),
              "ret.thisptr = result"]
         if not copy:
             l.append("ret.delete_thisptr = False")
@@ -491,13 +503,14 @@ class CppPointerTypeConverter(AbstractTypeConverter):
         return lines(*l)
 
     def python_type_decl(self):
-        return "%s %s" % (
+        return "%s%s %s" % (
+            cython_type_prefix(self.type_info, self.tname),
             typedef_prefix(self.tname_wo_ptr, self.type_info.typedefs,
                            self.type_info),
             self.python_argname)
 
     def cpp_type_decl(self):
-        type_prefix = lookup_type_prefix(self.type_info, self.tname)
+        type_prefix = cpp_type_prefix(self.type_info, self.tname)
         return "cdef %s%s" % (type_prefix, self.tname)
 
 
@@ -531,7 +544,7 @@ class StlTypeConverter(AbstractTypeConverter):
         if (tname.startswith("vector") and
                     subtypes[1] in self.type_info.classes):
             conversion = render(
-                "convert_vector", type_prefix=lookup_type_prefix(
+                "convert_vector", type_prefix=cpp_type_prefix(
                     self.type_info, subtypes[1]),
                 python_argname=self.python_argname,
                 cpp_tname=self.type_info.underlying_type(subtypes[1]),
@@ -551,8 +564,8 @@ class StlTypeConverter(AbstractTypeConverter):
                 spec_subtype, self.type_info.typedefs, self.type_info)
             if (prefixed_subtype in self.type_info.enums or
                         prefixed_subtype in self.type_info.classes):
-                type_prefix = lookup_type_prefix(self.type_info,
-                                                 prefixed_subtype)
+                type_prefix = cpp_type_prefix(self.type_info,
+                                              prefixed_subtype)
                 prefixed_subtype = "%s%s" % (type_prefix, prefixed_subtype)
             tname = tname.replace(subtype, prefixed_subtype)
         return "cdef " + typedef_prefix(
