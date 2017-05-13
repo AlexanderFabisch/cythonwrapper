@@ -94,7 +94,7 @@ def find_all_subtypes(tname):
     return list(result)
 
 
-def lookup_module(type_info, tname):
+def lookup_module(type_info, tname):  # TODO move to TypeInfo
     tname = _remove_pointer(tname)
     return type_info.get_modulename(tname)
 
@@ -103,15 +103,7 @@ def _remove_pointer(tname):
     return tname.replace(" *", "")
 
 
-def cython_type_prefix(type_info, tname):
-    modulename = lookup_module(type_info, tname)
-    if modulename is None or modulename == type_info.current_module:
-        return ""
-    else:
-        return modulename + "."
-
-
-def cpp_type_prefix(type_info, tname):
+def cpp_type_prefix(type_info, tname):  # TODO move to TypeInfo
     modulename = lookup_module(type_info, tname)
     if modulename is None:
         return ""
@@ -403,7 +395,7 @@ class EnumConverter(AbstractTypeConverter):
         return 1
 
     def add_includes(self, includes):
-        includes.add_custom_module(lookup_module(self.type_info, self.tname))
+        pass
 
     def python_to_cpp(self):
         return ""
@@ -433,7 +425,6 @@ class CythonTypeConverter(AbstractTypeConverter):
 
     def add_includes(self, includes):
         includes.add_include_for_deref()
-        includes.add_custom_module(lookup_module(self.type_info, self.tname))
 
     def python_to_cpp(self):
         cython_argname = "cpp_" + self.python_argname
@@ -446,15 +437,13 @@ class CythonTypeConverter(AbstractTypeConverter):
     def return_output(self, copy=True):
         # TODO only works with default and assignment operator
         return lines(
-            "ret = %s%s()" % (cython_type_prefix(self.type_info, self.tname),
-                              self.tname),
+            "ret = %s()" % self.tname,
             "ret.thisptr[0] = result",
             "return ret")
 
     def python_type_decl(self):
         spec = self.type_info.get_specialization(self.tname)
-        return "%s%s %s" % (
-            cython_type_prefix(self.type_info, self.tname),
+        return "%s %s" % (
             typedef_prefix(spec, self.type_info.typedefs, self.type_info),
             self.python_argname)
 
@@ -482,7 +471,7 @@ class CppPointerTypeConverter(AbstractTypeConverter):
         return 1
 
     def add_includes(self, includes):
-        includes.add_custom_module(lookup_module(self.type_info, self.tname))
+        pass
 
     def python_to_cpp(self):
         cython_argname = "cpp_" + self.python_argname
@@ -494,8 +483,7 @@ class CppPointerTypeConverter(AbstractTypeConverter):
 
     def return_output(self, copy=True):
         # TODO only works with default constructor
-        l = ["ret = %s%s()" % (cython_type_prefix(self.type_info, self.tname),
-                               self.tname_wo_ptr),
+        l = ["ret = %s()" % self.tname_wo_ptr,
              "ret.thisptr = result"]
         if not copy:
             l.append("ret.delete_thisptr = False")
@@ -503,8 +491,7 @@ class CppPointerTypeConverter(AbstractTypeConverter):
         return lines(*l)
 
     def python_type_decl(self):
-        return "%s%s %s" % (
-            cython_type_prefix(self.type_info, self.tname),
+        return "%s %s" % (
             typedef_prefix(self.tname_wo_ptr, self.type_info.typedefs,
                            self.type_info),
             self.python_argname)
@@ -524,8 +511,6 @@ class StlTypeConverter(AbstractTypeConverter):
 
     def add_includes(self, includes):
         includes.add_include_for_deref()
-        # TODO
-        #includes.add_custom_module(lookup_module(self.type_info, self.tname))
 
     def cpp_call_args(self):
         return ["cpp_" + self.python_argname]

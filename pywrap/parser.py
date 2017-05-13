@@ -80,7 +80,6 @@ class Includes:
                          os.linesep)
         for modulename in self.custom_modules:
             includes += "cimport _%s" % modulename + os.linesep
-            includes += "import %s" % modulename + os.linesep
         return includes
 
 
@@ -93,13 +92,6 @@ class TypeInfo:
             self.typedefs.update(typedefs)
         self.enums = {}
         self.spec = {}
-        self.current_module = None
-
-    def enter_module(self, modulename):
-        self.current_module = modulename
-
-    def exit_module(self):
-        self.current_module = None
 
     def attach_specialization(self, spec):
         self.spec = spec

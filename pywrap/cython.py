@@ -97,11 +97,12 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
     # TODO check if duplicates from separate modules are removed
     postprocess_asts(asts.values())
 
-    extensions = _make_extension(asts, includes, type_info, config)
+    extensions = _make_extension(
+        modulename, asts, includes, type_info, config)
     declarations = _make_declarations(asts, includes, config)
     setup = _make_setup(sources, modulename, asts.keys(), target, incdirs,
                         compiler_flags, config)
-    results = dict(extensions + declarations + [setup])
+    results = dict(declarations + [extensions, setup])
 
     if verbose >= 2:
         for filename in sorted(results.keys()):
@@ -122,23 +123,17 @@ def _parse_files(filenames, config, incdirs, verbose):
     return includes, type_info, asts
 
 
-def _make_extension(asts, includes, type_info, config):
-    cies = {}
-    for modulename, ast in asts.iteritems():
+def _make_extension(modulename, asts, includes, type_info, config):
+    body = ""
+    for module, ast in asts.iteritems():
         cie = CythonImplementationExporter(
-            modulename, includes, type_info, config)
-        type_info.enter_module(modulename)
+            module, includes, type_info, config)
         ast.accept(cie)
-        type_info.exit_module()
-        includes.add_custom_module(modulename)
-        cies[modulename] = cie
-    results = []
-    for modulename, cie in cies.iteritems():
-        pyx_filename = modulename + "." + config.pyx_file_ending
-        body = cie.export()
-        extension = includes.implementations_import() + body
-        results.append((pyx_filename, extension))
-    return results
+        includes.add_custom_module(module)
+        body += cie.export()
+    extension = includes.implementations_import() + body
+    pyx_filename = modulename + "." + config.pyx_file_ending
+    return pyx_filename, extension
 
 
 def _make_declarations(asts, includes, config):
@@ -165,9 +160,8 @@ def _make_setup(sources, modulename, modules, target, incdirs, compiler_flags,
                        for filename in sources]
     setup_py = render(
         "setup", filenames=source_relpaths, modulename=modulename,
-        modules=modules, sourcedir=sourcedir, incdirs=incdirs,
-        compiler_flags=compiler_flags, library_dirs=config.library_dirs,
-        libraries=config.libraries)
+        sourcedir=sourcedir, incdirs=incdirs, compiler_flags=compiler_flags,
+        library_dirs=config.library_dirs, libraries=config.libraries)
     return "setup.py", setup_py
 
 
