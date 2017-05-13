@@ -1,8 +1,8 @@
 # this seems to be possible only when we use C++11 (-std=c++11)
 # maybe it will be fixed in a future version of Cython
 {{ cpp_type_decl }} {{ cython_argname }}
-cdef cpp.{{ cpp_tname }} * {{ python_argname }}_ptr = NULL
+cdef {{ type_prefix }}{{ cpp_tname }} * {{ python_argname }}_ptr = NULL
 cdef {{ cpp_tname }} {{ python_argname }}_element
 for {{ python_argname }}_element in {{ python_argname }}:
-    {{ python_argname }}_ptr = <cpp.{{ cpp_tname }}*> {{ python_argname }}_element.thisptr
+    {{ python_argname }}_ptr = <{{ type_prefix }}{{ cpp_tname }}*> {{ python_argname }}_element.thisptr
     cpp_{{ python_argname }}.push_back(deref({{ python_argname }}_ptr))

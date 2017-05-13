@@ -307,9 +307,10 @@ class CythonImplementationExporter(AstExporter):
     config : Config, optional
         Configuration that controls e.g. template specializations
     """
-    def __init__(self, includes=Includes(), type_info=TypeInfo(),
+    def __init__(self, modulename, includes=Includes(), type_info=TypeInfo(),
                  config=Config()):
         super(CythonImplementationExporter, self).__init__()
+        self.modulename = modulename
         self.includes = includes
         self.type_info = type_info
         self.config = config
@@ -319,7 +320,7 @@ class CythonImplementationExporter(AstExporter):
                              functions=self.functions, classes=self.classes)
 
     def visit_enum(self, enum):
-        self.enums.append(render("enum", enum=enum))
+        self.enums.append(render("enum", enum=enum, modulename=self.modulename))
 
     def visit_typedef(self, typedef):
         pass
@@ -346,6 +347,7 @@ class CythonImplementationExporter(AstExporter):
             self.type_info.attach_specialization(clazz.get_attached_typeinfo())
             class_def = {}
             class_def.update(clazz.__dict__)
+            class_def["modulename"] = self.modulename
             class_def["cppname"] = cppname
             class_def["comment"] = clazz.comment
             class_def["fields"] = map(partial(
@@ -372,10 +374,10 @@ class CythonImplementationExporter(AstExporter):
     def _process_field(self, field, selftype):
         try:
             setter_def = SetterDefinition(
-                selftype, field, self.includes, self.type_info,
+                self.modulename, selftype, field, self.includes, self.type_info,
                 self.config).make()
             getter_def = GetterDefinition(
-                selftype, field, self.includes, self.type_info,
+                self.modulename, selftype, field, self.includes, self.type_info,
                 self.config).make()
             return {
                 "name": from_camel_case(field.name),
@@ -399,8 +401,8 @@ class CythonImplementationExporter(AstExporter):
 
         try:
             constructor_def = ConstructorDefinition(
-                selftype, ctor.comment, ctor.nodes, self.includes,
-                self.type_info, self.config, cpptype)
+                self.modulename, selftype, ctor.comment, ctor.nodes,
+                self.includes, self.type_info, self.config, cpptype)
             return constructor_def.make()
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % ctor.name)
@@ -420,9 +422,9 @@ class CythonImplementationExporter(AstExporter):
         method, cppname = arg
         try:
             method_def = MethodDefinition(
-                selftype, method.comment, method.name, method.nodes,
-                self.includes, method.result_type, self.type_info, self.config,
-                cppname=cppname)
+                self.modulename, selftype, method.comment, method.name,
+                method.nodes, self.includes, method.result_type, self.type_info,
+                self.config, cppname=cppname)
             return method_def.make()
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring method '%s'" % method.name)
@@ -443,9 +445,10 @@ class CythonImplementationExporter(AstExporter):
 
         try:
             self.functions.append(FunctionDefinition(
-                function.name, function.comment, function.nodes, self.includes,
-                function.result_type, self.type_info,
-                self.config, cppname=cppname, clazz=function.clazz).make())
+                self.modulename, function.name, function.comment,
+                function.nodes, self.includes, function.result_type,
+                self.type_info, self.config, cppname=cppname,
+                clazz=function.clazz).make())
         except NotImplementedError as e:
             warnings.warn(e.message + " Ignoring function '%s'" % function.name)
             function.ignored = True
@@ -460,8 +463,9 @@ class CythonImplementationExporter(AstExporter):
 
 
 class FunctionDefinition(object):
-    def __init__(self, name, comment, arguments, includes, result_type,
-                 type_info, config, cppname=None, clazz=None):
+    def __init__(self, modulename, name, comment, arguments, includes,
+                 result_type, type_info, config, cppname=None, clazz=None):
+        self.modulename = modulename
         self.name = name
         self.comment = comment
         self.arguments = arguments
@@ -533,30 +537,33 @@ class FunctionDefinition(object):
             tc.cpp_call_args() for tc in self.type_converters))
 
     def _call_cpp_function(self, call_args):
-        call = templates.fun_call % {"name": self.cppname,
+        call = templates.fun_call % {"modulename": self.modulename,
+                                     "name": self.cppname,
                                      "call_args": ", ".join(call_args)}
         return catch_result(self.output_type_converter.cpp_type_decl(), call)
 
 
 class ConstructorDefinition(FunctionDefinition):
-    def __init__(self, class_name, comment, arguments, includes, type_info,
-                 config, cpp_classname):
+    def __init__(self, modulename, class_name, comment, arguments, includes,
+                 type_info, config, cpp_classname):
         super(ConstructorDefinition, self).__init__(
-            "__init__", comment, arguments, includes, result_type=None,
-            type_info=type_info, config=config)
+            modulename, "__init__", comment, arguments, includes,
+            result_type=None, type_info=type_info, config=config)
         self.initial_args = ["%s self" % class_name]
         self.cpp_classname = cpp_classname
 
     def _call_cpp_function(self, call_args):
-        return templates.ctor_call % {"class_name": self.cpp_classname,
+        return templates.ctor_call % {"modulename": self.modulename,
+                                      "class_name": self.cpp_classname,
                                       "call_args": ", ".join(call_args)}
 
 
 class MethodDefinition(FunctionDefinition):
-    def __init__(self, class_name, comment, name, arguments, includes,
-                 result_type, type_info, config, cppname=None):
+    def __init__(self, modulename, class_name, comment, name, arguments,
+                 includes, result_type, type_info, config, cppname=None):
         super(MethodDefinition, self).__init__(
-            name, comment, arguments, includes, result_type, type_info, config, cppname)
+            modulename, name, comment, arguments, includes, result_type,
+            type_info, config, cppname)
         self.initial_args = ["%s self" % class_name]
 
     def _call_cpp_function(self, call_args):
@@ -567,11 +574,12 @@ class MethodDefinition(FunctionDefinition):
 
 
 class SetterDefinition(MethodDefinition):
-    def __init__(self, python_classname, field, includes, type_info, config):
+    def __init__(self, modulename, python_classname, field, includes, type_info,
+                 config):
         name = "__set_%s" % field.name
         super(SetterDefinition, self).__init__(
-            python_classname, "", name, [field], includes, "void", type_info,
-            config)
+            modulename, python_classname, "", name, [field], includes, "void",
+            type_info, config)
         self.field_name = field.name
 
     def _call_cpp_function(self, call_args):
@@ -581,11 +589,12 @@ class SetterDefinition(MethodDefinition):
 
 
 class GetterDefinition(MethodDefinition):
-    def __init__(self, python_classname, field, includes, type_info, config):
+    def __init__(self, modulename, python_classname, field, includes, type_info,
+                 config):
         name = "__get_%s" % field.name
         super(GetterDefinition, self).__init__(
-            python_classname, "", name, [], includes, field.tipe, type_info,
-            config)
+            modulename, python_classname, "", name, [], includes, field.tipe,
+            type_info, config)
         self.output_is_copy = False
         self.field_name = field.name
 

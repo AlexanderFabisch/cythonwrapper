@@ -6,7 +6,7 @@ from .type_conversion import cythontype_from_cpptype
 from .ast import (Ast, Enum, Typedef, Clazz, Function, TemplateClass,
                   TemplateFunction, Constructor, Method, TemplateMethod,
                   Param, Field)
-from .utils import make_header, convert_to_docstring
+from .utils import make_header, convert_to_docstring, derive_module_name_from
 
 
 class ClangError(Exception):
@@ -31,6 +31,7 @@ class Includes:
                     "set": False,
                     "stack": False}
         self.deref = False
+        self.custom_modules = set()
 
     def add_include_for(self, tname):
         for t in self.stl.keys():
@@ -42,6 +43,10 @@ class Includes:
 
     def add_include_for_numpy(self):
         self.numpy = True
+
+    def add_custom_module(self, modulename):
+        if modulename is not None:
+            self.custom_modules.add(modulename)
 
     def _part_of_tname(self, tname, subtname):
         return (tname == subtname or tname.startswith(subtname) or
@@ -60,6 +65,9 @@ class Includes:
                 includes += ("from libcpp.%(type)s cimport %(type)s"
                              % {"type": t}) + os.linesep
 
+        for modulename in self.custom_modules:
+            includes += "cimport _%s" % modulename + os.linesep
+
         return includes
 
     def implementations_import(self):
@@ -70,7 +78,9 @@ class Includes:
         if self.deref:
             includes += ("from cython.operator cimport dereference as deref" +
                          os.linesep)
-        includes += "cimport _declarations as cpp" + os.linesep
+        for modulename in self.custom_modules:
+            includes += "cimport _%s" % modulename + os.linesep
+            includes += "import %s" % modulename + os.linesep
         return includes
 
 
@@ -100,6 +110,15 @@ class TypeInfo:
 
     def get_specialization(self, tname):
         return self.spec.get(tname, tname)
+
+    def get_modulename(self, tname):
+        if tname in self.classes:
+            filename = self.classes[tname]
+        elif tname in self.enums:
+            filename = self.enums[tname]
+        else:
+            raise KeyError("No module for %s" % tname)
+        return derive_module_name_from(filename)
 
 
 IGNORED_NODES = [
@@ -444,6 +463,7 @@ class Parser(object):
                               underlying_tname)
             self.ast.nodes.append(typedef)
             self.type_info.typedefs[tname] = underlying_tname
+            self.type_info.classes[tname] = self.include_file
             return True
 
     def add_struct_decl(self, name, namespace, additional_namespace):

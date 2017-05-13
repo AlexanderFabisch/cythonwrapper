@@ -5,7 +5,8 @@ from .exporter import CythonDeclarationExporter, CythonImplementationExporter
 from .parser import Parser, Includes, TypeInfo
 from .ast import postprocess_asts
 from .templates import render
-from .utils import make_header, file_ending, hidden_stdout, hidden_stderr
+from .utils import (make_header, file_ending, hidden_stdout, hidden_stderr,
+                    derive_module_name_from)
 
 
 def load_config(custom_config):
@@ -26,7 +27,7 @@ def load_config(custom_config):
     parts = custom_config.split(os.sep)
     path = os.sep.join(parts[:-1])
     filename = parts[-1]
-    module = _derive_module_name_from(filename)
+    module = derive_module_name_from(filename)
 
     sys.path.insert(0, path)
     imported_module = __import__(module)
@@ -74,7 +75,7 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
     if isinstance(filenames, str):
         filenames = [filenames]
     if len(filenames) == 1 and modulename is None:
-        modulename = _derive_module_name_from(filenames[0])
+        modulename = derive_module_name_from(filenames[0])
     if modulename is None:
         raise ValueError("Please give a module name when there are multiple "
                          "C++ files that you want to wrap.")
@@ -93,14 +94,14 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
     includes, type_info, asts = _parse_files(
         filenames, config, incdirs, verbose)
 
-    postprocess_asts(asts)
+    # TODO check if duplicates from separate modules are removed
+    postprocess_asts(asts.values())
 
-    results = dict(
-        [_make_extension(modulename, asts, includes, type_info, config),
-         _make_declarations(asts, includes, config),
-         _make_setup(sources, modulename, target, incdirs, compiler_flags,
-                     config)]
-    )
+    extensions = _make_extension(asts, includes, type_info, config)
+    declarations = _make_declarations(asts, includes, config)
+    setup = _make_setup(sources, modulename, asts.keys(), target, incdirs,
+                        compiler_flags, config)
+    results = dict(extensions + declarations + [setup])
 
     if verbose >= 2:
         for filename in sorted(results.keys()):
@@ -110,52 +111,62 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
     return results
 
 
-def _derive_module_name_from(filename):
-    filename = filename.split(os.sep)[-1]
-    return filename.split(".")[0]
-
-
 def _parse_files(filenames, config, incdirs, verbose):
     includes = Includes()
     type_info = TypeInfo(config)
-    asts = []
+    asts = {}
     for filename in filenames:
+        modulename = derive_module_name_from(filename)
         parser = Parser(filename, includes, type_info, incdirs, verbose)
-        asts.append(parser.parse())
+        asts[modulename] = parser.parse()
     return includes, type_info, asts
 
 
-def _make_extension(modulename, asts, includes, type_info, config):
-    cie = CythonImplementationExporter(includes, type_info, config)
-    for ast in asts:
+def _make_extension(asts, includes, type_info, config):
+    cies = {}
+    for modulename, ast in asts.iteritems():
+        cie = CythonImplementationExporter(
+            modulename, includes, type_info, config)
         ast.accept(cie)
-    pyx_filename = modulename + "." + config.pyx_file_ending
-    body = cie.export()
-    extension = includes.implementations_import() + body
-    return pyx_filename, extension
+        includes.add_custom_module(modulename)
+        cies[modulename] = cie
+    results = []
+    for modulename, cie in cies.iteritems():
+        pyx_filename = modulename + "." + config.pyx_file_ending
+        body = cie.export()
+        extension = includes.implementations_import() + body
+        results.append((pyx_filename, extension))
+    return results
 
 
 def _make_declarations(asts, includes, config):
-    cde = CythonDeclarationExporter(includes, config)
-    for ast in asts:
+    cdes = {}
+    for modulename, ast in asts.iteritems():
+        cde = CythonDeclarationExporter(includes, config)
         ast.accept(cde)
-    body = cde.export()
-    declarations = includes.declarations_import() + body
-    for decl in config.additional_declarations:
-        declarations += decl
-    pxd_filename = "_declarations." + config.pxd_file_ending
-    return pxd_filename, declarations
+        cdes[modulename] = cde
+    results = []
+    for modulename, cde in cdes.iteritems():
+        pxd_filename = "_%s.%s" % (modulename, config.pxd_file_ending)
+        body = cde.export()
+        declarations = includes.declarations_import() + body
+        for decl in config.additional_declarations:
+            declarations += decl
+        results.append((pxd_filename, declarations))
+    return results
 
 
-def _make_setup(sources, modulename, target, incdirs, compiler_flags, config):
+def _make_setup(sources, modulename, modules, target, incdirs, compiler_flags,
+                config):
     sourcedir = os.path.relpath(".", start=target)
     source_relpaths = [os.path.relpath(filename, start=target)
                        for filename in sources]
-    return "setup.py", render("setup", filenames=source_relpaths,
-                              module=modulename, sourcedir=sourcedir,
-                              incdirs=incdirs, compiler_flags=compiler_flags,
-                              library_dirs=config.library_dirs,
-                              libraries=config.libraries)
+    setup_py = render(
+        "setup", filenames=source_relpaths, modulename=modulename,
+        modules=modules, sourcedir=sourcedir, incdirs=incdirs,
+        compiler_flags=compiler_flags, library_dirs=config.library_dirs,
+        libraries=config.libraries)
+    return "setup.py", setup_py
 
 
 def write_files(files, target="."):
