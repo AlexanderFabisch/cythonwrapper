@@ -99,7 +99,7 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
 
     extensions = _make_extension(
         modulename, asts, includes, type_info, config)
-    declarations = _make_declarations(asts, includes, config)
+    declarations = _make_declarations(asts, includes, type_info, config)
     setup = _make_setup(sources, modulename, asts.keys(), target, incdirs,
                         compiler_flags, config)
     results = dict(declarations + [extensions, setup])
@@ -136,10 +136,10 @@ def _make_extension(modulename, asts, includes, type_info, config):
     return pyx_filename, extension
 
 
-def _make_declarations(asts, includes, config):
+def _make_declarations(asts, includes, type_info, config):
     cdes = {}
     for modulename, ast in asts.iteritems():
-        cde = CythonDeclarationExporter(includes, config)
+        cde = CythonDeclarationExporter(modulename, includes, type_info, config)
         ast.accept(cde)
         cdes[modulename] = cde
     results = []

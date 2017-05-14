@@ -116,7 +116,7 @@ class TypeInfo:
         elif tname in self.enums:
             filename = self.enums[tname]
         else:
-            raise KeyError("No module for %s" % tname)
+            return None
         return derive_module_name_from(filename)
 
 

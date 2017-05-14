@@ -38,7 +38,7 @@ template_function_decl = """cdef extern from "%(filename)s" namespace "%(namespa
 method_decl = "%(result_type)s %(name)s(%(args)s)"
 template_method_decl = "%(result_type)s %(name)s[%(types)s](%(args)s)"
 constructor_decl = "%(class_name)s(%(args)s)"
-arg_decl = "%(tipe)s %(name)s"
+arg_decl = "%(type_prefix)s%(tipe)s %(name)s"
 field_decl = "%(tipe)s %(name)s"
 
 # member definitions

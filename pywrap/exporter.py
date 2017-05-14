@@ -10,7 +10,7 @@ from .defaultconfig import Config
 from .template_specialization import (ClassSpecializer, FunctionSpecializer,
                                       MethodSpecializer)
 from .templates import render
-from .type_conversion import create_type_converter
+from .type_conversion import create_type_converter, cpp_type_prefix
 from .utils import from_camel_case, replace_keyword_argnames
 
 
@@ -177,12 +177,18 @@ class CythonDeclarationExporter(AstExporter):
     includes : Includes, optional
         Collects information about required import statements from the exporter
 
+    type_info : TypeInfo, optional
+        Contains names of custom C++ types that have been defined in the code
+
     config : Config, optional
         Configuration that controls e.g. template specializations
     """
-    def __init__(self, includes=Includes(), config=Config()):
+    def __init__(self, modulename, includes=Includes(), type_info=TypeInfo(),
+                 config=Config()):
         super(CythonDeclarationExporter, self).__init__()
+        self.modulename = modulename
         self.includes = includes
+        self.type_info = type_info
         self.config = config
 
     def visit_ast(self, ast):
@@ -221,7 +227,12 @@ class CythonDeclarationExporter(AstExporter):
 
     def visit_field(self, field):
         if not field.ignored:
-            self.fields.append(templates.field_decl % field.__dict__)
+            field_dict = {}
+            field_dict.update(field.__dict__)
+            field_dict["tipe"] = (
+                cpp_type_prefix(self.type_info, field_dict["tipe"]) +
+                field_dict["tipe"])
+            self.fields.append(templates.field_decl % field_dict)
 
     def visit_constructor(self, ctor):
         if not ctor.ignored:
@@ -243,6 +254,9 @@ class CythonDeclarationExporter(AstExporter):
         if not method.ignored:
             method_dict = {"args": ", ".join(self.arguments)}
             method_dict.update(method.__dict__)
+            method_dict["result_type"] = (
+                cpp_type_prefix(self.type_info, method_dict["result_type"]) +
+                method_dict["result_type"])
             if additional_args is not None:
                 method_dict.update(additional_args)
             method_dict["name"] = replace_operator_decl(
@@ -256,6 +270,9 @@ class CythonDeclarationExporter(AstExporter):
         if not function.ignored:
             function_dict = {"args": ", ".join(self.arguments)}
             function_dict.update(function.__dict__)
+            function_dict["result_type"] = (
+                cpp_type_prefix(self.type_info, function_dict["result_type"]) +
+                function_dict["result_type"])
             function_str = templates.function_decl % function_dict
             function_str += self._exception_suffix(function.result_type)
             self.functions.append(function_str)
@@ -267,6 +284,9 @@ class CythonDeclarationExporter(AstExporter):
                 "args": ", ".join(self.arguments),
                 "types": ", ".join(template_function.template_types)}
             function_dict.update(template_function.__dict__)
+            function_dict["result_type"] = (
+                cpp_type_prefix(self.type_info, function_dict["result_type"]) +
+                function_dict["result_type"])
             function_str = templates.template_function_decl % function_dict
             function_str += self._exception_suffix(
                 template_function.result_type)
@@ -276,6 +296,8 @@ class CythonDeclarationExporter(AstExporter):
     def visit_param(self, param):
         param_dict = param.__dict__
         param_dict["name"] = replace_keyword_argnames(param.name)
+        param_dict["type_prefix"] = cpp_type_prefix(
+            self.type_info, param_dict["tipe"])
         self.arguments.append(templates.arg_decl % param_dict)
 
     def _exception_suffix(self, result_type):
