@@ -147,9 +147,9 @@ def _make_declarations(asts, includes, type_info, config):
         pxd_filename = "_%s.%s" % (modulename, config.pxd_file_ending)
         body = cde.export()
         declarations = includes.declarations_import() + body
-        for decl in config.additional_declarations:
-            declarations += decl
         results.append((pxd_filename, declarations))
+    for modulename, decl in config.additional_declarations.iteritems():
+        results.append(("_%s.%s" % (modulename, config.pxd_file_ending), decl))
     return results
 
 

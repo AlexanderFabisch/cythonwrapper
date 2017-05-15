@@ -87,6 +87,7 @@ class TypeInfo:
     def __init__(self, config=Config(), typedefs=None):
         self.config = config
         self.classes = {}
+        self.classes.update(self.config.class_to_module)
         self.typedefs = {}
         if typedefs is not None:
             self.typedefs.update(typedefs)

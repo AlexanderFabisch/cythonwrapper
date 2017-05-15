@@ -54,11 +54,13 @@ class Config(object):
 
         self.registered_converters = []
         self.registered_template_specializations = {}
-        self.additional_declarations = []
+        self.additional_declarations = {}
         self.ignored = []
 
         self.library_dirs = []
         self.libraries = []
+
+        self.class_to_module = {}
 
     def cpp_to_py_operator(self, name):
         if name.startswith("operator") and name not in self.operators:
@@ -66,8 +68,10 @@ class Config(object):
                                       "Python operator." % name)
         return self.operators.get(name, name)
 
-    def add_declaration(self, decl):
-        self.additional_declarations.append(decl)
+    def add_declaration(self, modulename, decl, defined_classes=()):
+        self.additional_declarations[modulename] = decl
+        for clazz in defined_classes:
+            self.class_to_module[clazz] = modulename
 
     def register_class_specialization(self, cpp_classname, python_classname,
                                       template_to_type):

@@ -44,11 +44,12 @@ cdef extern from "Eigen/Dense" namespace "Eigen":
 
         def add_includes(self, includes):
             includes.numpy = True
+            includes.add_custom_module("eigen_vector")
 
         def python_to_cpp(self):
             return lines(
                 "cdef int %(python_argname)s_length = %(python_argname)s.shape[0]",
-                "cdef cpp.VectorXd %(cpp_argname)s = cpp.VectorXd(%(python_argname)s_length)",
+                "cdef _eigen_vector.VectorXd %(cpp_argname)s = _eigen_vector.VectorXd(%(python_argname)s_length)",
                 "cdef int %(python_argname)s_idx",
                 "for %(python_argname)s_idx in range(%(python_argname)s_length):",
                 "    %(cpp_argname)s.data()[%(python_argname)s_idx] = %(python_argname)s[%(python_argname)s_idx]"
@@ -72,11 +73,11 @@ cdef extern from "Eigen/Dense" namespace "Eigen":
             return "np.ndarray[double, ndim=1] " + self.python_argname
 
         def cpp_type_decl(self):
-            return "cdef cpp.VectorXd"
+            return "cdef _eigen_vector.VectorXd"
 
     config = Config()
     config.registered_converters.append(EigenConverter)
-    config.add_declaration(eigen_vector_decl)
+    config.add_declaration("eigen_vector", eigen_vector_decl, ["VectorXd"])
 
     with cython_extension_from("eigen.hpp", config=config,
                                incdirs=eigen3_incdir):
