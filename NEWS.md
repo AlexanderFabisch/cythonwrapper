@@ -25,6 +25,9 @@ Not released yet.
 * Fixed typo in interface of Config: renamed all occurences of 'decleration'
   to 'declaration'. In particular, the method Config.add_decleration()
   has been renamed to Config.add_declaration().
+* A declaration file for each C++ header will be generated.
+* Config.add_declaration() takes the arguments 'modulename', 'decl',
+  and 'defined_classes'.
 
 ## Version 0.1
 
