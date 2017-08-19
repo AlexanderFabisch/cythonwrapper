@@ -9,8 +9,9 @@ import os
 def strict_prototypes_workaround():
     # Workaround to remove '-Wstrict-prototypes' from compiler invocation
     opt = get_config_vars('OPT')[0]
-    os.environ['OPT'] = " ".join(flag for flag in opt.split()
-                                 if flag != '-Wstrict-prototypes')
+    if opt is not None:
+        os.environ['OPT'] = " ".join(flag for flag in opt.split()
+                                     if flag != '-Wstrict-prototypes')
 
 
 if __name__ == '__main__':

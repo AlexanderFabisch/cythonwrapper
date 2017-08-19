@@ -61,4 +61,4 @@ def test_another_include_dir():
     with cython_extension_from("addincludedir.hpp",
                                incdirs=["anotherincludedir"]):
         from addincludedir import length
-        assert_equal(length(3.0, 4.0), 5.0)
+        assert_equal(length(3.0, -4.0), 7.0)

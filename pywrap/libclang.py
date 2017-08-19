@@ -4,13 +4,21 @@ import clang
 from clang import cindex
 
 
+# list of releases: http://releases.llvm.org/
+SUPPORTED_VERSIONS = [
+    "3.8.1", "3.8",
+    "3.7.1", "3.7",
+    "3.6.2", "3.6.1", "3.6",
+    "3.5.2", "3.5.1", "3.5"
+]
+
+
 def find_clang(set_library_path=True, verbose=0):
     """Find installation of libclang.
 
     python-clang does not know where to find libclang, so we have to do this
     here almost manually.
     """
-    SUPPORTED_VERSIONS = ["3.8", "3.7", "3.6", "3.5"]
     # remove pythonX.Y/site-packages/clang/__init__.pyc from path
     basepath = os.sep.join(clang.__file__.split(os.sep)[:-4])
 
@@ -21,7 +29,8 @@ def find_clang(set_library_path=True, verbose=0):
         search_paths = [
             os.path.join("/usr/lib", "llvm-%s" % clang_version, "lib"),
             os.path.join("/usr/local/lib", "llvm-%s" % clang_version, "lib"),
-            basepath  # e.g. '$HOME/anaconda3/envs/$ENV/lib'
+            os.path.join(basepath, "Library"),
+            basepath,  # e.g. '$HOME/anaconda3/envs/$ENV/lib'
         ]
         for lib_path in search_paths:
             if verbose >= 2:
@@ -41,15 +50,18 @@ def find_clang(set_library_path=True, verbose=0):
             if verbose >= 1:
                 print("Found libclang at '%s'." % lib_filename)
 
-            clang_incdir = _find_include_directory(lib_path, clang_version)
+            clang_incdir = _find_include_directory(
+                lib_path, clang_version, verbose)
             if verbose >= 1:
                 print("Found clang include directory at '%s'."
                       % clang_incdir)
 
             if set_library_path:
-                cindex.Config.set_library_path(lib_path)
+                cindex.Config.set_library_file(lib_filename)
 
-            return clang_version, clang_incdir
+            clang_version_major_minor = ".".join(
+                clang_version.split(".")[:2])
+            return clang_version_major_minor, clang_incdir
 
     raise ImportError("Could not find a valid installation of libclang-dev. "
                       "Only versions %s are supported at the moment."
@@ -58,26 +70,38 @@ def find_clang(set_library_path=True, verbose=0):
 
 def _find_lib(lib_path, clang_version):
     lib_names = ["libclang-%s.so" % clang_version,
-                 "libclang.so.%s" % clang_version]
+                 "libclang.so.%s" % clang_version,
+                 os.path.join("bin", "libclang.dll")]
     lib_filename = None
     for lib_name in lib_names:
         lib_file = os.path.join(lib_path, lib_name)
+        print(lib_file)
         if os.path.exists(lib_file):
             lib_filename = lib_file
             break
     return lib_filename
 
 
-def _find_include_directory(lib_path, clang_version):
-    incdir_pattern = os.path.join(
-        lib_path, "clang/%s.?/include/" % clang_version)
-    clang_incdirs = list(glob.glob(incdir_pattern))
-    if len(clang_incdirs) != 1:
-        raise ImportError(
-            "Could not find exactly one clang include directory. "
-            "Checked pattern '%s'." % incdir_pattern)
-    clang_incdir = clang_incdirs[0]
-    return clang_incdir
+def _find_include_directory(lib_path, clang_version, verbose):
+    search_paths = [
+        os.path.join(lib_path, "clang", "%s.?", "include") % clang_version,
+        os.path.join(lib_path, "lib", "clang", "%s", "include") % clang_version
+    ]
+    print(lib_path)
+    for incdir_pattern in search_paths:
+        clang_incdirs = list(glob.glob(incdir_pattern))
+        if verbose >= 2:
+            print("Searching for clang include directory in '%s'"
+                  % incdir_pattern)
+        if len(clang_incdirs) > 1:
+            raise ImportError(
+                "Found more than one clang include directory. "
+                "Checked pattern '%s'." % incdir_pattern)
+        elif len(clang_incdirs) == 1:
+            clang_incdir = clang_incdirs[0]
+            return clang_incdir
+
+    raise ImportError("Could not find the clang include directory.")
 
 
 # This must be done globally and exactly once:
