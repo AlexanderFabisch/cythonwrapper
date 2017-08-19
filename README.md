@@ -107,7 +107,7 @@ A third option to generate a Python wrapper is to use the import hook:
 ```python
 import pywrap.import_hook
 import myheader
-a = A()
+a = myheader.A()
 b = 3.213
 c = a.plus2(b)
 ```
