@@ -1,7 +1,8 @@
 #include "somefunction.hpp"
-#include <cmath>
 
 double length(double a, double b)
 {
-    return std::sqrt(square(a) + square(b));
+    const absA = a > 0 ? a : -a;
+    const absB = b > 0 ? b : -b;
+    return absA + absB;
 }
