@@ -55,7 +55,8 @@ def test_getter_definition():
         lines(
             "cpdef __get_my_field(MyClass self):",
             "    cdef double result = self.thisptr.myField",
-            "    return result"
+            "    return result",
+            ""
         )
     )
 
