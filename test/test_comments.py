@@ -8,7 +8,7 @@ def test_comments():
         from comments import MyClass, MyEnum
         assert_multi_line_equal(
             lines("This is a brief class description.",
-                  "    ",
+                  "",
                   "    And this is a detailed description.",
                   "    "),
             MyClass.__doc__)
