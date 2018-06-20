@@ -141,7 +141,7 @@ def _make_declarations(asts, includes, config):
         ast.accept(cde)
     body = cde.export()
     declarations = includes.declarations_import() + body
-    for decl in config.additional_declerations:
+    for decl in config.additional_declarations:
         declarations += decl
     pxd_filename = "_declarations." + config.pxd_file_ending
     return pxd_filename, declarations

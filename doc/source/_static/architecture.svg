@@ -13,7 +13,7 @@
    height="800"
    id="svg2"
    version="1.1"
-   inkscape:version="0.48.4 r9939"
+   inkscape:version="0.91 r13725"
    sodipodi:docname="architecture.svg"
    inkscape:export-filename="/home/afabisch/Projekte/pywrap/doc/source/_static/architecture.png"
    inkscape:export-xdpi="90"
@@ -33,10 +33,10 @@
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1366"
-     inkscape:window-height="748"
-     inkscape:window-x="1277"
-     inkscape:window-y="-3"
+     inkscape:window-width="1223"
+     inkscape:window-height="1000"
+     inkscape:window-x="57"
+     inkscape:window-y="24"
      inkscape:window-maximized="1" />
   <metadata
      id="metadata7">
@@ -46,7 +46,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -165,7 +165,7 @@
        y="735.87366" />
     <text
        xml:space="preserve"
-       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
        x="51.071438"
        y="785.57648"
        id="text3844-1-0"
@@ -174,7 +174,7 @@
          id="tspan3846-0-3"
          x="51.071438"
          y="785.57648"
-         style="font-size:24px">decleration</tspan></text>
+         style="font-size:24px">declaration</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"

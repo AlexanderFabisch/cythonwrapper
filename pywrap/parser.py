@@ -189,7 +189,7 @@ class Parser(object):
         self.init_ast()
         if self.verbose >= 1:
             print(make_header("Parsing"))
-        self.convert_ast(cursor, 0)
+        self.convert_ast(cursor)
         if self.verbose >= 2:
             print(make_header("AST"))
             print(self.ast)
@@ -242,9 +242,8 @@ class Parser(object):
         self.last_function = None
         self.last_template = None
         self.last_param = None
-        self.namespace = ""
 
-    def convert_ast(self, node, depth):
+    def convert_ast(self, node, depth=0, namespace="", additional_namespace=""):
         """Convert AST from Clang to our own representation.
 
         Parameters
@@ -252,10 +251,15 @@ class Parser(object):
         node : clang.cindex.Index
             Currently visited node of Clang's AST
 
-        depth : int
+        depth : int, optional (default: 0)
             Current depth in the AST
+
+        namespace : str, optional (default: '')
+            Current namespace
+
+        additional_namespace : str, optional (default: '')
+            Additional namespace, e.g. current (inner) class name
         """
-        namespace = self.namespace
         if self.verbose >= 1:
             line = "  " * depth + "Node: %s" % node.kind
             if node.spelling:
@@ -267,16 +271,17 @@ class Parser(object):
         parse_children = True
         class_added = False
         param_added = False
+        last_type = self.last_type
         try:
             if node.location.file is None:
                 pass
             elif node.location.file.name != self.parsable_file:
                 return
             elif node.kind == cindex.CursorKind.NAMESPACE:
-                if self.namespace == "":
-                    self.namespace = node.displayname
+                if namespace == "":
+                    namespace = node.displayname
                 else:
-                    self.namespace = self.namespace + "::" + node.displayname
+                    namespace = namespace + "::" + node.displayname
             elif node.kind == cindex.CursorKind.PARM_DECL:
                 parse_children = self.add_param(
                     node.displayname, node.type.spelling)
@@ -284,16 +289,19 @@ class Parser(object):
             elif node.kind == cindex.CursorKind.FUNCTION_DECL:
                 parse_children = self.add_function(
                     node.spelling, node.result_type.spelling,
-                    self.namespace, convert_to_docstring(node.raw_comment))
+                    namespace, additional_namespace, None,
+                    convert_to_docstring(node.raw_comment))
             elif node.kind == cindex.CursorKind.CLASS_TEMPLATE:
                 name = node.displayname.split("<")[0]
                 self.add_template_class(
-                    name, convert_to_docstring(node.raw_comment))
+                    name, namespace, additional_namespace,
+                    convert_to_docstring(node.raw_comment))
                 class_added = True
             elif node.kind == cindex.CursorKind.FUNCTION_TEMPLATE:
-                if self.last_type is None:
+                if last_type is None:
                     self.add_template_function(
                         node.spelling, node.result_type.spelling,
+                        namespace, additional_namespace,
                         convert_to_docstring(node.raw_comment))
                 else:
                     self.add_template_method(
@@ -309,13 +317,16 @@ class Parser(object):
             elif node.kind == cindex.CursorKind.CXX_METHOD:
                 if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
                     if node.is_static_method():
-                        namespace = self.namespace
-                        if namespace != "":
-                            namespace += "::"
-                        namespace += self.last_type.name
+                        if additional_namespace == "":
+                            additional_namespace = last_type.name
+                        else:
+                            additional_namespace = (additional_namespace +
+                                                    "::" + last_type.name)
                         parse_children = self.add_function(
                             node.spelling, node.result_type.spelling,
-                            namespace, convert_to_docstring(node.raw_comment))
+                            namespace, additional_namespace,
+                            last_type.name,
+                            convert_to_docstring(node.raw_comment))
                     else:
                         parse_children = self.add_method(
                             node.spelling, node.result_type.spelling,
@@ -330,19 +341,26 @@ class Parser(object):
                     parse_children = False
             elif node.kind == cindex.CursorKind.CLASS_DECL:
                 parse_children = self.add_class(
-                    node.displayname, convert_to_docstring(node.raw_comment))
+                    node.displayname, namespace, additional_namespace,
+                    convert_to_docstring(node.raw_comment))
+                if additional_namespace == "":
+                    additional_namespace = node.displayname
+                else:
+                    additional_namespace = (additional_namespace + "::" +
+                                            node.displayname)
                 class_added = True
             elif node.kind == cindex.CursorKind.CXX_BASE_SPECIFIER:
-                if self.last_type.base is not None:
+                if last_type.base is not None:
                     warnings.warn("Class '%s' already has a base class: '%s', "
                                   "ignoring '%s'."
-                                  % (self.last_type.name, self.last_type.base,
+                                  % (last_type.name, last_type.base,
                                      node.type.spelling))
                 else:
-                    self.last_type.base = node.type.spelling
+                    last_type.base = node.type.spelling
                 parse_children = False
             elif node.kind == cindex.CursorKind.STRUCT_DECL:
-                parse_children = self.add_struct_decl(node.displayname)
+                parse_children, additional_namespace = self.add_struct_decl(
+                    node.displayname, namespace, additional_namespace)
             elif node.kind == cindex.CursorKind.FIELD_DECL:
                 if node.access_specifier == cindex.AccessSpecifier.PUBLIC:
                     parse_children = self.add_field(
@@ -353,10 +371,12 @@ class Parser(object):
             elif node.kind == cindex.CursorKind.TYPEDEF_DECL:
                 tname = node.displayname
                 parse_children = self.add_typedef(
-                    node.underlying_typedef_type.spelling, tname)
+                    node.underlying_typedef_type.spelling, tname, namespace,
+                    additional_namespace)
             elif node.kind == cindex.CursorKind.ENUM_DECL:
                 parse_children = self.add_enum(
-                    node.displayname, convert_to_docstring(node.raw_comment))
+                    node.displayname, namespace, additional_namespace,
+                    convert_to_docstring(node.raw_comment))
             elif node.kind == cindex.CursorKind.ENUM_CONSTANT_DECL:
                 self.last_enum.constants.append(node.displayname)
             elif node.kind == cindex.CursorKind.COMPOUND_STMT:
@@ -386,15 +406,26 @@ class Parser(object):
 
         if parse_children:
             for child in node.get_children():
-                self.convert_ast(child, depth + 1)
+                self.convert_ast(child, depth + 1, namespace,
+                                 additional_namespace)
+            self.last_type = last_type
+
         if class_added:
             self.last_type = None
         if param_added:
             self.last_param = None
 
-        self.namespace = namespace
+    def _full_namespace(self, namespace, additional_namespace):
+        if namespace == "":
+            return additional_namespace
+        else:
+            if additional_namespace == "":
+                return namespace
+            else:
+                return namespace + "::" + additional_namespace
 
-    def add_typedef(self, underlying_tname, tname):
+    def add_typedef(self, underlying_tname, tname, namespace,
+                    additional_namespace):
         if underlying_tname == "struct " + tname:
             if self.unnamed_struct is None:
                 raise LookupError("Struct typedef does not match any "
@@ -408,30 +439,29 @@ class Parser(object):
         else:
             underlying_tname = cythontype_from_cpptype(underlying_tname)
             self.includes.add_include_for(underlying_tname)
-            if self.last_type is None:
-                namespace = self.namespace
-            else:
-                namespace = self.namespace + "::" + self.last_type.name
+            namespace = self._full_namespace(namespace, additional_namespace)
             typedef = Typedef(self.include_file, namespace, tname,
                               underlying_tname)
             self.ast.nodes.append(typedef)
             self.type_info.typedefs[tname] = underlying_tname
             return True
 
-    def add_struct_decl(self, name):
+    def add_struct_decl(self, name, namespace, additional_namespace):
         if name == "" and self.unnamed_struct is None:
+            namespace = self._full_namespace(namespace, additional_namespace)
             self.unnamed_struct = Clazz(
-                self.include_file, self.namespace, name, "")
+                self.include_file, namespace, name, "")
             self.last_type = self.unnamed_struct
         else:
-            self.add_class(name)
-        return True
+            self.add_class(name, namespace, additional_namespace)
+            if additional_namespace == "":
+                additional_namespace = name
+            else:
+                additional_namespace = additional_namespace + "::" + name
+        return True, additional_namespace
 
-    def add_enum(self, name, comment=""):
-        if self.last_type is not None:
-            namespace = "%s::%s" % (self.namespace, self.last_type.name)
-        else:
-            namespace = self.namespace
+    def add_enum(self, name, namespace, additional_namespace, comment=""):
+        namespace = self._full_namespace(namespace, additional_namespace)
         enum = Enum(self.include_file, namespace, name, comment)
         self.type_info.enums.append(name)
         self.last_enum = enum
@@ -441,34 +471,40 @@ class Parser(object):
     def add_template_type(self, template_type):
         self.last_template.template_types.append(template_type)
 
-    def add_function(self, name, tname, namespace, comment=""):
+    def add_function(self, name, tname, namespace, additional_namespace,
+                     clazz=None, comment=""):
+        namespace = self._full_namespace(namespace, additional_namespace)
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
         function = Function(
-            self.include_file, namespace, name, tname, comment)
+            self.include_file, namespace, name, tname, comment, clazz)
         self.ast.nodes.append(function)
         self.last_function = function
         return True
 
-    def add_template_function(self, name, tname, comment=""):
+    def add_template_function(self, name, tname, namespace,
+                              additional_namespace, comment=""):
         tname = cythontype_from_cpptype(tname)
         self.includes.add_include_for(tname)
-        function = TemplateFunction(self.include_file, self.namespace, name,
+        function = TemplateFunction(self.include_file, namespace, name,
                                     tname, comment)
         self.ast.nodes.append(function)
         self.last_function = function
         self.last_template = function
         return True
 
-    def add_class(self, name, comment=""):
-        clazz = Clazz(self.include_file, self.namespace, name, comment)
+    def add_class(self, name, namespace, additional_namespace, comment=""):
+        namespace = self._full_namespace(namespace, additional_namespace)
+        clazz = Clazz(self.include_file, namespace, name, comment)
         self.ast.nodes.append(clazz)
         self.last_type = clazz
         self.type_info.classes.append(name)
         return True
 
-    def add_template_class(self, name, comment=""):
-        clazz = TemplateClass(self.include_file, self.namespace, name, comment)
+    def add_template_class(self, name, namespace, additional_namespace,
+                           comment=""):
+        namespace = self._full_namespace(namespace, additional_namespace)
+        clazz = TemplateClass(self.include_file, namespace, name, comment)
         self.ast.nodes.append(clazz)
         self.last_type = clazz
         self.last_template = clazz

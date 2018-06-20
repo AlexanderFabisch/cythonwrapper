@@ -54,7 +54,7 @@ class Config(object):
 
         self.registered_converters = []
         self.registered_template_specializations = {}
-        self.additional_declerations = []
+        self.additional_declarations = []
         self.ignored = []
 
         self.library_dirs = []
@@ -66,8 +66,8 @@ class Config(object):
                                       "Python operator." % name)
         return self.operators.get(name, name)
 
-    def add_decleration(self, decl):
-        self.additional_declerations.append(decl)
+    def add_declaration(self, decl):
+        self.additional_declarations.append(decl)
 
     def register_class_specialization(self, cpp_classname, python_classname,
                                       template_to_type):
