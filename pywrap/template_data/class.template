@@ -3,7 +3,7 @@ cdef class {{ name }}:
     """{{ comment|indent(4) }}
     """
 {%- endif %}
-    cdef cpp.{{ cppname }} * thisptr
+    cdef _{{ modulename }}.{{ cppname }} * thisptr
     cdef bool delete_thisptr
 
     def __cinit__(self):

@@ -18,6 +18,17 @@ Not released yet.
 * Enums can be defined in classes.
 * Linking of external libraries.
 
+### Breaking Changes
+
+* Static methods of a class 'CLS' will now have the prefix 'CLS_', e.g.
+  'CLS_static_method()'.
+* Fixed typo in interface of Config: renamed all occurences of 'decleration'
+  to 'declaration'. In particular, the method Config.add_decleration()
+  has been renamed to Config.add_declaration().
+* A declaration file for each C++ header will be generated.
+* Config.add_declaration() takes the arguments 'modulename', 'decl',
+  and 'defined_classes'.
+
 ## Version 0.1
 
 2017/04/03

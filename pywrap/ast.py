@@ -120,11 +120,13 @@ class FunctionBase(AstNode):
 
 
 class Function(FunctionBase):
-    def __init__(self, filename, namespace, name, result_type, comment=""):
+    def __init__(self, filename, namespace, name, result_type, comment="",
+                 clazz=None):
         super(Function, self).__init__(name, comment)
         self.filename = filename
         self.namespace = namespace
         self.result_type = result_type
+        self.clazz = clazz
 
     def __str__(self):
         result = super(Function, self).__str__()
@@ -132,6 +134,12 @@ class Function(FunctionBase):
             result += os.linesep + indent_block(
                 "Returns (%s)" % self.result_type, 1)
         return result
+
+    def exported_name(self):
+        if self.clazz is None:
+            return self.name
+        else:
+            return self.clazz + "_" + self.name
 
 
 class Constructor(FunctionBase):
@@ -304,12 +312,13 @@ def _remove_overloaded_functions(asts):
     function_names = []
     removed_functions = []
     for f in functions:
-        if f.name in function_names:
+        function_name = f.exported_name()
+        if function_name in function_names:
             warnings.warn(
                 "Function '%s' is already defined. Only one method "
-                "will be exposed." % f.name)
+                "will be exposed." % function_name)
             removed_functions.append(f)
         else:
-            function_names.append(f.name)
+            function_names.append(function_name)
     for ast in asts:
         ast.nodes = [n for n in ast.nodes if n not in removed_functions]

@@ -10,9 +10,10 @@ from nose.tools import assert_multi_line_equal
 
 
 def test_simple_function_def():
+    config = Config()
     method = MethodDefinition(
-        "Testclass", "", "testfun", [], Includes(),
-        "void", TypeInfo({}), Config()).make()
+        "mymodule", "Testclass", "", "testfun", [], Includes(),
+        "void", TypeInfo(config, {}), config).make()
     assert_multi_line_equal(
         method,
         lines("cpdef testfun(Testclass self):",
@@ -21,10 +22,11 @@ def test_simple_function_def():
 
 
 def test_array_arg_function_def():
+    config = Config()
     method = MethodDefinition(
-        "Testclass", "", "testfun", [Param("a", "double *"),
-                                 Param("aSize", "unsigned int")],
-        Includes(), "void", TypeInfo({}), Config()).make()
+        "mymodule", "Testclass", "", "testfun",
+        [Param("a", "double *"), Param("aSize", "unsigned int")],
+        Includes(), "void", TypeInfo(config, {}), config).make()
     assert_multi_line_equal(
         method,
         lines("cpdef testfun(Testclass self, np.ndarray[double, ndim=1] a):",
@@ -35,7 +37,7 @@ def test_array_arg_function_def():
 def test_setter_definition():
     field = Field("myField", "double", "MyClass")
     setter = SetterDefinition(
-        "MyClass", field, Includes(), TypeInfo(), Config()).make()
+        "mymodule", "MyClass", field, Includes(), TypeInfo(), Config()).make()
     assert_multi_line_equal(
         setter,
         lines(
@@ -49,7 +51,7 @@ def test_setter_definition():
 def test_getter_definition():
     field = Field("myField", "double", "MyClass")
     getter = GetterDefinition(
-        "MyClass", field, Includes(), TypeInfo(), Config()).make()
+        "mymodule", "MyClass", field, Includes(), TypeInfo(), Config()).make()
     assert_multi_line_equal(
         getter,
         lines(
@@ -61,37 +63,40 @@ def test_getter_definition():
     )
 
 def test_default_ctor_def():
-    ctor = ConstructorDefinition("MyClass", "", [], Includes(), TypeInfo(),
-                                 Config(), "MyClass").make()
+    ctor = ConstructorDefinition(
+        "mymodule", "MyClass", "", [], Includes(), TypeInfo(), Config(),
+        "MyClass").make()
     assert_multi_line_equal(
         ctor,
         lines(
             "def __init__(MyClass self):",
-            "    self.thisptr = new cpp.MyClass()"
+            "    self.thisptr = new _mymodule.MyClass()"
         )
     )
 
 
 def test_function_def():
-    fun = FunctionDefinition("myFun", "", [], Includes(), "void", TypeInfo(),
-                             Config()).make()
+    fun = FunctionDefinition(
+        "mymodule", "myFun", "", [], Includes(), "void", TypeInfo(), Config()
+    ).make()
     assert_multi_line_equal(
         fun,
         lines(
             "cpdef my_fun():",
-            "    cpp.myFun()"
+            "    _mymodule.myFun()"
         )
     )
 
 
 def test_function_def_with_another_cppname():
-    fun = FunctionDefinition("myFunInt", "", [], Includes(), "void", TypeInfo(),
-                             Config(), cppname="myFun").make()
+    fun = FunctionDefinition(
+        "mymodule", "myFunInt", "", [], Includes(), "void", TypeInfo(),
+        Config(), cppname="myFun").make()
     assert_multi_line_equal(
         fun,
         lines(
             "cpdef my_fun_int():",
-            "    cpp.myFun()"
+            "    _mymodule.myFun()"
         )
     )
 

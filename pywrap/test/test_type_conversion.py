@@ -56,8 +56,11 @@ def test_const_chars():
 
 
 def test_typedef_prefix():
-    assert_equal(typedef_prefix("tdef", {}), "tdef")
-    assert_equal(typedef_prefix("tdef", {"tdef": "float"}), "cpp.tdef")
+    type_info = TypeInfo()
+    assert_equal(typedef_prefix("tdef", {}, type_info), "tdef")
+    type_info.classes["tdef"] = "cpp"
+    assert_equal(typedef_prefix("tdef", {"tdef": "float"}, type_info),
+                 "_cpp.tdef")
 
 
 def test_find_subtypes_of_primitive():
@@ -92,5 +95,6 @@ def test_find_subtypes_of_complex_hierarchy():
 
 
 def test_converter_not_available():
+    config = Config()
     assert_raises(NotImplementedError, create_type_converter,
-                  "UnknownType", "unknownType", TypeInfo([]), Config())
+                  "UnknownType", "unknownType", TypeInfo(config, []), config)

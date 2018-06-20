@@ -18,9 +18,9 @@ if __name__ == '__main__':
 
     extensions = [
         Extension(
-            "{{ module }}",
+            "{{ modulename }}",
             [
-                "{{ module }}.pyx",
+                "{{ modulename }}.pyx",
 {%- for filename in filenames %}
                 "{{ filename }}",
 {%- endfor %}
