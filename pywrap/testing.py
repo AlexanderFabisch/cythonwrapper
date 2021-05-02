@@ -84,7 +84,7 @@ def _write_cython_wrapper(filenames, modulename, config, incdirs, assert_warn,
             temporary_files.append(filename.replace(
                 file_ending(filename), "cpp"))
             temporary_files.append(filename.replace(
-                file_ending(filename), "so"))
+                "." + file_ending(filename), ".*.so"))
     filenames.extend(temporary_files)
 
     return filenames
