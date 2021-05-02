@@ -33,7 +33,7 @@ def full_paths(filenames):
     else:
         attach_prefix = lambda filename: (filename if filename.startswith("/")
                                           else os.path.join(PREFIX, filename))
-        full_paths = map(attach_prefix, filenames)
+        full_paths = list(map(attach_prefix, filenames))
         for path in full_paths:
             assert os.path.exists(path)
         return full_paths
