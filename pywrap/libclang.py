@@ -10,7 +10,7 @@ def find_clang(set_library_path=True, verbose=0):
     python-clang does not know where to find libclang, so we have to do this
     here almost manually.
     """
-    SUPPORTED_VERSIONS = ["6.0", "5.0", "4.0", "3.9", "3.8", "3.7", "3.6", "3.5"]
+    SUPPORTED_VERSIONS = ["11", "6.0", "5.0", "4.0", "3.9", "3.8", "3.7", "3.6", "3.5"]
     # remove pythonX.Y/site-packages/clang/__init__.pyc from path
     basepath = os.sep.join(clang.__file__.split(os.sep)[:-4])
 
@@ -73,9 +73,13 @@ def _find_include_directory(lib_path, clang_version):
         lib_path, "clang/%s.?/include/" % clang_version)
     clang_incdirs = list(glob.glob(incdir_pattern))
     if len(clang_incdirs) != 1:
-        raise ImportError(
-            "Could not find exactly one clang include directory. "
-            "Checked pattern '%s'." % incdir_pattern)
+        incdir_pattern = os.path.join(
+            lib_path, "clang/%s.?.?/include/" % clang_version)
+        clang_incdirs = list(glob.glob(incdir_pattern))
+        if len(clang_incdirs) != 1:
+            raise ImportError(
+                "Could not find exactly one clang include directory. "
+                "Checked pattern '%s'." % incdir_pattern)
     clang_incdir = clang_incdirs[0]
     return clang_incdir
 

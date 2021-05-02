@@ -403,7 +403,7 @@ class CythonImplementationExporter(AstExporter):
                 self.type_info, self.config, cpptype)
             return constructor_def.make()
         except NotImplementedError as e:
-            warnings.warn(e.message + " Ignoring method '%s'" % ctor.name)
+            warnings.warn(str(e) + " Ignoring method '%s'" % ctor.name)
             ctor.ignored = True
             return ""
 
@@ -425,7 +425,7 @@ class CythonImplementationExporter(AstExporter):
                 cppname=cppname)
             return method_def.make()
         except NotImplementedError as e:
-            warnings.warn(e.message + " Ignoring method '%s'" % method.name)
+            warnings.warn(str(e) + " Ignoring method '%s'" % method.name)
             method.ignored = True
             return ""
 
@@ -441,7 +441,7 @@ class CythonImplementationExporter(AstExporter):
                 function.result_type, self.type_info,
                 self.config, cppname=cppname).make())
         except NotImplementedError as e:
-            warnings.warn(e.message + " Ignoring function '%s'" % function.name)
+            warnings.warn(str(e) + " Ignoring function '%s'" % function.name)
             function.ignored = True
 
     def visit_template_function(self, template_function):
