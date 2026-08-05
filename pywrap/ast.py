@@ -242,6 +242,7 @@ def postprocess_asts(asts):
     for leaf_name in leaf_names:
         _copy_methods_from_base(classes, classes[leaf_name])
     _remove_overloaded_methods(classes.values())
+    _remove_overloaded_constructors(classes.values())
     _remove_overloaded_functions(asts)
 
 
@@ -296,6 +297,24 @@ def _remove_overloaded_methods(classes):
                 method_names.append(m.name)
         clazz.nodes = [n for n in clazz.nodes if n not in removed_methods]
 
+
+def _remove_overloaded_constructors(classes):
+    """Cython cannot handle overloaded constructors. We will keep the empty one
+    if available, otherwise the first one."""
+    for clazz in classes:
+        constructors = [n for n in clazz.nodes if isinstance(n, Constructor)]
+        if len(constructors) > 1:
+            preferred = constructors[0]
+            for c in constructors:
+                if len(c.nodes) == 0:
+                    preferred = c
+                    break
+            for c in constructors:
+                if c != preferred:
+                    c.ignored = True
+                    warnings.warn(
+                        "Class '%s' has multiple constructors. Only one "
+                        "constructor will be exposed." % clazz.name)
 
 def _remove_overloaded_functions(asts):
     """Cython cannot handle overloaded functions, we will take the first one."""
