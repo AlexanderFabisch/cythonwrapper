@@ -28,8 +28,8 @@ def test_complex_arg():
 
 
 def test_map():
-    with cython_extension_from("map.hpp"):
-        from map import lookup
+    with cython_extension_from("maparg.hpp"):
+        from maparg import lookup
         m = {"test": 0}
         assert_equal(lookup(m), 0)
 

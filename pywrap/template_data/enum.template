@@ -4,5 +4,5 @@ cdef class {{ enum.tipe }}:
     """
 {%- endif %}
 {%- for constant in enum.constants %}
-    {{ constant }} = cpp.{{ constant }}
+    {{ constant }} = _{{ modulename }}.{{ constant }}
 {%- endfor %}

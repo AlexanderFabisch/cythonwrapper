@@ -144,3 +144,8 @@ def replace_keyword_argnames(argname):
     if keyword.iskeyword(argname):
         argname = "_" + argname
     return argname
+
+
+def derive_module_name_from(filename):
+    filename = filename.split(os.sep)[-1]
+    return filename.split(".")[0]
