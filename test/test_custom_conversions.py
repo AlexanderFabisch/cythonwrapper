@@ -76,7 +76,7 @@ cdef extern from "Eigen/Dense" namespace "Eigen":
 
     config = Config()
     config.registered_converters.append(EigenConverter)
-    config.add_decleration(eigen_vector_decl)
+    config.add_declaration(eigen_vector_decl)
 
     with cython_extension_from("eigen.hpp", config=config,
                                incdirs=eigen3_incdir):

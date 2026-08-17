@@ -7,9 +7,11 @@ with dynamic types. That means we cannot directly wrap template types in
 Python. We have to specify how the template types should be set. In order to
 do that we can create a custom configuration, e.g.
 
-.. literalinclude:: ../../test/templateclassconfig.py
-   :language: python
-   :linenos:
+.. code:: python
+
+    from pywrap.defaultconfig import Config
+    config = Config()
+    config.register_class_specialization("A", "Ad", {"T": "double"})
 
 The corresponding C++ header looks like this:
 

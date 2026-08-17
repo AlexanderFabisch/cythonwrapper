@@ -107,16 +107,24 @@ def test_enum():
 
 def test_enum_in_class():
     with cython_extension_from("enuminclass.hpp"):
-        from enuminclass import MyEnum, enum_to_string
+        from enuminclass import MyEnum, MyEnumClass_enum_to_string
         assert_not_equal(MyEnum.FIRSTOPTION, MyEnum.SECONDOPTION)
         assert_not_equal(MyEnum.SECONDOPTION, MyEnum.THIRDOPTION)
-        assert_equal(enum_to_string(MyEnum.FIRSTOPTION), "first")
-        assert_equal(enum_to_string(MyEnum.SECONDOPTION), "second")
-        assert_equal(enum_to_string(MyEnum.THIRDOPTION), "third")
+        assert_equal(MyEnumClass_enum_to_string(MyEnum.FIRSTOPTION), "first")
+        assert_equal(MyEnumClass_enum_to_string(MyEnum.SECONDOPTION), "second")
+        assert_equal(MyEnumClass_enum_to_string(MyEnum.THIRDOPTION), "third")
+
+
+def test_class_in_class():
+    with cython_extension_from("classinclass.hpp"):
+        from classinclass import ClassB, ClassB_mystatfun
+        b = ClassB()
+        assert_equal(b.myfun(), 123)
+        assert_equal(ClassB_mystatfun(), 124)
 
 
 def test_static_method():
     with cython_extension_from("staticmethod.hpp"):
-        from staticmethod import plus1, plus2
-        assert_equal(plus1(1), 2)
-        assert_equal(plus2(1), 3)
+        from staticmethod import A_plus1, B_plus2
+        assert_equal(A_plus1(1), 2)
+        assert_equal(B_plus2(1), 3)

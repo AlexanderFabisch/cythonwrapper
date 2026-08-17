@@ -23,11 +23,11 @@ def test_load_config():
 from pywrap.defaultconfig import Config
 
 config = Config()
-config.add_decleration("asd")
+config.add_declaration("asd")
 """)
     try:
         config = load_config(configfile)
-        assert_equal(config.additional_declerations[0], "asd")
+        assert_equal(config.additional_declarations[0], "asd")
     finally:
         os.remove(configfile)
 
