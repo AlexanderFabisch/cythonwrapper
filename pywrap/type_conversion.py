@@ -82,7 +82,7 @@ def find_all_subtypes(tname):
     tname = tname.replace(" ", "")
     result = set()
     while len(tname) > 1:
-        match = re.match("([,\[\]]?([a-zA-Z0-9_\*]+?)[,\[\]]).*", tname)
+        match = re.match(r"([,\[\]]?([a-zA-Z0-9_\*]+?)[,\[\]]).*", tname)
         if match is None:
             return result
 
@@ -274,7 +274,7 @@ class FixedSizeArrayTypeConverter(AbstractTypeConverter):
     def matches(self):
         if type(self.tname) is not str:
             return False
-        match = re.match(".* \[(\d+)\]", self.tname)
+        match = re.match(r".* \[(\d+)\]", self.tname)
         if match is None:
             return False
         self.size = int(match.group(1))

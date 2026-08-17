@@ -1,5 +1,6 @@
 import os
 import sys
+import glob
 from contextlib import contextmanager
 from functools import partial
 import keyword
@@ -134,6 +135,10 @@ def remove_files(filenames):
     for f in filenames:
         if os.path.exists(f):
             os.remove(f)
+        else:
+            files = list(glob.glob(f))
+            if len(files) == 1:
+                os.remove(files[0])
 
 
 def replace_keyword_argnames(argname):

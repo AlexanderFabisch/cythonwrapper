@@ -73,6 +73,8 @@ def make_cython_wrapper(filenames, sources, modulename=None, target=".",
     """
     if isinstance(filenames, str):
         filenames = [filenames]
+    if not filenames:
+        raise ValueError("No filenames given.")
     if len(filenames) == 1 and modulename is None:
         modulename = _derive_module_name_from(filenames[0])
     if modulename is None:

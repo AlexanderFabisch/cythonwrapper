@@ -13,7 +13,7 @@ class Specializer(object):
         try:
             specs = self._lookup_specification(general)
         except LookupError as e:
-            warnings.warn(e.message)
+            warnings.warn(str(e))
             general.ignored = True
             return []
 
